@@ -255,7 +255,9 @@ export default async function handler(req, res) {
     send('complete', { message: 'Session complete' });
   } catch (err) {
     console.error('Pipeline error:', err);
-    send('error', { message: err.message || 'Something went wrong. Please try again.' });
+    const isOverloaded = err.message && err.message.includes('529');
+    const userMessage = isOverloaded ? 'The AI service is under high demand right now. Please try again in a few minutes.' : (err.message || 'Something went wrong. Please try again.');
+    send('error', { message: userMessage });
   }
 
   res.end();
