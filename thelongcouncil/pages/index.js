@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
 import Head from 'next/head';
-import '../styles/globals.css';
 
 // ── Parse deliberation output into card blocks ──────────────────────────
 function parseCards(deliberationText) {
