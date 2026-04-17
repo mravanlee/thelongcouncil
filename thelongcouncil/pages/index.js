@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import Head from 'next/head';
+import Link from 'next/link';
 
 // ── Tiny inline markdown renderer ──────────────────────────────────────
 function Markdown({ text }) {
@@ -94,16 +95,10 @@ function renderInline(text) {
   return parts.length === 0 ? text : parts;
 }
 
-// ── Parse deliberation output into card blocks ──────────────────────────
-// Filters out:
-// - The SPEAKING ORDER line (new metadata from Prompt 2)
-// - Preamble blocks (e.g., "Deliberation Engine Output", "Issue Analysis")
-// - The convergence note
-// - Anything that isn't a real member card
+// ── Parsers ──────────────────────────────────────────────────────────────
 function parseCards(deliberationText) {
   if (!deliberationText) return [];
 
-  // Strip the SPEAKING ORDER line if present (it sits before the first ---)
   const cleaned = deliberationText.replace(/^SPEAKING ORDER:.*$/im, '').trim();
 
   const blocks = cleaned.split(/\n---\n/).map(b => b.trim()).filter(Boolean);
@@ -113,19 +108,16 @@ function parseCards(deliberationText) {
   return blocks.filter(b => {
     if (b.length < 50) return false;
 
-    // Explicit exclusions
     if (/^SPEAKING ORDER:/i.test(b)) return false;
     if (/^CONVERGENCE/i.test(b)) return false;
     if (/^##\s*The convergence note/i.test(b)) return false;
 
-    // Heading-based preamble exclusion
     const firstHeadingMatch = b.match(/^##\s+(.+)$/m);
     if (firstHeadingMatch) {
       const headingText = firstHeadingMatch[1];
       if (PREAMBLE_KEYWORDS.test(headingText)) return false;
     }
 
-    // Inline preamble signals
     if (/\*\*Central Tension:\*\*/i.test(b)) return false;
     if (/\*\*Issue Analysis\*\*/i.test(b)) return false;
 
@@ -133,7 +125,6 @@ function parseCards(deliberationText) {
   });
 }
 
-// ── Extract convergence note ────────────────────────────────────────────
 function parseConvergence(deliberationText) {
   if (!deliberationText) return null;
   const blocks = deliberationText.split(/\n---\n/).map(b => b.trim()).filter(Boolean);
@@ -143,7 +134,6 @@ function parseConvergence(deliberationText) {
   return oldMatch ? oldMatch[1].trim() : null;
 }
 
-// ── Extract verdict and summary from verdict output ─────────────────────
 function parseVerdict(verdictText) {
   if (!verdictText) return { verdict: '', summary: '' };
 
@@ -382,15 +372,21 @@ export default function Home() {
     <>
       <Head>
         <title>The Long Council</title>
-        <meta name="description" content="The counsel of history's greatest minds, brought to life by AI." />
+        <meta name="description" content="Counsel from those who governed. AI-generated deliberation from 35 historic leaders and thinkers." />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <div className="mast" onClick={reset}>
+      <div className="mast mast-link" onClick={reset}>
         <div className="mast-name">The Long Council</div>
-        <div className="mast-tag">The counsel of history's greatest minds, brought to life by AI</div>
+        <div className="mast-tag">Counsel from those who governed</div>
       </div>
+
+      <nav className="nav">
+        <Link href="/council" className="nav-link">The Council</Link>
+        <span className="nav-link nav-disabled" title="Coming soon">The Archive</span>
+        <a className="nav-raise nav-active-raise" onClick={reset}>Raise an issue</a>
+      </nav>
 
       {screen === 'landing' && (
         <div className="landing">
