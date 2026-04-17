@@ -339,7 +339,6 @@ footer { text-align: center; padding: 24px 32px; border-top: 0.5px solid #e8e4de
    COUNCIL PAGE — the grid of 35 members
    ══════════════════════════════════════════════════════════════════ */
 
-/* Page header — sits below the nav */
 .council-hd {
   max-width: 1200px;
   margin: 0 auto;
@@ -361,7 +360,6 @@ footer { text-align: center; padding: 24px 32px; border-top: 0.5px solid #e8e4de
   margin-bottom: 22px;
 }
 
-/* Filter bar */
 .council-filters {
   display: flex;
   align-items: center;
@@ -398,7 +396,6 @@ footer { text-align: center; padding: 24px 32px; border-top: 0.5px solid #e8e4de
 .council-search:focus { border-color: #6b1a1a; }
 .council-search::placeholder { color: #9a9a9a; font-style: italic; }
 
-/* The 3-column grid */
 .council-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -408,21 +405,25 @@ footer { text-align: center; padding: 24px 32px; border-top: 0.5px solid #e8e4de
 @media (max-width: 900px) { .council-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 600px) { .council-grid { grid-template-columns: 1fr; } }
 
-/* Each member card */
+/* Each member card — now with hover state */
 .mc {
-  padding: 22px 24px 20px;
+  padding: 22px 24px 24px;
   border-bottom: 0.5px solid #e8e4de;
   border-right: 0.5px solid #e8e4de;
   display: flex;
   flex-direction: column;
+  transition: background 0.15s;
 }
+.mc:hover { background: #f2efe9; }
 
-/* Top row: avatar + badge + dates */
+/* Top row: avatar + dates + country
+   Note: avatar stays here so you can later replace the monogram
+   with a profile picture without changing structure. */
 .mc-top {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 .mc-av {
   width: 42px;
@@ -439,19 +440,19 @@ footer { text-align: center; padding: 24px 32px; border-top: 0.5px solid #e8e4de
 }
 .mc-av-p { background: #fdf5ec; color: #6b1a1a; border: 0.5px solid #c4897a66; }
 .mc-av-f { background: #edf4ed; color: #2a4a2a; border: 0.5px solid #7a9a7a66; }
-.mc-top-text { display: flex; flex-direction: column; gap: 3px; padding-top: 2px; }
+.mc-top-text { display: flex; flex-direction: column; gap: 3px; padding-top: 4px; }
+
+/* Badge — plain small-caps text, no pill/background */
 .mc-badge {
-  font-size: 9px;
-  letter-spacing: 0.08em;
+  font-size: 10px;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  padding: 2px 8px;
-  border-radius: 2px;
+  font-weight: 500;
   display: inline-block;
   width: fit-content;
-  font-weight: 500;
 }
-.mc-badge-p { background: #fdf5ec; color: #8b4a2a; border: 0.5px solid #c4897a44; }
-.mc-badge-f { background: #edf4ed; color: #2a5a2a; border: 0.5px solid #7a9a7a44; }
+.mc-badge-p { color: #8b4a2a; }
+.mc-badge-f { color: #2a5a2a; }
 .mc-dates {
   font-size: 11px;
   color: #8a8a8a;
@@ -480,7 +481,6 @@ footer { text-align: center; padding: 24px 32px; border-top: 0.5px solid #e8e4de
   display: flex;
   flex-direction: column;
   gap: 0;
-  margin-bottom: 12px;
   flex-grow: 1;
 }
 .mc-pos {
@@ -492,6 +492,7 @@ footer { text-align: center; padding: 24px 32px; border-top: 0.5px solid #e8e4de
   display: flex;
   gap: 8px;
 }
+.mc-pos:first-child { border-top: none; padding-top: 4px; }
 .mc-pos::before {
   content: '—';
   color: #c4897a;
@@ -500,16 +501,6 @@ footer { text-align: center; padding: 24px 32px; border-top: 0.5px solid #e8e4de
   line-height: 1.55;
 }
 .mc-framer .mc-pos::before { color: #7a9a7a; }
-
-/* Country footer */
-.mc-country-foot {
-  font-size: 10px;
-  color: #9a9a9a;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  padding-top: 8px;
-  border-top: 0.5px solid #ede9e3;
-}
 
 /* Empty state when search returns nothing */
 .council-empty {
@@ -537,5 +528,5 @@ footer { text-align: center; padding: 24px 32px; border-top: 0.5px solid #e8e4de
   .council-hd { padding: 24px 20px 20px; }
   .council-hd h2 { font-size: 22px; }
   .council-search { width: 100%; margin-left: 0; margin-top: 8px; }
-  .mc { padding: 18px 20px 16px; }
+  .mc { padding: 18px 20px; }
 }
