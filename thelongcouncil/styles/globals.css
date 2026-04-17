@@ -179,8 +179,6 @@ body { background: #f8f6f2; font-family: 'Crimson Pro', serif; color: #0f0f0f; m
   font-weight: 500;
 }
 
-/* ── REASONING CARDS ─────────────────────────────────────────────── */
-
 .cards { display: flex; flex-direction: column; gap: 0; margin-bottom: 32px; }
 .rcard {
   border-left: 2px solid #6b1a1a;
@@ -240,8 +238,6 @@ body { background: #f8f6f2; font-family: 'Crimson Pro', serif; color: #0f0f0f; m
 }
 .rcard.framer .md-challenge { color: #2a5a2a; border-top-color: #dde4dd; }
 
-/* ── CONCLUSION BAR ──────────────────────────────────────────────── */
-
 .conc-wrap { opacity: 0; transition: opacity 0.7s; margin: 10px 0 24px; }
 .conc-wrap.visible { opacity: 1; }
 .conc-bar { background: #6b1a1a; border-radius: 2px; padding: 28px 32px; }
@@ -277,8 +273,6 @@ body { background: #f8f6f2; font-family: 'Crimson Pro', serif; color: #0f0f0f; m
   margin-bottom: 14px;
 }
 .conc-summary .md-p:last-child { margin-bottom: 0; }
-
-/* ── POLICY BRIEF ────────────────────────────────────────────────── */
 
 .brief-toggle-row { opacity: 0; transition: opacity 0.5s; margin-top: 8px; }
 .brief-toggle-row.visible { opacity: 1; }
@@ -336,7 +330,7 @@ body { background: #f8f6f2; font-family: 'Crimson Pro', serif; color: #0f0f0f; m
 footer { text-align: center; padding: 24px 32px; border-top: 0.5px solid #e8e4de; font-size: 11px; color: #9a9a9a; letter-spacing: 0.04em; }
 
 /* ══════════════════════════════════════════════════════════════════
-   COUNCIL PAGE — the grid of 35 members
+   COUNCIL PAGE
    ══════════════════════════════════════════════════════════════════ */
 
 .council-hd {
@@ -405,7 +399,6 @@ footer { text-align: center; padding: 24px 32px; border-top: 0.5px solid #e8e4de
 @media (max-width: 900px) { .council-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 600px) { .council-grid { grid-template-columns: 1fr; } }
 
-/* Each member card — now with hover state */
 .mc {
   padding: 22px 24px 24px;
   border-bottom: 0.5px solid #e8e4de;
@@ -416,9 +409,6 @@ footer { text-align: center; padding: 24px 32px; border-top: 0.5px solid #e8e4de
 }
 .mc:hover { background: #f2efe9; }
 
-/* Top row: avatar + dates + country
-   Note: avatar stays here so you can later replace the monogram
-   with a profile picture without changing structure. */
 .mc-top {
   display: flex;
   align-items: flex-start;
@@ -442,7 +432,6 @@ footer { text-align: center; padding: 24px 32px; border-top: 0.5px solid #e8e4de
 .mc-av-f { background: #edf4ed; color: #2a4a2a; border: 0.5px solid #7a9a7a66; }
 .mc-top-text { display: flex; flex-direction: column; gap: 3px; padding-top: 4px; }
 
-/* Badge — plain small-caps text, no pill/background */
 .mc-badge {
   font-size: 10px;
   letter-spacing: 0.1em;
@@ -459,7 +448,6 @@ footer { text-align: center; padding: 24px 32px; border-top: 0.5px solid #e8e4de
   letter-spacing: 0.02em;
 }
 
-/* Name + role */
 .mc-name {
   font-family: 'Playfair Display', serif;
   font-size: 17px;
@@ -476,7 +464,6 @@ footer { text-align: center; padding: 24px 32px; border-top: 0.5px solid #e8e4de
   margin-bottom: 14px;
 }
 
-/* Three position bullets */
 .mc-positions {
   display: flex;
   flex-direction: column;
@@ -502,7 +489,6 @@ footer { text-align: center; padding: 24px 32px; border-top: 0.5px solid #e8e4de
 }
 .mc-framer .mc-pos::before { color: #7a9a7a; }
 
-/* Empty state when search returns nothing */
 .council-empty {
   max-width: 1200px;
   margin: 0 auto;
@@ -511,6 +497,74 @@ footer { text-align: center; padding: 24px 32px; border-top: 0.5px solid #e8e4de
   font-size: 14px;
   color: #8a8a8a;
   font-style: italic;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   ABOUT PAGE
+   ══════════════════════════════════════════════════════════════════ */
+
+.about {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 56px 32px 40px;
+}
+.about-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: #0f0f0f;
+  margin-bottom: 32px;
+  letter-spacing: -0.005em;
+}
+
+/* Lead paragraph — slightly larger, sets tone */
+.about-lead {
+  font-size: 17px;
+  line-height: 1.8;
+  color: #1a1a1a;
+  margin-bottom: 22px;
+}
+
+.about p {
+  font-size: 16px;
+  line-height: 1.85;
+  color: #2a2a2a;
+  margin-bottom: 22px;
+}
+
+/* Section headers — italic serif, quieter than the main title */
+.about h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: 16px;
+  font-weight: 500;
+  font-style: italic;
+  color: #6b1a1a;
+  margin: 36px 0 14px 0;
+  letter-spacing: 0.01em;
+}
+
+/* Links in body text */
+.about a {
+  color: #6b1a1a;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 0.5px;
+  transition: color 0.2s;
+}
+.about a:hover { color: #8b2a2a; }
+
+/* Footer block — separated by hairline, smaller text */
+.about-footer {
+  margin-top: 44px;
+  padding-top: 24px;
+  border-top: 0.5px solid #e0dbd4;
+}
+.about-footer p {
+  font-size: 13px;
+  line-height: 1.75;
+  color: #5a5a5a;
+  margin-bottom: 0;
 }
 
 /* ── RESPONSIVE ── */
@@ -524,9 +578,13 @@ footer { text-align: center; padding: 24px 32px; border-top: 0.5px solid #e8e4de
   .conc-bar { padding: 22px 22px; }
   .conc-verdict .md-p { font-size: 15px; }
   .proposed-actions { flex-direction: column; }
-  .nav { gap: 18px; padding: 11px 20px; }
+  .nav { gap: 16px; padding: 11px 16px; flex-wrap: wrap; }
   .council-hd { padding: 24px 20px 20px; }
   .council-hd h2 { font-size: 22px; }
   .council-search { width: 100%; margin-left: 0; margin-top: 8px; }
   .mc { padding: 18px 20px; }
+  .about { padding: 40px 20px 32px; }
+  .about-title { font-size: 24px; }
+  .about-lead { font-size: 16px; }
+  .about p { font-size: 15px; }
 }
