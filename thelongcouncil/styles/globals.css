@@ -116,12 +116,8 @@ body { background: #f8f6f2; font-family: 'Crimson Pro', serif; color: #0f0f0f; m
    SESSION — the results page
    ══════════════════════════════════════════════════════════════════ */
 
-/* Narrower for better readability — was 880px, now 720px
-   Short lines = more compact feel, faster scanning */
 .session { max-width: 720px; margin: 0 auto; padding: 40px 32px 80px; }
 
-/* The raised issue — was 26px/600, now 22px/500
-   Less shouty, reads as a considered question not a headline */
 .session-issue {
   font-family: 'Playfair Display', serif;
   font-size: 22px;
@@ -132,8 +128,6 @@ body { background: #f8f6f2; font-family: 'Crimson Pro', serif; color: #0f0f0f; m
 }
 .session-meta { font-size: 12px; color: #8a8a8a; margin-bottom: 40px; letter-spacing: 0.02em; }
 
-/* Section header — "THE DELIBERATION" etc.
-   Was grey #8a8a8a; now burgundy with more weight so it stops disappearing */
 .sec-head { display: flex; align-items: center; gap: 12px; margin: 8px 0 24px; }
 .sec-rule { flex: 1; height: 0.5px; background: #d4cfc8; }
 .sec-lbl {
@@ -161,7 +155,7 @@ body { background: #f8f6f2; font-family: 'Crimson Pro', serif; color: #0f0f0f; m
 
 /* ── MARKDOWN ELEMENTS INSIDE CARDS ──────────────────────────────── */
 
-/* Member name — renders from "## Member Name" in prompt output */
+/* Member name — from "## Member Name" */
 .rcard .md-h2 {
   font-family: 'Playfair Display', serif;
   font-size: 19px;
@@ -171,8 +165,7 @@ body { background: #f8f6f2; font-family: 'Crimson Pro', serif; color: #0f0f0f; m
   margin-bottom: 2px;
 }
 
-/* Role line — the <p> immediately following the member name heading.
-   Adjacent sibling selector means this only hits the FIRST paragraph after h2 */
+/* Role line — first <p> after the member name heading */
 .rcard .md-h2 + .md-p {
   font-size: 13px;
   color: #6a6a6a;
@@ -189,20 +182,23 @@ body { background: #f8f6f2; font-family: 'Crimson Pro', serif; color: #0f0f0f; m
 }
 .rcard .md-p:last-child { margin-bottom: 0; }
 
-/* Framing line — the italic one-liner above the reasoning.
-   Gets pull-quote treatment: indent + hairline left border */
+/* Framing line — the italic one-liner.
+   UPGRADED: now Playfair Display italic at 17px (was Crimson 14px).
+   Creates proper hierarchy: name > framing > body > challenge.
+   Bolder left border so it reads as a pull-quote, not an afterthought. */
 .rcard .md-framing {
-  font-size: 14px;
-  color: #5a5a5a;
+  font-family: 'Playfair Display', serif;
+  font-size: 17px;
+  font-weight: 400;
   font-style: italic;
-  line-height: 1.6;
-  padding-left: 14px;
-  border-left: 1.5px solid #e0dbd4;
-  margin: 4px 0 18px 0;
+  color: #3a3a3a;
+  line-height: 1.55;
+  padding-left: 16px;
+  border-left: 2px solid #c0b8a8;
+  margin: 6px 0 22px 0;
 }
 
-/* Challenge line — closes each card with a top hairline.
-   Burgundy, small, sits visually apart from the main reasoning */
+/* Challenge line — closes each card */
 .rcard .md-challenge {
   font-size: 13px;
   color: #6b1a1a;
@@ -227,7 +223,6 @@ body { background: #f8f6f2; font-family: 'Crimson Pro', serif; color: #0f0f0f; m
   margin-bottom: 14px;
 }
 
-/* The verdict line — short, Playfair italic, prominent */
 .conc-verdict {
   font-family: 'Playfair Display', serif;
   color: #f5ede4;
@@ -241,8 +236,6 @@ body { background: #f8f6f2; font-family: 'Crimson Pro', serif; color: #0f0f0f; m
 }
 .conc-verdict .md-p:last-child { margin-bottom: 0; }
 
-/* The reasoning summary — two beats separated by proper spacing.
-   Not italic. Crimson Pro. Readable paragraphs. */
 .conc-summary {
   padding-top: 18px;
   border-top: 0.5px solid rgba(232, 214, 198, 0.25);
@@ -279,7 +272,6 @@ body { background: #f8f6f2; font-family: 'Crimson Pro', serif; color: #0f0f0f; m
 .brief-content { display: none; border: 0.5px solid #e8e4de; border-top: none; padding: 28px 32px; background: #faf8f4; }
 .brief-content.open { display: block; }
 
-/* Markdown styling inside the brief */
 .brief-content .md-h2 {
   font-family: 'Playfair Display', serif;
   font-size: 16px;
@@ -322,6 +314,7 @@ footer { text-align: center; padding: 24px 32px; border-top: 0.5px solid #e8e4de
   .session-issue { font-size: 19px; }
   .rcard { padding-left: 16px; }
   .rcard .md-h2 { font-size: 17px; }
+  .rcard .md-framing { font-size: 15px; }
   .conc-bar { padding: 22px 22px; }
   .conc-verdict .md-p { font-size: 15px; }
   .proposed-actions { flex-direction: column; }
