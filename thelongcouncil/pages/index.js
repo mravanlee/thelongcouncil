@@ -2,9 +2,6 @@ import { useState, useRef, useEffect } from 'react';
 import Head from 'next/head';
 
 // ── Tiny inline markdown renderer ──────────────────────────────────────
-// Handles: ## headings, **bold**, *italic*, paragraphs, --- as divider (skipped).
-// Detects framing lines (entirely *italic*) and challenge lines (start with **Challenge)
-// so they can be styled distinctly via CSS.
 function Markdown({ text }) {
   if (!text) return null;
 
@@ -35,7 +32,7 @@ function Markdown({ text }) {
       flushPara();
       blocks.push({ type: 'h1', content: line.slice(2) });
     } else if (line === '---' || line === '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━') {
-      flushPara(); // skip horizontal rules and ASCII dividers
+      flushPara();
     } else {
       currentPara.push(line);
     }
@@ -49,21 +46,17 @@ function Markdown({ text }) {
         if (block.type === 'h2') return <h2 key={i} className="md-h2">{renderInline(block.content)}</h2>;
         if (block.type === 'h3') return <h3 key={i} className="md-h3">{renderInline(block.content)}</h3>;
 
-        // Paragraph classification
         const raw = block.content;
 
-        // Framing line: entirely wrapped in single asterisks (not double)
         const isFraming = raw.length >= 3
           && raw[0] === '*'
           && raw[1] !== '*'
           && raw[raw.length - 1] === '*'
           && raw[raw.length - 2] !== '*';
 
-        // Challenge line: starts with **Challenge
         const isChallenge = /^\*\*Challenge\b/i.test(raw);
 
         if (isFraming) {
-          // Strip the outer asterisks; CSS handles the italic styling
           const stripped = raw.slice(1, -1);
           return <p key={i} className="md-framing">{renderInline(stripped)}</p>;
         }
@@ -101,37 +94,54 @@ function renderInline(text) {
   return parts.length === 0 ? text : parts;
 }
 
+// ── Detect preamble / meta blocks that shouldn't render as cards ───────
+// Defensive filter: even if the prompt slips and emits "Deliberation
+// Engine Output" / "Issue Analysis" / "Central Tension" as a block,
+// this keeps it out of the UI.
+function isPreambleBlock(text) {
+  const lower = text.toLowerCase();
+  const preamblePatterns = [
+    'deliberation engine',
+    'issue analysis',
+    'central tension',
+    'council assembly',
+    'taxonomy tag',
+    'selected member',
+    'conclusion type',
+    'reasoning cards',
+    'here is the deliberation',
+    'here are the reasoning',
+  ];
+  return preamblePatterns.some(p => lower.includes(p));
+}
+
 // ── Parse deliberation output into card blocks ──────────────────────────
-// Works with both old and new prompt formats.
+// A valid card starts with "## " heading, has enough content, and is
+// not a preamble/meta block or the convergence note.
 function parseCards(deliberationText) {
   if (!deliberationText) return [];
   const blocks = deliberationText.split(/\n---\n/).map(b => b.trim()).filter(Boolean);
   return blocks.filter(b => {
     if (b.length < 50) return false;
-    // Exclude the convergence note (both old and new formats)
-    if (/^CONVERGENCE/i.test(b)) return false;
+    if (!b.startsWith('## ')) return false;
     if (/^##\s*The convergence note/i.test(b)) return false;
+    if (isPreambleBlock(b)) return false;
     return true;
   });
 }
 
-// ── Extract convergence note ────────────────────────────────────────────
 function parseConvergence(deliberationText) {
   if (!deliberationText) return null;
-  // New format: delimited block starting with ## The convergence note
   const blocks = deliberationText.split(/\n---\n/).map(b => b.trim()).filter(Boolean);
   const newBlock = blocks.find(b => /^##\s*The convergence note/i.test(b));
   if (newBlock) return newBlock;
-  // Old format: CONVERGENCE NOTE: ... to end of text
   const oldMatch = deliberationText.match(/CONVERGENCE NOTE:\s*([\s\S]*?)$/i);
   return oldMatch ? oldMatch[1].trim() : null;
 }
 
-// ── Extract verdict and summary from verdict output ─────────────────────
 function parseVerdict(verdictText) {
   if (!verdictText) return { verdict: '', summary: '' };
 
-  // New format: ## Verdict  ...  ## Reasoning  ...
   const newVerdictMatch = verdictText.match(/##\s*Verdict\s*\n([\s\S]*?)(?=\n##\s*Reasoning|$)/i);
   const newReasoningMatch = verdictText.match(/##\s*Reasoning\s*\n([\s\S]*?)(?=\n---|$)/i);
   if (newVerdictMatch) {
@@ -141,7 +151,6 @@ function parseVerdict(verdictText) {
     };
   }
 
-  // Old format: VERDICT: ... REASONING SUMMARY: ...
   const oldVerdictMatch = verdictText.match(/VERDICT:\s*([\s\S]*?)(?=REASONING SUMMARY:|$)/i);
   const oldSummaryMatch = verdictText.match(/REASONING SUMMARY:\s*([\s\S]*?)(?=---|$)/i);
   return {
@@ -150,29 +159,24 @@ function parseVerdict(verdictText) {
   };
 }
 
-// ── Determine if a card is from a Framer (green) or Practitioner (red) ──
 function isFramer(cardText) {
   return /Framer/i.test(cardText);
 }
 
 export default function Home() {
-  // ── State machine ──────────────────────────────────────────────────────
-  const [screen, setScreen] = useState('landing'); // landing | sharpening | loading | session
+  const [screen, setScreen] = useState('landing');
   const [question, setQuestion] = useState('');
 
-  // Sharpener state
-  const [chatHistory, setChatHistory] = useState([]); // [{role, content}]
-  const [sharpenerMessages, setSharpenerMessages] = useState([]); // display messages
+  const [chatHistory, setChatHistory] = useState([]);
+  const [sharpenerMessages, setSharpenerMessages] = useState([]);
   const [proposedQuestion, setProposedQuestion] = useState(null);
   const [confirmedQuestion, setConfirmedQuestion] = useState('');
   const [sharpenerInput, setSharpenerInput] = useState('');
   const [sharpenerLoading, setSharpenerLoading] = useState(false);
 
-  // Loading state
-  const [loadingStep, setLoadingStep] = useState(0); // 0=idle,1=assembly,2=deliberation,3=verdict,4=brief
+  const [loadingStep, setLoadingStep] = useState(0);
   const [loadingMessage, setLoadingMessage] = useState('');
 
-  // Session state
   const [sessionData, setSessionData] = useState(null);
   const [visibleCards, setVisibleCards] = useState(0);
   const [showConclusion, setShowConclusion] = useState(false);
@@ -181,7 +185,6 @@ export default function Home() {
 
   const textareaRef = useRef(null);
 
-  // Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -189,7 +192,6 @@ export default function Home() {
     }
   }, [question]);
 
-  // Animate cards when session loads
   useEffect(() => {
     if (screen !== 'session' || !sessionData) return;
     const cards = sessionData.cards || [];
@@ -208,7 +210,6 @@ export default function Home() {
     return () => clearTimeout(t);
   }, [screen, sessionData]);
 
-  // ── Step 1: Submit initial question ────────────────────────────────────
   async function handleSubmit() {
     const q = question.trim();
     if (!q) return;
@@ -238,7 +239,6 @@ export default function Home() {
     }
   }
 
-  // ── Step 2: Reply in sharpener dialogue ────────────────────────────────
   async function handleSharpenerReply() {
     const reply = sharpenerInput.trim();
     if (!reply || sharpenerLoading) return;
@@ -272,7 +272,6 @@ export default function Home() {
     }
   }
 
-  // ── Step 3: Confirm question and run pipeline ───────────────────────────
   async function runPipeline(finalQuestion) {
     setConfirmedQuestion(finalQuestion);
     setScreen('loading');
@@ -298,7 +297,7 @@ export default function Home() {
 
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split('\n');
-        buffer = lines.pop(); // keep incomplete line in buffer
+        buffer = lines.pop();
 
         for (const line of lines) {
           if (line.startsWith('event: ')) {
@@ -329,7 +328,6 @@ export default function Home() {
         }
       }
 
-      // Parse into display-ready structure
       const cards = parseCards(result.deliberation || '');
       const convergence = parseConvergence(result.deliberation || '');
       const { verdict, summary } = parseVerdict(result.verdict || '');
@@ -352,7 +350,6 @@ export default function Home() {
     }
   }
 
-  // ── Reset to landing ────────────────────────────────────────────────────
   function reset() {
     setScreen('landing');
     setQuestion('');
@@ -385,15 +382,11 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      {/* ── MASTHEAD ── */}
       <div className="mast" onClick={reset}>
         <div className="mast-name">The Long Council</div>
         <div className="mast-tag">The counsel of history's greatest minds, brought to life by AI</div>
       </div>
 
-      {/* ═══════════════════════════════════════════════════════════════
-          LANDING SCREEN
-      ═══════════════════════════════════════════════════════════════ */}
       {screen === 'landing' && (
         <div className="landing">
           <div className="landing-eyebrow">Raise an issue</div>
@@ -428,9 +421,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* ═══════════════════════════════════════════════════════════════
-          SHARPENER SCREEN
-      ═══════════════════════════════════════════════════════════════ */}
       {screen === 'sharpening' && (
         <div className="sharpener">
           <div className="sharpener-heading">Before the council assembles</div>
@@ -491,9 +481,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* ═══════════════════════════════════════════════════════════════
-          LOADING SCREEN
-      ═══════════════════════════════════════════════════════════════ */}
       {screen === 'loading' && (
         <div className="loading">
           <div className="loading-question">"{confirmedQuestion}"</div>
@@ -512,9 +499,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* ═══════════════════════════════════════════════════════════════
-          SESSION SCREEN
-      ═══════════════════════════════════════════════════════════════ */}
       {screen === 'session' && sessionData && (
         <div className="session">
           <div className="session-issue">{sessionData.question}</div>
@@ -523,7 +507,6 @@ export default function Home() {
             {' · '}AI-generated counsel from historical figures
           </div>
 
-          {/* Reasoning cards */}
           <div className="sec-head">
             <div className="sec-rule" />
             <div className="sec-lbl">The deliberation</div>
@@ -543,7 +526,6 @@ export default function Home() {
                   </div>
                 ))
               : (
-                // Fallback: show raw deliberation if parsing produced nothing
                 <div className={`rcard visible`}>
                   <div className="card-body">
                     <Markdown text={sessionData.deliberation || 'Deliberation not available.'} />
@@ -552,7 +534,6 @@ export default function Home() {
               )}
           </div>
 
-          {/* Conclusion bar */}
           <div className={`conc-wrap ${showConclusion ? 'visible' : ''}`}>
             <div className="sec-head">
               <div className="sec-rule" />
@@ -572,7 +553,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Policy brief toggle */}
           <div className={`brief-toggle-row ${showBriefToggle ? 'visible' : ''}`}>
             <button
               className="brief-toggle-btn"
@@ -586,7 +566,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* New session */}
           <div className="new-session-row">
             <button className="new-session-btn" onClick={reset}>
               Raise a new issue
