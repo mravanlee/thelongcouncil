@@ -1,29 +1,130 @@
 import { useState, useRef, useEffect } from 'react';
 import Head from 'next/head';
 
+// ── Tiny inline markdown renderer ──────────────────────────────────────
+// Handles: ## headings, **bold**, *italic*, paragraphs, --- as divider (skipped).
+// No dependencies. Good enough for what our prompts emit.
+function Markdown({ text }) {
+  if (!text) return null;
+
+  const lines = text.split('\n');
+  const blocks = [];
+  let currentPara = [];
+
+  const flushPara = () => {
+    if (currentPara.length > 0) {
+      blocks.push({ type: 'p', content: currentPara.join(' ') });
+      currentPara = [];
+    }
+  };
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) {
+      flushPara();
+      continue;
+    }
+    if (line.startsWith('### ')) {
+      flushPara();
+      blocks.push({ type: 'h3', content: line.slice(4) });
+    } else if (line.startsWith('## ')) {
+      flushPara();
+      blocks.push({ type: 'h2', content: line.slice(3) });
+    } else if (line.startsWith('# ')) {
+      flushPara();
+      blocks.push({ type: 'h1', content: line.slice(2) });
+    } else if (line === '---' || line === '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━') {
+      flushPara(); // skip horizontal rules and ASCII dividers
+    } else {
+      currentPara.push(line);
+    }
+  }
+  flushPara();
+
+  return (
+    <>
+      {blocks.map((block, i) => {
+        const content = renderInline(block.content);
+        if (block.type === 'h1') return <h1 key={i} className="md-h1">{content}</h1>;
+        if (block.type === 'h2') return <h2 key={i} className="md-h2">{content}</h2>;
+        if (block.type === 'h3') return <h3 key={i} className="md-h3">{content}</h3>;
+        return <p key={i} className="md-p">{content}</p>;
+      })}
+    </>
+  );
+}
+
+function renderInline(text) {
+  const parts = [];
+  const pattern = /(\*\*[^*]+\*\*|\*[^*]+\*)/g;
+  let lastIndex = 0;
+  let key = 0;
+  let match;
+
+  while ((match = pattern.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+    const m = match[0];
+    if (m.startsWith('**')) {
+      parts.push(<strong key={key++}>{m.slice(2, -2)}</strong>);
+    } else {
+      parts.push(<em key={key++}>{m.slice(1, -1)}</em>);
+    }
+    lastIndex = match.index + m.length;
+  }
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+  return parts.length === 0 ? text : parts;
+}
+
 // ── Parse deliberation output into card blocks ──────────────────────────
+// Works with both old and new prompt formats.
 function parseCards(deliberationText) {
   if (!deliberationText) return [];
-  // Split on --- delimiters
   const blocks = deliberationText.split(/\n---\n/).map(b => b.trim()).filter(Boolean);
-  return blocks.filter(b => b.length > 50 && !b.startsWith('CONVERGENCE'));
+  return blocks.filter(b => {
+    if (b.length < 50) return false;
+    // Exclude the convergence note (both old and new formats)
+    if (/^CONVERGENCE/i.test(b)) return false;
+    if (/^##\s*The convergence note/i.test(b)) return false;
+    return true;
+  });
 }
 
 // ── Extract convergence note ────────────────────────────────────────────
 function parseConvergence(deliberationText) {
   if (!deliberationText) return null;
-  const match = deliberationText.match(/CONVERGENCE NOTE:\s*([\s\S]*?)$/i);
-  return match ? match[1].trim() : null;
+  // New format: delimited block starting with ## The convergence note
+  const blocks = deliberationText.split(/\n---\n/).map(b => b.trim()).filter(Boolean);
+  const newBlock = blocks.find(b => /^##\s*The convergence note/i.test(b));
+  if (newBlock) return newBlock;
+  // Old format: CONVERGENCE NOTE: ... to end of text
+  const oldMatch = deliberationText.match(/CONVERGENCE NOTE:\s*([\s\S]*?)$/i);
+  return oldMatch ? oldMatch[1].trim() : null;
 }
 
 // ── Extract verdict and summary from verdict output ─────────────────────
 function parseVerdict(verdictText) {
-  if (!verdictText) return { verdict: verdictText, summary: '' };
-  const verdictMatch = verdictText.match(/VERDICT:\s*([\s\S]*?)(?=REASONING SUMMARY:|$)/i);
-  const summaryMatch = verdictText.match(/REASONING SUMMARY:\s*([\s\S]*?)(?=---|$)/i);
+  if (!verdictText) return { verdict: '', summary: '' };
+
+  // New format: ## Verdict  ...  ## Reasoning  ...
+  const newVerdictMatch = verdictText.match(/##\s*Verdict\s*\n([\s\S]*?)(?=\n##\s*Reasoning|$)/i);
+  const newReasoningMatch = verdictText.match(/##\s*Reasoning\s*\n([\s\S]*?)(?=\n---|$)/i);
+  if (newVerdictMatch) {
+    return {
+      verdict: newVerdictMatch[1].trim(),
+      summary: newReasoningMatch ? newReasoningMatch[1].trim() : '',
+    };
+  }
+
+  // Old format: VERDICT: ... REASONING SUMMARY: ...
+  const oldVerdictMatch = verdictText.match(/VERDICT:\s*([\s\S]*?)(?=REASONING SUMMARY:|$)/i);
+  const oldSummaryMatch = verdictText.match(/REASONING SUMMARY:\s*([\s\S]*?)(?=---|$)/i);
   return {
-    verdict: verdictMatch ? verdictMatch[1].trim() : verdictText,
-    summary: summaryMatch ? summaryMatch[1].trim() : '',
+    verdict: oldVerdictMatch ? oldVerdictMatch[1].trim() : verdictText,
+    summary: oldSummaryMatch ? oldSummaryMatch[1].trim() : '',
   };
 }
 
@@ -36,7 +137,7 @@ export default function Home() {
   // ── State machine ──────────────────────────────────────────────────────
   const [screen, setScreen] = useState('landing'); // landing | sharpening | loading | session
   const [question, setQuestion] = useState('');
-  
+
   // Sharpener state
   const [chatHistory, setChatHistory] = useState([]); // [{role, content}]
   const [sharpenerMessages, setSharpenerMessages] = useState([]); // display messages
@@ -219,6 +320,7 @@ export default function Home() {
         verdictSummary: summary,
         brief: result.brief || '',
         assembly: result.assembly || '',
+        deliberation: result.deliberation || '',
       });
 
       setScreen('session');
@@ -413,13 +515,17 @@ export default function Home() {
                     key={i}
                     className={`rcard ${isFramer(cardText) ? 'framer' : ''} ${i < visibleCards ? 'visible' : ''}`}
                   >
-                    <pre className="deliberation-raw">{cardText}</pre>
+                    <div className="card-body">
+                      <Markdown text={cardText} />
+                    </div>
                   </div>
                 ))
               : (
                 // Fallback: show raw deliberation if parsing produced nothing
                 <div className={`rcard visible`}>
-                  <pre className="deliberation-raw">{sessionData.deliberation || 'Deliberation not available.'}</pre>
+                  <div className="card-body">
+                    <Markdown text={sessionData.deliberation || 'Deliberation not available.'} />
+                  </div>
                 </div>
               )}
           </div>
@@ -433,9 +539,13 @@ export default function Home() {
             </div>
             <div className="conc-bar">
               <div className="conc-lbl">The Long Council · Verdict</div>
-              <div className="conc-verdict">{sessionData.verdict}</div>
+              <div className="conc-verdict">
+                <Markdown text={sessionData.verdict} />
+              </div>
               {sessionData.verdictSummary && (
-                <div className="conc-summary">{sessionData.verdictSummary}</div>
+                <div className="conc-summary">
+                  <Markdown text={sessionData.verdictSummary} />
+                </div>
               )}
             </div>
           </div>
@@ -450,7 +560,7 @@ export default function Home() {
               <span style={{ fontSize: 11, transition: 'transform 0.3s', transform: briefOpen ? 'rotate(180deg)' : 'none' }}>▾</span>
             </button>
             <div className={`brief-content ${briefOpen ? 'open' : ''}`}>
-              <pre>{sessionData.brief}</pre>
+              <Markdown text={sessionData.brief} />
             </div>
           </div>
 
