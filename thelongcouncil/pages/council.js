@@ -3,9 +3,6 @@ import Head from 'next/head';
 import Link from 'next/link';
 
 // ── Council roster — 35 members ────────────────────────────────────────
-// Data is embedded here rather than read from /data/profiles/ so the page
-// renders statically with zero build-time filesystem work.
-// Position bullets were authored alongside the profiles.
 const COUNCIL_MEMBERS = [
   { type: 'practitioner', monogram: 'LKY', name: 'Lee Kuan Yew', role: 'Prime Minister, Singapore 1959–90', lifespan: '1923 — 2015', country: 'Singapore', positions: ['Resilience over optimism: design policy for the worst case, not the most likely', 'Meritocracy and discipline as non-negotiable foundations of a functioning state', 'Small state survival requires making yourself indispensable to larger powers'] },
   { type: 'practitioner', monogram: 'DX', name: 'Deng Xiaoping', role: 'Paramount Leader, China 1978–92', lifespan: '1904 — 1997', country: 'China', positions: ['Cross the river by feeling the stones: pragmatic, non-ideological reform', 'Economic opening is compatible with political control if sequenced correctly', 'Absorb, adapt, indigenise: technology transfer as the engine of development'] },
@@ -45,7 +42,7 @@ const COUNCIL_MEMBERS = [
 ];
 
 export default function Council() {
-  const [filter, setFilter] = useState('all'); // all | practitioner | framer
+  const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
 
   const counts = useMemo(() => ({
@@ -141,7 +138,6 @@ export default function Council() {
                 <div key={i} className="mc-pos">{p}</div>
               ))}
             </div>
-            <div className="mc-country-foot">{m.country}</div>
           </div>
         ))}
       </div>
