@@ -3,7 +3,8 @@ import Head from 'next/head';
 
 // ── Tiny inline markdown renderer ──────────────────────────────────────
 // Handles: ## headings, **bold**, *italic*, paragraphs, --- as divider (skipped).
-// No dependencies. Good enough for what our prompts emit.
+// Detects framing lines (entirely *italic*) and challenge lines (start with **Challenge)
+// so they can be styled distinctly via CSS.
 function Markdown({ text }) {
   if (!text) return null;
 
@@ -44,11 +45,32 @@ function Markdown({ text }) {
   return (
     <>
       {blocks.map((block, i) => {
-        const content = renderInline(block.content);
-        if (block.type === 'h1') return <h1 key={i} className="md-h1">{content}</h1>;
-        if (block.type === 'h2') return <h2 key={i} className="md-h2">{content}</h2>;
-        if (block.type === 'h3') return <h3 key={i} className="md-h3">{content}</h3>;
-        return <p key={i} className="md-p">{content}</p>;
+        if (block.type === 'h1') return <h1 key={i} className="md-h1">{renderInline(block.content)}</h1>;
+        if (block.type === 'h2') return <h2 key={i} className="md-h2">{renderInline(block.content)}</h2>;
+        if (block.type === 'h3') return <h3 key={i} className="md-h3">{renderInline(block.content)}</h3>;
+
+        // Paragraph classification
+        const raw = block.content;
+
+        // Framing line: entirely wrapped in single asterisks (not double)
+        const isFraming = raw.length >= 3
+          && raw[0] === '*'
+          && raw[1] !== '*'
+          && raw[raw.length - 1] === '*'
+          && raw[raw.length - 2] !== '*';
+
+        // Challenge line: starts with **Challenge
+        const isChallenge = /^\*\*Challenge\b/i.test(raw);
+
+        if (isFraming) {
+          // Strip the outer asterisks; CSS handles the italic styling
+          const stripped = raw.slice(1, -1);
+          return <p key={i} className="md-framing">{renderInline(stripped)}</p>;
+        }
+        if (isChallenge) {
+          return <p key={i} className="md-challenge">{renderInline(raw)}</p>;
+        }
+        return <p key={i} className="md-p">{renderInline(raw)}</p>;
       })}
     </>
   );
