@@ -94,42 +94,46 @@ function renderInline(text) {
   return parts.length === 0 ? text : parts;
 }
 
-// ── Detect preamble / meta blocks that shouldn't render as cards ───────
-// Defensive filter: even if the prompt slips and emits "Deliberation
-// Engine Output" / "Issue Analysis" / "Central Tension" as a block,
-// this keeps it out of the UI.
-function isPreambleBlock(text) {
-  const lower = text.toLowerCase();
-  const preamblePatterns = [
-    'deliberation engine',
-    'issue analysis',
-    'central tension',
-    'council assembly',
-    'taxonomy tag',
-    'selected member',
-    'conclusion type',
-    'reasoning cards',
-    'here is the deliberation',
-    'here are the reasoning',
-  ];
-  return preamblePatterns.some(p => lower.includes(p));
-}
-
 // ── Parse deliberation output into card blocks ──────────────────────────
-// A valid card starts with "## " heading, has enough content, and is
-// not a preamble/meta block or the convergence note.
+// Filters out:
+// - The SPEAKING ORDER line (new metadata from Prompt 2)
+// - Preamble blocks (e.g., "Deliberation Engine Output", "Issue Analysis")
+// - The convergence note
+// - Anything that isn't a real member card
 function parseCards(deliberationText) {
   if (!deliberationText) return [];
-  const blocks = deliberationText.split(/\n---\n/).map(b => b.trim()).filter(Boolean);
+
+  // Strip the SPEAKING ORDER line if present (it sits before the first ---)
+  const cleaned = deliberationText.replace(/^SPEAKING ORDER:.*$/im, '').trim();
+
+  const blocks = cleaned.split(/\n---\n/).map(b => b.trim()).filter(Boolean);
+
+  const PREAMBLE_KEYWORDS = /\b(engine|output|analysis|tension|council|preamble|overview|assembly|session|issue|context|summary|introduction|deliberation|verdict|conclusion)\b/i;
+
   return blocks.filter(b => {
     if (b.length < 50) return false;
-    if (!b.startsWith('## ')) return false;
+
+    // Explicit exclusions
+    if (/^SPEAKING ORDER:/i.test(b)) return false;
+    if (/^CONVERGENCE/i.test(b)) return false;
     if (/^##\s*The convergence note/i.test(b)) return false;
-    if (isPreambleBlock(b)) return false;
+
+    // Heading-based preamble exclusion
+    const firstHeadingMatch = b.match(/^##\s+(.+)$/m);
+    if (firstHeadingMatch) {
+      const headingText = firstHeadingMatch[1];
+      if (PREAMBLE_KEYWORDS.test(headingText)) return false;
+    }
+
+    // Inline preamble signals
+    if (/\*\*Central Tension:\*\*/i.test(b)) return false;
+    if (/\*\*Issue Analysis\*\*/i.test(b)) return false;
+
     return true;
   });
 }
 
+// ── Extract convergence note ────────────────────────────────────────────
 function parseConvergence(deliberationText) {
   if (!deliberationText) return null;
   const blocks = deliberationText.split(/\n---\n/).map(b => b.trim()).filter(Boolean);
@@ -139,6 +143,7 @@ function parseConvergence(deliberationText) {
   return oldMatch ? oldMatch[1].trim() : null;
 }
 
+// ── Extract verdict and summary from verdict output ─────────────────────
 function parseVerdict(verdictText) {
   if (!verdictText) return { verdict: '', summary: '' };
 
