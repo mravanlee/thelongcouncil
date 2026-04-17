@@ -385,7 +385,8 @@ export default function Home() {
       <nav className="nav">
         <Link href="/council" className="nav-link">The Council</Link>
         <span className="nav-link nav-disabled" title="Coming soon">The Archive</span>
-        <a className="nav-raise nav-active-raise" onClick={reset}>Raise an issue</a>
+        <Link href="/about" className="nav-link">About</Link>
+        <a className="nav-raise" onClick={reset}>Raise an issue</a>
       </nav>
 
       {screen === 'landing' && (
