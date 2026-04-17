@@ -78,6 +78,7 @@ export default function Council() {
       <nav className="nav">
         <Link href="/council" className="nav-link nav-active">The Council</Link>
         <span className="nav-link nav-disabled" title="Coming soon">The Archive</span>
+        <Link href="/about" className="nav-link">About</Link>
         <Link href="/" className="nav-raise">Raise an issue</Link>
       </nav>
 
