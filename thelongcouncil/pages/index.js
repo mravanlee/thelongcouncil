@@ -379,7 +379,7 @@ export default function Home() {
 
       <div className="mast mast-link" onClick={reset}>
         <div className="mast-name">The Long Council</div>
-        <div className="mast-tag">Counsel from those who governed</div>
+        <div className="mast-tag">The counsel of history's greatest minds, brought to life by AI</div>
       </div>
 
       <nav className="nav">
