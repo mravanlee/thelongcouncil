@@ -170,7 +170,6 @@ export default function Home() {
   const [loadingMessage, setLoadingMessage] = useState('');
 
   const [sessionData, setSessionData] = useState(null);
-  const [visibleCards, setVisibleCards] = useState(0);
   const [showConclusion, setShowConclusion] = useState(false);
   const [showBriefToggle, setShowBriefToggle] = useState(false);
   const [briefOpen, setBriefOpen] = useState(false);
@@ -183,24 +182,6 @@ export default function Home() {
       textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
     }
   }, [question]);
-
-  useEffect(() => {
-    if (screen !== 'session' || !sessionData) return;
-    const cards = sessionData.cards || [];
-    let i = 0;
-    const showNext = () => {
-      if (i < cards.length) {
-        setVisibleCards(i + 1);
-        i++;
-        setTimeout(showNext, 1400);
-      } else {
-        setTimeout(() => setShowConclusion(true), 800);
-        setTimeout(() => setShowBriefToggle(true), 1600);
-      }
-    };
-    const t = setTimeout(showNext, 600);
-    return () => clearTimeout(t);
-  }, [screen, sessionData]);
 
   async function handleSubmit() {
     const q = question.trim();
@@ -351,11 +332,15 @@ export default function Home() {
     setConfirmedQuestion('');
     setSharpenerInput('');
     setSessionData(null);
-    setVisibleCards(0);
     setShowConclusion(false);
     setShowBriefToggle(false);
     setBriefOpen(false);
     setLoadingStep(0);
+  }
+
+  function handleProcessionComplete() {
+    setTimeout(() => setShowConclusion(true), 400);
+    setTimeout(() => setShowBriefToggle(true), 1000);
   }
 
   const STEPS = [
@@ -506,11 +491,11 @@ export default function Home() {
             {' · '}AI-generated counsel from historical figures
           </div>
 
-          {/* ─── The deliberation — Procession component ─── */}
+          {/* ─── The deliberation — Procession component with folding flow ─── */}
           {sessionData.cards.length > 0 ? (
             <Procession
               cards={sessionData.cards}
-              visibleCards={visibleCards}
+              onComplete={handleProcessionComplete}
             />
           ) : (
             <div className="rcard visible">
