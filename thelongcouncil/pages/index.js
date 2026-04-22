@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
+import Procession from '../components/Procession';
 
-// ── Tiny inline markdown renderer ──────────────────────────────────────
+// ── Tiny inline markdown renderer (used for verdict + brief) ───────────
 function Markdown({ text }) {
   if (!text) return null;
 
@@ -152,10 +153,6 @@ function parseVerdict(verdictText) {
     verdict: oldVerdictMatch ? oldVerdictMatch[1].trim() : verdictText,
     summary: oldSummaryMatch ? oldSummaryMatch[1].trim() : '',
   };
-}
-
-function isFramer(cardText) {
-  return /Framer/i.test(cardText);
 }
 
 export default function Home() {
@@ -509,33 +506,21 @@ export default function Home() {
             {' · '}AI-generated counsel from historical figures
           </div>
 
-          <div className="sec-head">
-            <div className="sec-rule" />
-            <div className="sec-lbl">The deliberation</div>
-            <div className="sec-rule" />
-          </div>
+          {/* ─── The deliberation — Procession component ─── */}
+          {sessionData.cards.length > 0 ? (
+            <Procession
+              cards={sessionData.cards}
+              visibleCards={visibleCards}
+            />
+          ) : (
+            <div className="rcard visible">
+              <div className="card-body">
+                <Markdown text={sessionData.deliberation || 'Deliberation not available.'} />
+              </div>
+            </div>
+          )}
 
-          <div className="cards">
-            {sessionData.cards.length > 0
-              ? sessionData.cards.map((cardText, i) => (
-                  <div
-                    key={i}
-                    className={`rcard ${isFramer(cardText) ? 'framer' : ''} ${i < visibleCards ? 'visible' : ''}`}
-                  >
-                    <div className="card-body">
-                      <Markdown text={cardText} />
-                    </div>
-                  </div>
-                ))
-              : (
-                <div className={`rcard visible`}>
-                  <div className="card-body">
-                    <Markdown text={sessionData.deliberation || 'Deliberation not available.'} />
-                  </div>
-                </div>
-              )}
-          </div>
-
+          {/* ─── Verdict ─── */}
           <div className={`conc-wrap ${showConclusion ? 'visible' : ''}`}>
             <div className="sec-head">
               <div className="sec-rule" />
@@ -555,6 +540,7 @@ export default function Home() {
             </div>
           </div>
 
+          {/* ─── Policy brief ─── */}
           <div className={`brief-toggle-row ${showBriefToggle ? 'visible' : ''}`}>
             <button
               className="brief-toggle-btn"
