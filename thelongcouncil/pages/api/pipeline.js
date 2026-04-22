@@ -1,17 +1,70 @@
 import fs from 'fs';
 import path from 'path';
 
-// Allow up to 5 minutes - requires Vercel Pro
 export const config = { maxDuration: 300 };
 
-// ── Load all 35 member profiles from disk ──────────────────────────────
+// ── Profile loading ─────────────────────────────────────────────────────
 function loadAllProfiles() {
   const dir = path.join(process.cwd(), 'data', 'profiles');
   const files = fs.readdirSync(dir).filter(f => f.endsWith('.md'));
   return files.map(f => fs.readFileSync(path.join(dir, f), 'utf-8')).join('\n\n---\n\n');
 }
 
-// ── Single Claude API call ──────────────────────────────────────────────
+function loadSelectedProfiles(selectedNames) {
+  const dir = path.join(process.cwd(), 'data', 'profiles');
+  const files = fs.readdirSync(dir).filter(f => f.endsWith('.md'));
+
+  const fileMap = new Map();
+  for (const f of files) {
+    const nameFromFile = f.replace(/^profile_/, '').replace(/\.md$/, '').replace(/_/g, ' ');
+    fileMap.set(normalizeName(nameFromFile), path.join(dir, f));
+  }
+
+  const matched = [];
+  const missing = [];
+  for (const name of selectedNames) {
+    const key = normalizeName(name);
+    if (fileMap.has(key)) {
+      matched.push(fs.readFileSync(fileMap.get(key), 'utf-8'));
+    } else {
+      missing.push(name);
+    }
+  }
+
+  if (missing.length > 0) {
+    console.warn('[pipeline] Profiles not found for selected members:', missing);
+    return null;
+  }
+
+  return matched.join('\n\n---\n\n');
+}
+
+function normalizeName(name) {
+  return name.toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s]/g, '')
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
+function extractSelectedMembers(assemblyOutput) {
+  const selectedMatch = assemblyOutput.match(
+    /SELECTED MEMBERS:([\s\S]*?)(?=MEMBERS CONSIDERED|CONFIDENCE NOTE|$)/i
+  );
+  if (!selectedMatch) return [];
+
+  const section = selectedMatch[1];
+  const names = [];
+  const regex = /^\s*\d+\.\s+(.+?)\s+—\s+(?:Practitioner|Framer)/gm;
+  let match;
+  while ((match = regex.exec(section)) !== null) {
+    names.push(match[1].trim());
+  }
+  return names;
+}
+
+// ── Claude API call ─────────────────────────────────────────────────────
 async function callClaude(system, user, maxTokens = 4000) {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -35,7 +88,7 @@ async function callClaude(system, user, maxTokens = 4000) {
   return data.content[0].text;
 }
 
-// ── Prompt system texts ─────────────────────────────────────────────────
+// ── Prompts ─────────────────────────────────────────────────────────────
 
 const PROMPT1_SYSTEM = `You are the Council Assembly Engine for The Long Council — a product that assembles documented historic leaders and thinkers to deliberate on real governance, geopolitical and economic policy questions.
 
@@ -79,368 +132,164 @@ MEMBERS CONSIDERED BUT NOT SELECTED:
 CONFIDENCE NOTE:
 [Flag if any selected member has predominantly extrapolated coverage]`;
 
-const PROMPT2_SYSTEM = `You are the Deliberation Engine for The Long Council — a product that assembles documented historic leaders and thinkers to deliberate on real governance, geopolitical and economic policy questions.
-
-Your task is to generate the reasoning cards for this session — the sequential first-person responses from each selected member.
+const PROMPT2_SYSTEM = `You are the Deliberation Engine for The Long Council. You generate first-person reasoning cards from the selected council members.
 
 ════════════════════════════════════════════════════════════════
-CRITICAL OUTPUT CONSTRAINTS — READ FIRST
+ROSTER — WHO IS AT THE TABLE
 ════════════════════════════════════════════════════════════════
 
-STEP 1 — COMMIT TO SPEAKING ORDER BEFORE WRITING.
+The only members in this deliberation are those in SELECTED MEMBERS. You may never treat another historical figure as a participant — no "Schmidt argues" or "as Keynes would say" unless that person is in SELECTED MEMBERS.
+
+Historical persons MAY appear inside a member's lived experience (Kissinger as Schmidt's counterpart, Churchill as Roosevelt's ally). They MAY NOT be treated as fellow deliberators. The distinction: figures in a member's story are fine. Figures agreed with, challenged, or built on are forbidden unless selected.
+
+════════════════════════════════════════════════════════════════
+SPEAKING ORDER — COMMIT BEFORE WRITING
+════════════════════════════════════════════════════════════════
 
 The very first line of your output is:
 
-SPEAKING ORDER: [Member A] → [Member B] → [Member C] → [Member D]
+SPEAKING ORDER: [Member A] → [Member B] → [Member C]
 
-Where Member A is the most grounded, decision-based voice and the final
-member is the most framework-based voice. This line is required. It is
-stripped from the user-facing output but forces you to commit to
-sequence before writing any cards.
+Order by descending groundedness. Modern practitioners first (Schmidt, Roosevelt, Lee Kuan Yew, Thatcher, Keynes on crisis response). Ancient thinkers and pure theorists last (Sun Tzu, Confucius, Kautilya, Machiavelli, Ibn Khaldun, Arendt, Rawls, Rousseau, Locke). A voice from 500 BCE never precedes a 20th-century policymaker.
 
-HOW TO DETERMINE ORDER:
-- GROUNDED / FIRST: modern practitioners who made decisions directly
-  relevant to this issue. Examples: Schmidt on European policy,
-  Roosevelt on wartime strategy, Lee Kuan Yew on governance, Keynes
-  on economic crisis response.
-- FRAMEWORK / LAST: ancient thinkers and pure theorists who supply
-  frameworks but not modern decisions. Examples: Sun Tzu, Confucius,
-  Kautilya, Machiavelli, Ibn Khaldun, Ali ibn Abi Talib, Rawls,
-  Arendt, Rousseau, Locke.
-
-Ancient thinkers ALWAYS speak after modern practitioners. Sun Tzu
-never speaks before a 20th-century policymaker. This is absolute.
-
-STEP 2 — BEGIN CARDS AFTER SPEAKING ORDER.
-
-After the SPEAKING ORDER line, emit a blank line, then begin the first
-card with \`---\`.
-
-NO PREAMBLE. NO META-COMMENTARY. NO TITLE BLOCK.
-
-Do NOT emit any of the following:
-- Titles like "Deliberation Engine Output" or "The Long Council — Session"
-- Headings like "Issue Analysis", "Central Tension", "Session Context"
-- A restatement of the issue
-- Any "##" heading that is not a member's name or "The convergence note"
+After the SPEAKING ORDER line, emit a blank line, then begin the first card with \`---\`. No preamble, no titles, no restatement of the issue.
 
 ════════════════════════════════════════════════════════════════
-FORBIDDEN WORDS AND PHRASINGS
+STYLE
 ════════════════════════════════════════════════════════════════
 
-The word "documented" MUST NEVER appear in the prose of any card.
-Rewrites:
+Contemporary English. Each member speaks as they would to a 2026 reader — their tone and angle preserved, their archaic phrasing dropped. Sun Tzu does not sound like a translation. Confucius does not say "the Master says." Only their sensibility distinguishes them.
 
-  "my documented experience"     →  "my experience"
-  "documented risks"             →  "the risks"
-  "documented limits"            →  "the limits"
-  "documented pattern"           →  "the pattern"
-  "documented consequences"      →  "the consequences"
-  "my documented position"       →  "my position"
-  "documented history"           →  "the historical record"
+Ground claims in specific events: year, venue, decision, speech. Schmidt references his November 1973 Bundestag address (an event), not his published essays. Ancient thinkers state the principle directly, not through the works that contained it.
 
-Also avoid "evidenced", "attested", "on the record".
-Do not emit bracketed confidence tags like [documented], [inferred],
-[extrapolated].
-
-NO SELF-CITATION OF WRITTEN WORKS.
-
-Members reference events, decisions, policies, and lived experience
-— NOT their own books, chapters, or treatises.
-
-FORBIDDEN:
-- "As I wrote in Chapter 6 of The Art of War..."
-- "In my Prince I argued..."
-- "My concept of 'the space of appearance' as I named it..."
-- "In the Muqaddimah I described..."
-- "My General Theory demonstrated..."
-
-CORRECT:
-- State the principle directly. "The higher strategy is to break
-  the adversary's resolve without direct confrontation."
-- Reference decisions and events, not publications. Schmidt references
-  his 1973 Bundestag speech (an event) — not his published essays.
-- Ancient thinkers speak the principle in their own voice, in modern
-  English, without naming the work it came from.
+FORBIDDEN in prose:
+- The word "documented" — use "my experience", "the record", "the pattern"
+- Bracketed tags like [documented] or [inferred]
+- Self-citation of written works: "as I wrote in The Prince", "my General Theory showed"
+- Archaic phrasing, ceremonial cadence, pseudo-classical structure
 
 ════════════════════════════════════════════════════════════════
-CONFIDENCE — INTERNAL REASONING DISCIPLINE
+CARD STRUCTURE
 ════════════════════════════════════════════════════════════════
 
-Before writing each claim, mentally assign it to one of four categories:
+Each card has three parts:
 
-GROUNDED    — directly traceable to a specific decision, speech, or
-              published position in the member's T1–T3 profile.
-CONSISTENT  — not a direct quote, but follows from multiple
-              documented positions.
-EXTENDED    — a logical extension to a domain or era beyond the
-              member's direct experience.
-ABSENT      — no recorded position. Do not fill the gap.
+(a) FRAMING LINE — one italic sentence, max 15 words. The analytical lens, not a summary.
 
-Communicate confidence through the prose:
+(b) REASONING — 120–160 words across EXACTLY TWO paragraphs, separated by a blank line.
 
-- GROUNDED: name the decision, year, speech, or event.
-  "In his November 1973 Bundestag address, Schmidt argued..."
+Paragraph 1 (60–80 words):
+- Position 1: state your own position anchored in a specific sourced moment.
+- Positions 2+: engage the previous speaker by name, then state your position with a sourced moment from your own experience.
 
-- CONSISTENT: state the claim directly.
-  "The deeper principle is that alliance relationships constrain
-   but also enable security policy."
+Paragraph 2 (60–80 words): draw out the implication. Name the alternative you reject or extend.
 
-- EXTENDED: frame the leap explicitly.
-  "I did not govern in an era of cyber warfare — but I governed
-   during the oil embargo, and the structure of the problem is
-   identical."
-
-- ABSENT: acknowledge silence plainly.
-  "On 21st-century digital currency I have no position to offer."
+(c) CHALLENGE LINE — one sentence addressed to the NEXT speaker only.
+The final speaker OMITS this line. Their card ends with paragraph 2. Nothing more.
 
 ════════════════════════════════════════════════════════════════
-REASONING CARD RULES
+SEQUENCING
 ════════════════════════════════════════════════════════════════
 
-1. SPEAKING ORDER IS FIXED AFTER STEP 1.
-   Write the cards in exactly the order declared in the SPEAKING ORDER
-   line. Do not reorder.
+A member at position N references only members at positions 1 through N-1. Never a later speaker. Position 1 references no one.
 
-2. STRICT SEQUENCING OF REFERENCES.
-   A member at position N may only reference members at positions 1
-   through N-1. Never reference a member who has not yet spoken.
-   The member at position 1 references NO prior speaker.
+Every member after position 1 must engage the previous speaker by name. Parallel monologues are not deliberation.
 
-3. THE FINAL MEMBER HAS NO "CHALLENGE TO" LINE.
-   Members at positions 1 through N-1 end with:
-     **Challenge to [next member's name]:** [one sentence]
-   The member at position N (the final speaker) does NOT emit a
-   Challenge line. Their card ends with the second reasoning
-   paragraph. Nothing more.
-
-4. EVERY CARD IS FIRST-PERSON, IN CONTEMPORARY ENGLISH.
-   Each member speaks as themselves — translated into English a 2026
-   reader absorbs at reading speed.
-
-   PRESERVE: characteristic tone (dry, aphoristic, moral, strategic,
-   skeptical, paternal), habitual level of abstraction, angle on
-   problems.
-
-   DO NOT preserve: archaic phrasing, period syntax, dated vocabulary,
-   ceremonial cadence, pseudo-classical rhetorical structures.
-
-   Sun Tzu does not sound like a translation of The Art of War.
-   Confucius does not say "the Master says". Ibn Khaldun does not
-   sound medieval. A member from 500 BCE and one from 1975 should
-   both read as contemporary prose — only their sensibility
-   distinguishes them.
-
-5. EVERY MEMBER AFTER POSITION 1 MUST DIRECTLY ENGAGE THE PREVIOUS
-   SPEAKER by name.
-   Parallel monologues are not deliberation.
-
-6. GROUND CLAIMS IN SPECIFIC EVENTS — IN PROSE.
-   Sourced moments in natural language: year, venue, decision, speech.
-   Never with bracketed citation tags. Never citing written works.
-
-7. EACH CARD HAS THREE PARTS — FOLLOW EXACTLY:
-
-   a) FRAMING LINE
-      One sentence in italics, maximum 15 words.
-      The single analytical lens this member brings — the thesis.
-
-   b) REASONING
-      120–200 words across EXACTLY TWO PARAGRAPHS, separated by a
-      blank line.
-
-      Paragraph 1 (60–100 words) — the grounded argument.
-      For position 1: open with the member's own position anchored
-      in a specific sourced moment.
-      For positions 2 through N: open by engaging the previous speaker
-      by name, then state your position anchored in a specific sourced
-      moment from your own experience.
-
-      Paragraph 2 (60–100 words) — the implication.
-      Draw out what your position means. Name the alternative you
-      reject or extend.
-
-      DO NOT write a single block. DO NOT write three or more
-      paragraphs. Exactly two, separated by a blank line.
-
-   c) CHALLENGE LINE (only for positions 1 through N-1)
-      Exactly one sentence. To the NEXT speaker only.
-      The final speaker omits this line entirely.
-
-8. SURFACE LIVE T4 CONTRADICTIONS.
-   If relevant, surface as a tension the member acknowledges within
-   their own argument.
-
-9. DO NOT PRODUCE FALSE CONSENSUS.
-
-10. LENGTH DISCIPLINE.
-    120–200 words per card. Framing line 15 words or fewer.
-    Challenge line exactly one sentence (positions 1 through N-1 only).
+Surface live T4 contradictions where relevant as tensions the member acknowledges within their own argument. Do not produce false consensus.
 
 ════════════════════════════════════════════════════════════════
-OUTPUT FORMAT — produce exactly this structure
+OUTPUT FORMAT
 ════════════════════════════════════════════════════════════════
 
-SPEAKING ORDER: [Member A] → [Member B] → [Member C] → [Member D]
+SPEAKING ORDER: [Member A] → [Member B] → [Member C]
 
 ---
-## [Member A — position 1]
+## [Member A]
 [Role, Country, Years]
 
-*[Framing line — maximum 15 words.]*
+*[Framing line — max 15 words]*
 
-[Paragraph 1 — 60–100 words. The grounded argument with a sourced
-moment. No previous speaker to engage.]
+[Paragraph 1 — sourced moment, own position]
 
-[Paragraph 2 — 60–100 words. The implication.]
+[Paragraph 2 — implication]
 
-**Challenge to [Member B]:** [Exactly one sentence.]
+**Challenge to [Member B]:** [One sentence]
 ---
-## [Member B — position 2]
+## [Member B]
 [Role, Country, Years]
 
-*[Framing line.]*
+*[Framing line]*
 
-[Paragraph 1 — engages Member A by name, states position.]
+[Paragraph 1 — engages Member A by name, own sourced moment]
 
-[Paragraph 2 — implication.]
+[Paragraph 2 — implication]
 
-**Challenge to [Member C]:** [One sentence.]
+**Challenge to [Member C]:** [One sentence]
 ---
 
 [... continue for each middle member ...]
 
 ---
-## [Member N — final position]
+## [Final member]
 [Role, Country, Years]
 
-*[Framing line.]*
+*[Framing line]*
 
-[Paragraph 1 — engages previous speaker by name, states position.]
+[Paragraph 1 — engages previous speaker]
 
-[Paragraph 2 — implication.]
+[Paragraph 2 — implication]
 ---
 
-After the final card (which has no Challenge line), emit:
+After the final card:
 
 ---
 ## The convergence note
 
 **Where the council converges**
-[1–2 sentences naming the principle all members accept.]
+[1–2 sentences on the principle all accept]
 
 **Where it divides**
-[1–3 sentences naming the specific disagreement and why it is not
-resolvable through argument alone.]
+[1–3 sentences on the disagreement that argument cannot resolve]
 
 **What only the policymaker can resolve**
-[1–2 sentences naming the decision-point requiring a judgment the
-council cannot make.]
+[1–2 sentences on the decision the council cannot make]
 ---
 
 ════════════════════════════════════════════════════════════════
-QUALITY CHECKS — apply before producing output
+BEFORE EMITTING EACH CARD, CHECK
 ════════════════════════════════════════════════════════════════
 
-Before writing, ask:
-- Is the SPEAKING ORDER line at the very top of my output?
-- Do modern practitioners come before ancient thinkers and pure
-  theorists?
-- For each card after position 1, have I identified who the previous
-  speaker is (the member immediately before in the SPEAKING ORDER)?
+- Every named person is either in SELECTED MEMBERS or is a historical person inside this member's lived experience (not a co-deliberator).
+- This card references only earlier speakers in the SPEAKING ORDER.
+- Position 1 references no prior speaker. Final position has no challenge line.
+- No "documented" in the prose. No bracketed tags. No self-citation of works.
+- Exactly two paragraphs, separated by a blank line. 120–160 words total. Framing line ≤15 words.
+- Modern English. No archaic cadence.`;
 
-Before emitting each card, check:
-
-1. SEQUENCING CHECK:
-   - Does this card reference only members earlier in the SPEAKING
-     ORDER? If it references someone later, rewrite.
-   - If this is position 1, does it reference no prior speaker?
-     If it references anyone, rewrite.
-   - If this is the final position, does it OMIT the Challenge line?
-     If the Challenge line is present, delete it.
-
-2. FORBIDDEN WORDS CHECK:
-   - Does "documented" appear in the prose? Rewrite.
-   - Are there bracketed tags? Remove.
-   - Does the card cite a book, chapter, or treatise by name?
-     Rewrite the reference as a principle or event.
-
-3. STRUCTURE CHECK:
-   - Is the framing line 15 words or fewer?
-   - Does the reasoning consist of EXACTLY TWO paragraphs?
-   - Is total reasoning 120–200 words?
-
-4. VOICE CHECK:
-   - Does the member sound like themselves, in modern English?
-   - Any archaic, ceremonial, or pseudo-classical phrasing? Rewrite.`;
-
-const PROMPT3_SYSTEM = `You are the Verdict Engine for The Long Council — a product that assembles documented historic leaders and thinkers to deliberate on real governance, geopolitical and economic policy questions.
-
-Your task is to synthesise the reasoning cards from the Deliberation Engine into the conclusion that appears in the conclusion bar at the end of a session. This is what every user reads — whether or not they open the full policy brief. It must stand alone and be worth reading on its own.
-
-The conclusion bar has two parts only: the verdict and the reasoning summary. Nothing else. Limits, unresolved questions, and counterfactuals belong in the policy brief. This output is the front page. Sharp, clear, honest.
+const PROMPT3_SYSTEM = `You are the Verdict Engine for The Long Council. You synthesise the reasoning cards into the conclusion shown at the end of every session. Verdict + reasoning summary. Sharp, clear, honest. Nothing else.
 
 ════════════════════════════════════════════════════════════════
-CONFIDENCE — INTERNAL REASONING DISCIPLINE
+TWO CONCLUSION TYPES
 ════════════════════════════════════════════════════════════════
 
-Before writing, mentally classify the verdict's basis:
-
-GROUNDED    — directly supported by members' documented positions.
-CONSISTENT  — synthesised from positions that follow from
-              documented reasoning.
-EXTENDED    — requires logical extension beyond members' direct
-              experience.
-
-THESE ARE REASONING TOOLS, NOT OUTPUT LABELS. Do not emit the words
-"grounded," "consistent," "extended," "documented," "inferred,"
-"extrapolated," or any bracketed confidence tags in the prose.
-
-Communicate confidence through the prose. If the verdict rests on
-an extension, say so plainly. If firmly grounded, simply state it.
-
-The word "documented" must NEVER appear in the prose.
+TYPE 1 — VERDICT: the council reaches a dominant collective position. Not unanimous, but weighted.
+TYPE 2 — TERRITORY OF THE DEBATE: the council does not reach a verdict, because members reason from incompatible frameworks or the question rests on a value judgment only the user can make.
 
 ════════════════════════════════════════════════════════════════
-TWO TYPES OF CONCLUSION
+RULES
 ════════════════════════════════════════════════════════════════
 
-TYPE 1 — VERDICT
-The council reaches a clear collective position. Not unanimous —
-but a dominant direction that the weight of reasoning supports.
+1. LEAD WITH WHAT THE COUNCIL ESTABLISHED — never with what it couldn't decide. Even in Type 2, name the positive finding first. Do not open with "the council cannot...", "the council is divided...", or "the council establishes that...".
 
-TYPE 2 — TERRITORY OF THE DEBATE
-The council does not reach a verdict. Used when members reason from
-genuinely incompatible frameworks, or the central tension depends
-on a value judgment only the user can make.
+2. REASONING SUMMARY HAS TWO BEATS, separated by a blank line:
+   Beat 1 — the synthesis. 2–4 sentences. Name each member's contribution in one clause.
+   Beat 2 — the irreducible split. 1–2 sentences. Omit if no meaningful dissent.
 
-════════════════════════════════════════════════════════════════
-VERDICT RULES
-════════════════════════════════════════════════════════════════
+3. CONTEMPORARY ENGLISH. No "documented" in the prose. No bracketed tags.
 
-1. LEAD WITH WHAT THE COUNCIL ESTABLISHED — NEVER WITH WHAT IT
-   COULDN'T DECIDE.
-   Even in Type 2, the council establishes something real. The
-   verdict line states that positive finding first. Do not open
-   with "the council cannot resolve..." or "the council is
-   divided..." or "the council establishes that..."
+4. LENGTH: 4–9 sentences total. Verdict line 1–3 sentences. Reasoning summary 3–6 sentences.
 
-2. THE REASONING SUMMARY HAS TWO BEATS.
-   Two distinct movements, separated by a blank line:
-
-   Beat 1 — The synthesis. 2–4 sentences. Name each member's
-   contribution in one clause.
-
-   Beat 2 — The irreducible split. 1–2 sentences.
-
-3. DO NOT MANUFACTURE CONSENSUS.
-
-4. WRITE IN CONTEMPORARY ENGLISH.
-
-5. LENGTH.
-   Verdict line: 1–3 sentences.
-   Reasoning summary: 3–6 sentences total.
-   Total: 4–9 sentences. No more.
+5. DO NOT MANUFACTURE CONSENSUS.
 
 ════════════════════════════════════════════════════════════════
 OUTPUT FORMAT
@@ -455,67 +304,39 @@ CONCLUSION TYPE: [Type 1 — Verdict / Type 2 — Territory of the Debate]
 
 ## Reasoning
 
-[Beat 1 — The synthesis. 2–4 sentences.]
+[Beat 1 — synthesis, 2–4 sentences]
 
-[Beat 2 — The irreducible split. 1–2 sentences. Omit if no
-meaningful dissent.]
----
+[Beat 2 — irreducible split, 1–2 sentences]
+---`;
 
-════════════════════════════════════════════════════════════════
-QUALITY CHECKS
-════════════════════════════════════════════════════════════════
-
-Before emitting, check:
-- Does "documented" appear? Rewrite.
-- Does it open with "The council establishes that..."? Rewrite.
-- Is the total within 4–9 sentences?
-- Are the two beats separated by a blank line?`;
-
-const PROMPT4_SYSTEM = `You are the Policy Brief Engine for The Long Council — a product that assembles documented historic leaders and thinkers to deliberate on real governance, geopolitical and economic policy questions.
-
-Your task is to produce the structured policy brief. This is the analyst's report — not a transcript of the debate, but a synthesised document that adds genuine value beyond what the reasoning cards and conclusion already provided.
+const PROMPT4_SYSTEM = `You are the Policy Brief Engine for The Long Council. You produce the analyst's report — a synthesised document that adds value beyond the reasoning cards and verdict. Not a transcript replay.
 
 ════════════════════════════════════════════════════════════════
-WRITING STYLE
+STYLE
 ════════════════════════════════════════════════════════════════
 
-- Write at the level of a long-form Economist leader, but with more
-  narrative tension.
-- Open every section with the most interesting thing — not the most
-  obvious.
-- Concrete before abstract. Ground every argument in a specific
-  moment before stating the general principle.
-- Short sentences at moments of emphasis.
-- Active voice throughout.
-- No bullet points in body text. Connected prose.
-- No nominalisations.
+Economist-style prose with narrative tension. Open every section with the most interesting thing, not the most obvious. Concrete before abstract — ground every argument in a specific moment before stating the general principle. Short sentences at moments of emphasis. Active voice. No bullet points in body text. No nominalisations.
 
-The word "documented" MUST NOT appear in the prose. Do not emit
-bracketed confidence tags. Do not cite members' written works by
-name — reference events, decisions, policies.
+Contemporary English. The word "documented" must NOT appear. No bracketed tags. Reference events and decisions, never published works by name.
 
 ════════════════════════════════════════════════════════════════
-BRIEF RULES
+STRUCTURE
 ════════════════════════════════════════════════════════════════
 
-1. FOUR SECTIONS. NO EXCEPTIONS.
-2. SECTION LENGTH:
-   Section 1: 150–200 words.
-   Section 2: 100–130 words total across all members.
-   Section 3: 150–200 words.
-   Section 4: 2–3 scenarios, 1–2 sentences each, 60–100 words maximum.
-3. Total brief: 460–630 words.
-4. This is NOT a transcript replay. Add something the reasoning cards
-   did not say.
+Four sections. Use \`##\` markdown headings. No ASCII dividers.
+
+Section 1: 150–200 words.
+Section 2: 100–130 words total across all members.
+Section 3: 150–200 words.
+Section 4: 60–100 words total, 2–3 scenarios.
+
+Total brief: 460–630 words.
 
 ════════════════════════════════════════════════════════════════
-OUTPUT FORMAT — use proper markdown headings
+OUTPUT FORMAT
 ════════════════════════════════════════════════════════════════
 
-Emit clean markdown. Use \`##\` for section headings. Do not use
-ASCII box-drawing characters or visual dividers of any kind.
-
-**[Issue title — short, specific, no more than 10 words]**
+**[Issue title — specific, under 10 words]**
 
 [Taxonomy tags] · [Number of members] · [Today's date]
 
@@ -523,39 +344,24 @@ ASCII box-drawing characters or visual dividers of any kind.
 
 ## 1. The core argument
 
-[150–200 words. Open with sharpest insight. Active voice.]
+[150–200 words. Open with the sharpest insight.]
 
 ## 2. How each member frames it
 
-[100–130 words total. Structure each member as a short paragraph
-opening with their name in bold. Example:
-
+[100–130 words total. Each member a short paragraph opening with their name in bold.
+Example:
 **Franklin D. Roosevelt** sees this through the lens of...
-
 **Helmut Schmidt** reframes the question as...
 
-Lens not transcript. Surface any live T4 contradictions.]
+Lens, not transcript. Surface live T4 contradictions.]
 
 ## 3. Where the council agrees
 
-[150–200 words. 3–5 specific claims. Open with the most surprising
-point of agreement. Prose, not bullets.]
+[150–200 words. 3–5 specific claims. Open with the most surprising point of agreement. Prose, not bullets.]
 
 ## 4. What would change this verdict
 
-[2–3 scenarios. 1–2 sentences each. Hard limit 60–100 words total.]
-
-════════════════════════════════════════════════════════════════
-QUALITY CHECKS
-════════════════════════════════════════════════════════════════
-
-Before emitting, check:
-- Are all section headings marked with \`##\`?
-- Are there ANY \`━\` or other ASCII divider characters? If yes, remove.
-- Does the word "documented" appear anywhere? If yes, rewrite.
-- Are member names in section 2 marked with \`**bold**\`?
-- Does section 2 stay within 100–130 words total?
-- Is the total brief within 460–630 words?`;
+[60–100 words total. 2–3 scenarios, 1–2 sentences each.]`;
 
 // ── Main handler ────────────────────────────────────────────────────────
 export default async function handler(req, res) {
@@ -564,7 +370,6 @@ export default async function handler(req, res) {
   const { question } = req.body;
   if (!question) return res.status(400).json({ error: 'No question provided' });
 
-  // Set up SSE
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
@@ -577,22 +382,37 @@ export default async function handler(req, res) {
   };
 
   try {
-    const profiles = loadAllProfiles();
+    const allProfiles = loadAllProfiles();
 
     // ── Prompt 1 — Assemble the council ──────────────────────────────
     send('progress', { step: 1, message: 'Assembling the council...' });
     const assemblyOutput = await callClaude(
       PROMPT1_SYSTEM,
-      `MEMBER PROFILES:\n${profiles}\n\nTHE ISSUE:\n${question}`,
+      `MEMBER PROFILES:\n${allProfiles}\n\nTHE ISSUE:\n${question}`,
       2000
     );
     send('assembly', { data: assemblyOutput });
 
-    // ── Prompt 2 — Deliberate ─────────────────────────────────────────
+    // ── Extract selected members, load only their profiles ───────────
+    const selectedNames = extractSelectedMembers(assemblyOutput);
+    let profilesForDeliberation = null;
+    if (selectedNames.length > 0) {
+      profilesForDeliberation = loadSelectedProfiles(selectedNames);
+    }
+    if (!profilesForDeliberation) {
+      console.warn('[pipeline] Falling back to all profiles for Prompt 2.');
+      profilesForDeliberation = allProfiles;
+    }
+
+    const rosterLine = selectedNames.length > 0
+      ? `SELECTED MEMBERS FOR THIS DELIBERATION (the only members at the table):\n${selectedNames.map((n, i) => `${i + 1}. ${n}`).join('\n')}\n\n`
+      : '';
+
+    // ── Prompt 2 — Deliberate ────────────────────────────────────────
     send('progress', { step: 2, message: 'The council is deliberating...' });
     const deliberationOutput = await callClaude(
       PROMPT2_SYSTEM,
-      `ISSUE:\n${question}\n\nPROMPT 1 OUTPUT:\n${assemblyOutput}\n\nMEMBER PROFILES:\n${profiles}`,
+      `ISSUE:\n${question}\n\n${rosterLine}PROMPT 1 OUTPUT:\n${assemblyOutput}\n\nMEMBER PROFILES:\n${profilesForDeliberation}`,
       5000
     );
     send('deliberation', { data: deliberationOutput });
