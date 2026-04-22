@@ -1,45 +1,12 @@
-// components/Procession.jsx
-//
-// ─────────────────────────────────────────────────────────────────────────────
-// THE LONG COUNCIL — Procession component
-// ─────────────────────────────────────────────────────────────────────────────
-// Renders the mobile-first council deliberation UI: seats on a vertical rail,
-// section labels between Practitioners and Framers, cards that fade in one by
-// one as visibleCards grows.
-//
-// Replaces the old .cards / .rcard block in pages/index.js.
-// The verdict and policy brief remain in index.js — this component only
-// handles the procession itself.
-//
-// ─────────────────────────────────────────────────────────────────────────────
+import { useMemo, useEffect, useState, Fragment } from 'react'
 
-import { useMemo } from 'react'
-
-// ─── Framer lookup (sync with pages/council.js COUNCIL_MEMBERS) ──────────────
 const FRAMER_NAMES = new Set([
-  'John Maynard Keynes',
-  'Friedrich Hayek',
-  'Milton Friedman',
-  'John Locke',
-  'Jean-Jacques Rousseau',
-  'John Rawls',
-  'Hannah Arendt',
-  'Amartya Sen',
-  'Albert Hirschman',
-  'Niccolò Machiavelli',
-  'Niccolo Machiavelli',
-  'Confucius',
-  'Kautilya',
-  'Ibn Khaldun',
-  'Frantz Fanon',
-  'Raúl Prebisch',
-  'Raul Prebisch',
-  'Ali ibn Abi Talib',
-  'Elinor Ostrom',
-  'Sun Tzu',
-  'Simón Bolívar',
-  'Simon Bolivar',
-  'Julius Nyerere',
+  'John Maynard Keynes', 'Friedrich Hayek', 'Milton Friedman', 'John Locke',
+  'Jean-Jacques Rousseau', 'John Rawls', 'Hannah Arendt', 'Amartya Sen',
+  'Albert Hirschman', 'Niccolò Machiavelli', 'Niccolo Machiavelli', 'Confucius',
+  'Kautilya', 'Ibn Khaldun', 'Frantz Fanon', 'Raúl Prebisch', 'Raul Prebisch',
+  'Ali ibn Abi Talib', 'Elinor Ostrom', 'Sun Tzu', 'Simón Bolívar',
+  'Simon Bolivar', 'Julius Nyerere',
 ])
 
 function getTier(name) {
@@ -60,12 +27,9 @@ function parseCard(raw) {
   if (!raw || typeof raw !== 'string') return null
   const lines = raw.split('\n').map(l => l.trim())
 
-  let name = ''
-  let role = ''
-  let framing = ''
+  let name = '', role = '', framing = ''
   const body = []
   let challenge = ''
-
   let cursor = 0
   while (cursor < lines.length && lines[cursor] === '') cursor++
   if (cursor >= lines.length) return null
@@ -91,9 +55,7 @@ function parseCard(raw) {
     role = rest.join('·').trim()
     cursor++
     while (cursor < lines.length && lines[cursor] === '') cursor++
-    if (cursor < lines.length && /^session confidence:/i.test(lines[cursor])) {
-      cursor++
-    }
+    if (cursor < lines.length && /^session confidence:/i.test(lines[cursor])) cursor++
   } else {
     return null
   }
@@ -135,9 +97,7 @@ function renderInline(text) {
   if (!text) return null
   const parts = []
   const pattern = /(\[(?:documented|inferred|extrapolated|no documented position)\]|\*\*[^*]+\*\*|\*[^*]+\*)/g
-  let lastIndex = 0
-  let match
-  let key = 0
+  let lastIndex = 0, match, key = 0
   while ((match = pattern.exec(text)) !== null) {
     if (match.index > lastIndex) parts.push(text.slice(lastIndex, match.index))
     const token = match[0]
@@ -154,8 +114,14 @@ function renderInline(text) {
   return parts.length === 0 ? text : parts
 }
 
-export default function Procession({ cards = [], visibleCards = 0 }) {
+export default function Procession({ cards = [], onComplete }) {
   const parsed = useMemo(() => cards.map(parseCard).filter(Boolean), [cards])
+
+  const [seatedCount, setSeatedCount] = useState(0)
+  const [speakingIndex, setSpeakingIndex] = useState(-1)
+  const [sessionComplete, setSessionComplete] = useState(false)
+  const [showGovSection, setShowGovSection] = useState(false)
+  const [showArchSection, setShowArchSection] = useState(false)
 
   const splitIndex = useMemo(() => {
     const idx = parsed.findIndex(c => getTier(c.name) === 'F')
@@ -165,84 +131,140 @@ export default function Procession({ cards = [], visibleCards = 0 }) {
   }, [parsed])
 
   const allFramers = parsed.length > 0 && parsed.every(c => getTier(c.name) === 'F')
-  const allPractitioners = parsed.length > 0 && parsed.every(c => getTier(c.name) === 'P')
 
-  let practitionerGroup = []
-  let framerGroup = []
-  if (allFramers) {
-    framerGroup = parsed.map((c, i) => ({ card: c, globalIdx: i }))
-  } else if (allPractitioners) {
-    practitionerGroup = parsed.map((c, i) => ({ card: c, globalIdx: i }))
-  } else if (splitIndex > 0) {
-    practitionerGroup = parsed.slice(0, splitIndex).map((c, i) => ({ card: c, globalIdx: i }))
-    framerGroup = parsed.slice(splitIndex).map((c, i) => ({ card: c, globalIdx: splitIndex + i }))
-  } else {
-    practitionerGroup = parsed.map((c, i) => ({ card: c, globalIdx: i }))
+  useEffect(() => {
+    if (parsed.length === 0) return
+    const timers = []
+
+    timers.push(setTimeout(() => {
+      if (allFramers) setShowArchSection(true)
+      else setShowGovSection(true)
+    }, 200))
+
+    const assemblyDelay = 450
+    const assemblyStart = 600
+    parsed.forEach((_, i) => {
+      timers.push(setTimeout(() => {
+        setSeatedCount(c => Math.max(c, i + 1))
+        if (splitIndex > 0 && i === splitIndex) {
+          setShowArchSection(true)
+        }
+      }, assemblyStart + i * assemblyDelay))
+    })
+
+    const speakingStart = assemblyStart + parsed.length * assemblyDelay + 700
+    const speakingDelay = 2200
+    parsed.forEach((_, i) => {
+      timers.push(setTimeout(() => {
+        setSpeakingIndex(i)
+      }, speakingStart + i * speakingDelay))
+    })
+
+    timers.push(setTimeout(() => {
+      setSessionComplete(true)
+      if (onComplete) onComplete()
+    }, speakingStart + parsed.length * speakingDelay + 400))
+
+    return () => timers.forEach(clearTimeout)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [parsed.length])
+
+  const getSeatState = (i) => {
+    if (i >= seatedCount) return 'empty'
+    if (sessionComplete) return 'past'
+    if (speakingIndex === i) return 'speaking'
+    if (speakingIndex > i) return 'past'
+    return 'seated'
   }
+
+  const renderArchMarkerHere = (i) => splitIndex > 0 && i === splitIndex
 
   return (
     <div className="procession">
-      {practitionerGroup.length > 0 && (
-        <>
-          <SectionLabel label="Those who governed" />
-          <Rail>
-            {practitionerGroup.map(({ card, globalIdx }) => (
-              <Seat
-                key={`p-${globalIdx}`}
-                card={card}
-                tier={getTier(card.name)}
-                visible={globalIdx < visibleCards}
-              />
-            ))}
-          </Rail>
-        </>
-      )}
+      <div className="rail">
+        {!allFramers && (
+          <SectionMarker label="Those who governed" visible={showGovSection} />
+        )}
+        {allFramers && (
+          <SectionMarker label="The intellectual architecture" visible={showArchSection} />
+        )}
 
-      {framerGroup.length > 0 && (
-        <>
-          <SectionLabel label="The intellectual architecture" />
-          <Rail>
-            {framerGroup.map(({ card, globalIdx }) => (
-              <Seat
-                key={`f-${globalIdx}`}
-                card={card}
-                tier={getTier(card.name)}
-                visible={globalIdx < visibleCards}
-              />
-            ))}
-          </Rail>
-        </>
-      )}
+        {parsed.map((card, i) => {
+          const state = getSeatState(i)
+          if (state === 'empty') {
+            if (renderArchMarkerHere(i) && showArchSection) {
+              return (
+                <SectionMarker
+                  key={`marker-${i}`}
+                  label="The intellectual architecture"
+                  visible={true}
+                />
+              )
+            }
+            return null
+          }
+
+          const tier = getTier(card.name)
+          return (
+            <Fragment key={i}>
+              {renderArchMarkerHere(i) && (
+                <SectionMarker label="The intellectual architecture" visible={showArchSection} />
+              )}
+              <Seat card={card} tier={tier} state={state} />
+            </Fragment>
+          )
+        })}
+      </div>
 
       <style jsx>{`
         .procession {
           margin: 8px 0 0;
+        }
+        .rail {
+          position: relative;
+          padding-left: 44px;
+        }
+        .rail::before {
+          content: "";
+          position: absolute;
+          left: 17px;
+          top: 18px;
+          bottom: 18px;
+          width: 1px;
+          background: #b8ad9c;
+          z-index: 0;
         }
       `}</style>
     </div>
   )
 }
 
-function SectionLabel({ label }) {
+function SectionMarker({ label, visible }) {
   return (
-    <div className="section-label">
-      <span className="rule" />
-      <span className="label">{label}</span>
-      <span className="rule" />
+    <div className={`marker ${visible ? 'visible' : ''}`}>
+      <span className="marker-label">{label}</span>
+      <span className="marker-rule" />
       <style jsx>{`
-        .section-label {
+        .marker {
+          position: relative;
+          margin: 18px 0 20px;
           display: flex;
           align-items: center;
-          gap: 12px;
-          margin: 18px 0 22px;
-          padding-left: 32px;
+          gap: 10px;
+          opacity: 0;
+          transition: opacity 0.6s ease-out;
         }
-        .rule {
-          flex: 1;
-          height: 0.5px;
-          background: #d4cfc8;
+        .marker.visible { opacity: 1; }
+        .marker::before {
+          content: "";
+          position: absolute;
+          left: -28px;
+          top: 50%;
+          width: 14px;
+          height: 1px;
+          background: #b8ad9c;
         }
-        .label {
+        .marker-label {
           font-family: 'Crimson Pro', serif;
           font-size: 10px;
           letter-spacing: 0.12em;
@@ -250,77 +272,59 @@ function SectionLabel({ label }) {
           text-transform: uppercase;
           white-space: nowrap;
         }
-      `}</style>
-    </div>
-  )
-}
-
-function Rail({ children }) {
-  return (
-    <div className="rail">
-      {children}
-      <style jsx>{`
-        .rail {
-          position: relative;
-          padding-left: 32px;
-        }
-        .rail::before {
-          content: "";
-          position: absolute;
-          left: 14px;
-          top: 8px;
-          bottom: 8px;
-          width: 0.5px;
-          background: linear-gradient(
-            to bottom,
-            transparent 0%,
-            #c0b8a8 6%,
-            #c0b8a8 94%,
-            transparent 100%
-          );
+        .marker-rule {
+          flex: 1;
+          height: 0.5px;
+          background: #d4cfc8;
         }
       `}</style>
     </div>
   )
 }
 
-function Seat({ card, tier, visible }) {
+function Seat({ card, tier, state }) {
   const { name, role, framing, body, challenge } = card
   const isFramer = tier === 'F'
 
   return (
-    <div className={`seat ${isFramer ? 'framer' : 'practitioner'} ${visible ? 'visible' : ''}`}>
+    <div className={`seat ${isFramer ? 'framer' : 'practitioner'} state-${state}`}>
       <div className={`avatar ${isFramer ? 'f' : 'p'}`}>{getInitials(name)}</div>
+
       <div className="content">
         <div className="head">
           <span className="name">{name}</span>
           {role && <span className="role">{role}</span>}
         </div>
+
         {framing && <div className="framing">{framing}</div>}
+
         {body && body.length > 0 && (
           <div className="body">
-            {body.map((p, i) => <p key={i}>{renderInline(p)}</p>)}
+            {body.map((p, idx) => <p key={idx}>{renderInline(p)}</p>)}
           </div>
         )}
+
         {challenge && <div className="challenge">{renderInline(challenge)}</div>}
       </div>
 
       <style jsx>{`
         .seat {
           position: relative;
-          margin-bottom: 30px;
+          margin-bottom: 32px;
           opacity: 0;
           transform: translateX(-6px);
           transition: opacity 0.6s ease-out, transform 0.6s ease-out;
         }
-        .seat.visible {
+        .seat.state-seated,
+        .seat.state-speaking,
+        .seat.state-past {
           opacity: 1;
           transform: translateX(0);
         }
 
         .avatar {
           position: absolute;
-          left: -32px;
+          left: -36px;
           top: 0;
           width: 28px;
           height: 28px;
@@ -332,25 +336,28 @@ function Seat({ card, tier, visible }) {
           font-size: 9.5px;
           font-weight: 600;
           z-index: 2;
+          transition: box-shadow 0.4s ease;
+          box-shadow: 0 0 0 2px #f8f6f2;
         }
         .avatar.p {
           background: #fdf5ec;
           color: #6b1a1a;
-          border: 0.5px solid #c4897a;
+          border: 1px solid #c4897a;
         }
         .avatar.f {
           background: #edf4ed;
           color: #2a3a2a;
-          border: 0.5px solid #7a9a7a;
+          border: 1px solid #7a9a7a;
+        }
+        .seat.state-speaking.practitioner .avatar {
+          box-shadow: 0 0 0 2px #f8f6f2, 0 0 0 5px rgba(107, 26, 26, 0.18);
+        }
+        .seat.state-speaking.framer .avatar {
+          box-shadow: 0 0 0 2px #f8f6f2, 0 0 0 5px rgba(42, 90, 42, 0.18);
         }
 
         .content {
-          border-left: 2px solid #6b1a1a;
-          padding-left: 16px;
-          margin-left: -16px;
-        }
-        .seat.framer .content {
-          border-left-color: #2a3a2a;
+          padding-top: 1px;
         }
 
         .head {
@@ -367,9 +374,7 @@ function Seat({ card, tier, visible }) {
           color: #0f0f0f;
           line-height: 1.3;
         }
-        .seat.framer .name {
-          color: #1a2a1a;
-        }
+        .seat.framer .name { color: #1a2a1a; }
         .role {
           font-family: 'Crimson Pro', serif;
           font-size: 11px;
@@ -384,7 +389,12 @@ function Seat({ card, tier, visible }) {
           font-style: italic;
           line-height: 1.55;
           margin-top: 7px;
-          margin-bottom: 12px;
+          margin-bottom: 0;
+          transition: margin-bottom 0.5s ease;
+        }
+        .seat.state-speaking .framing,
+        .seat.state-past .framing {
+          margin-bottom: 14px;
         }
 
         .body {
@@ -392,6 +402,15 @@ function Seat({ card, tier, visible }) {
           font-size: 15px;
           line-height: 1.8;
           color: #1a1a1a;
+          max-height: 0;
+          overflow: hidden;
+          opacity: 0;
+          transition: max-height 0.9s ease-in-out, opacity 0.5s ease;
+        }
+        .seat.state-speaking .body,
+        .seat.state-past .body {
+          max-height: 2200px;
+          opacity: 1;
         }
         .body :global(p) {
           margin-bottom: 12px;
@@ -419,13 +438,28 @@ function Seat({ card, tier, visible }) {
           color: #6b1a1a;
           font-style: italic;
           line-height: 1.6;
+          max-height: 0;
+          overflow: hidden;
+          opacity: 0;
+          margin-top: 0;
+          padding-top: 0;
+          border-top: 0.5px solid transparent;
+          transition:
+            max-height 0.6s ease-in-out,
+            opacity 0.5s ease,
+            margin-top 0.4s ease,
+            padding-top 0.4s ease,
+            border-top-color 0.4s ease;
+        }
+        .seat.state-speaking .challenge,
+        .seat.state-past .challenge {
+          max-height: 200px;
+          opacity: 1;
           margin-top: 14px;
           padding-top: 10px;
-          border-top: 0.5px solid #e8e4de;
+          border-top-color: #e8e4de;
         }
-        .seat.framer .challenge {
-          color: #2a5a2a;
-        }
+        .seat.framer .challenge { color: #2a5a2a; }
         .challenge :global(strong) {
           font-weight: 600;
           font-style: normal;
