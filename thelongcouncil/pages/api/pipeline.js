@@ -34,10 +34,10 @@ function loadSelectedProfiles(selectedNames) {
   if (missing.length > 0) {
     console.warn('[pipeline] Profiles NOT FOUND for selected members:', missing);
     console.warn('[pipeline] Available profile file keys:', Array.from(fileMap.keys()));
-    return null;
+    return { profiles: null, missing, availableKeys: Array.from(fileMap.keys()) };
   }
 
-  return matched.join('\n\n---\n\n');
+  return { profiles: matched.join('\n\n---\n\n'), missing: [], availableKeys: Array.from(fileMap.keys()) };
 }
 
 function normalizeName(name) {
@@ -50,10 +50,7 @@ function normalizeName(name) {
 }
 
 // ── Member extraction from Prompt 1 output ──────────────────────────────
-// Accepts multiple dash characters: — (em), – (en), - (hyphen), ― (horizontal bar)
-// Also tolerates line variations.
 function extractSelectedMembers(assemblyOutput) {
-  // First locate the SELECTED MEMBERS section
   const selectedMatch = assemblyOutput.match(
     /SELECTED MEMBERS:\s*\n([\s\S]*?)(?=\n\s*(?:MEMBERS CONSIDERED|CONFIDENCE NOTE|$))/i
   );
@@ -66,8 +63,6 @@ function extractSelectedMembers(assemblyOutput) {
   const section = selectedMatch[1];
   const names = [];
 
-  // Accept any dash-like character between name and role tier
-  // Also accept the tier being missing (sometimes Prompt 1 omits it)
   const dashChars = '[—–\\-―]';
   const regex = new RegExp(
     `^\\s*\\d+\\.\\s+(.+?)(?:\\s+${dashChars}\\s+(?:Practitioner|Framer))?\\s*$`,
@@ -77,7 +72,6 @@ function extractSelectedMembers(assemblyOutput) {
   let match;
   while ((match = regex.exec(section)) !== null) {
     const rawName = match[1].trim();
-    // Skip if this line doesn't look like a name (too short, or is a sub-line like "Relevance:")
     if (rawName.length < 3) continue;
     if (/^(Relevance|Coverage|Will argue):/i.test(rawName)) continue;
     names.push(rawName);
@@ -163,7 +157,7 @@ async function callClaude(system, user, maxTokens = 4000) {
   return data.content[0].text;
 }
 
-// ── Prompts (unchanged from rollback) ───────────────────────────────────
+// ── Prompts ─────────────────────────────────────────────────────────────
 
 const PROMPT1_SYSTEM = `You are the Council Assembly Engine for The Long Council — a product that assembles documented historic leaders and thinkers to deliberate on real governance, geopolitical and economic policy questions.
 
@@ -660,24 +654,18 @@ export default async function handler(req, res) {
     );
     send('assembly', { data: assemblyOutput });
 
-    // Log the first 800 chars of Prompt 1 output so we can see what it actually returned
-    console.log('[pipeline] === Prompt 1 output (first 800 chars) ===');
-    console.log(assemblyOutput.substring(0, 800));
-    console.log('[pipeline] === end Prompt 1 preview ===');
-
     // ── Extract selected members, load only their profiles ───────────
     const selectedNames = extractSelectedMembers(assemblyOutput);
-    console.log('[pipeline] Extracted selected names:', selectedNames);
 
     let profilesForDeliberation = null;
+    let loadInfo = null;
     if (selectedNames.length > 0) {
-      profilesForDeliberation = loadSelectedProfiles(selectedNames);
+      loadInfo = loadSelectedProfiles(selectedNames);
+      profilesForDeliberation = loadInfo.profiles;
     }
+    const fellBackToAll = !profilesForDeliberation;
     if (!profilesForDeliberation) {
-      console.warn('[pipeline] Falling back to all profiles for Prompt 2.');
       profilesForDeliberation = allProfiles;
-    } else {
-      console.log('[pipeline] Successfully loaded', selectedNames.length, 'selected profiles for Prompt 2.');
     }
 
     const rosterLine = selectedNames.length > 0
@@ -694,11 +682,20 @@ export default async function handler(req, res) {
     send('deliberation', { data: deliberationOutput });
 
     // ── Roster violation check ───────────────────────────────────────
+    let violations = [];
     if (selectedNames.length > 0) {
-      validateRoster(deliberationOutput, selectedNames);
-    } else {
-      console.warn('[pipeline] Roster validation SKIPPED because no names extracted from Prompt 1.');
+      violations = validateRoster(deliberationOutput, selectedNames);
     }
+
+    // ── DEBUG: send diagnostics to the browser via SSE ───────────────
+    send('debug', {
+      selectedNames,
+      violations,
+      fellBackToAll,
+      missingProfiles: loadInfo ? loadInfo.missing : [],
+      availableProfileKeys: loadInfo ? loadInfo.availableKeys : [],
+      prompt1Preview: assemblyOutput.substring(0, 1500),
+    });
 
     // ── Prompt 3 — Verdict ────────────────────────────────────────────
     send('progress', { step: 3, message: 'Forming the verdict...' });
