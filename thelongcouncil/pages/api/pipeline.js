@@ -32,7 +32,8 @@ function loadSelectedProfiles(selectedNames) {
   }
 
   if (missing.length > 0) {
-    console.warn('[pipeline] Profiles not found for selected members:', missing);
+    console.warn('[pipeline] Profiles NOT FOUND for selected members:', missing);
+    console.warn('[pipeline] Available profile file keys:', Array.from(fileMap.keys()));
     return null;
   }
 
@@ -48,26 +49,49 @@ function normalizeName(name) {
     .replace(/\s+/g, ' ');
 }
 
+// ── Member extraction from Prompt 1 output ──────────────────────────────
+// Accepts multiple dash characters: — (em), – (en), - (hyphen), ― (horizontal bar)
+// Also tolerates line variations.
 function extractSelectedMembers(assemblyOutput) {
+  // First locate the SELECTED MEMBERS section
   const selectedMatch = assemblyOutput.match(
-    /SELECTED MEMBERS:([\s\S]*?)(?=MEMBERS CONSIDERED|CONFIDENCE NOTE|$)/i
+    /SELECTED MEMBERS:\s*\n([\s\S]*?)(?=\n\s*(?:MEMBERS CONSIDERED|CONFIDENCE NOTE|$))/i
   );
-  if (!selectedMatch) return [];
+
+  if (!selectedMatch) {
+    console.warn('[pipeline] Could not locate "SELECTED MEMBERS:" section in Prompt 1 output.');
+    return [];
+  }
 
   const section = selectedMatch[1];
   const names = [];
-  const regex = /^\s*\d+\.\s+(.+?)\s+—\s+(?:Practitioner|Framer)/gm;
+
+  // Accept any dash-like character between name and role tier
+  // Also accept the tier being missing (sometimes Prompt 1 omits it)
+  const dashChars = '[—–\\-―]';
+  const regex = new RegExp(
+    `^\\s*\\d+\\.\\s+(.+?)(?:\\s+${dashChars}\\s+(?:Practitioner|Framer))?\\s*$`,
+    'gm'
+  );
+
   let match;
   while ((match = regex.exec(section)) !== null) {
-    names.push(match[1].trim());
+    const rawName = match[1].trim();
+    // Skip if this line doesn't look like a name (too short, or is a sub-line like "Relevance:")
+    if (rawName.length < 3) continue;
+    if (/^(Relevance|Coverage|Will argue):/i.test(rawName)) continue;
+    names.push(rawName);
   }
+
+  if (names.length === 0) {
+    console.warn('[pipeline] Regex matched no names. Section content was:');
+    console.warn(section.substring(0, 500));
+  }
+
   return names;
 }
 
 // ── Roster validator ────────────────────────────────────────────────────
-// Scans the deliberation output for names that look like council-member
-// references but don't match any of the selected members. Logs violations
-// to the server console for visibility (Vercel → Logs).
 const ALL_COUNCIL_MEMBERS = [
   'Lee Kuan Yew', 'Helmut Schmidt', 'Margaret Thatcher', 'Franklin Roosevelt',
   'Franklin D. Roosevelt', 'Konrad Adenauer', 'Nelson Mandela', 'Deng Xiaoping',
@@ -88,7 +112,6 @@ const ALL_COUNCIL_MEMBERS = [
 
 function validateRoster(deliberationOutput, selectedNames) {
   const selectedNorm = new Set(selectedNames.map(normalizeName));
-  // Also add last-name-only versions of selected members
   for (const name of selectedNames) {
     const words = name.trim().split(/\s+/);
     if (words.length > 1) {
@@ -100,7 +123,6 @@ function validateRoster(deliberationOutput, selectedNames) {
   for (const candidate of ALL_COUNCIL_MEMBERS) {
     const norm = normalizeName(candidate);
     if (selectedNorm.has(norm)) continue;
-    // Word-boundary regex search in deliberation text
     const escaped = candidate.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const re = new RegExp(`\\b${escaped}\\b`, 'i');
     if (re.test(deliberationOutput)) {
@@ -112,7 +134,7 @@ function validateRoster(deliberationOutput, selectedNames) {
     console.warn('[pipeline] ROSTER VIOLATION — non-selected members referenced in deliberation:', violations);
     console.warn('[pipeline] Selected members were:', selectedNames);
   } else {
-    console.log('[pipeline] Roster check passed. Selected:', selectedNames.join(', '));
+    console.log('[pipeline] Roster check PASSED. Selected:', selectedNames.join(', '));
   }
   return violations;
 }
@@ -141,7 +163,7 @@ async function callClaude(system, user, maxTokens = 4000) {
   return data.content[0].text;
 }
 
-// ── Prompts ─────────────────────────────────────────────────────────────
+// ── Prompts (unchanged from rollback) ───────────────────────────────────
 
 const PROMPT1_SYSTEM = `You are the Council Assembly Engine for The Long Council — a product that assembles documented historic leaders and thinkers to deliberate on real governance, geopolitical and economic policy questions.
 
@@ -638,9 +660,14 @@ export default async function handler(req, res) {
     );
     send('assembly', { data: assemblyOutput });
 
+    // Log the first 800 chars of Prompt 1 output so we can see what it actually returned
+    console.log('[pipeline] === Prompt 1 output (first 800 chars) ===');
+    console.log(assemblyOutput.substring(0, 800));
+    console.log('[pipeline] === end Prompt 1 preview ===');
+
     // ── Extract selected members, load only their profiles ───────────
     const selectedNames = extractSelectedMembers(assemblyOutput);
-    console.log('[pipeline] Prompt 1 selected:', selectedNames);
+    console.log('[pipeline] Extracted selected names:', selectedNames);
 
     let profilesForDeliberation = null;
     if (selectedNames.length > 0) {
@@ -649,6 +676,8 @@ export default async function handler(req, res) {
     if (!profilesForDeliberation) {
       console.warn('[pipeline] Falling back to all profiles for Prompt 2.');
       profilesForDeliberation = allProfiles;
+    } else {
+      console.log('[pipeline] Successfully loaded', selectedNames.length, 'selected profiles for Prompt 2.');
     }
 
     const rosterLine = selectedNames.length > 0
@@ -664,9 +693,11 @@ export default async function handler(req, res) {
     );
     send('deliberation', { data: deliberationOutput });
 
-    // ── Roster violation check (logs to server console) ──────────────
+    // ── Roster violation check ───────────────────────────────────────
     if (selectedNames.length > 0) {
       validateRoster(deliberationOutput, selectedNames);
+    } else {
+      console.warn('[pipeline] Roster validation SKIPPED because no names extracted from Prompt 1.');
     }
 
     // ── Prompt 3 — Verdict ────────────────────────────────────────────
