@@ -261,6 +261,17 @@ Do NOT emit any of the following:
 - A restatement of the issue
 - Any "##" heading that is not a member's name or "The convergence note"
 
+CRITICAL: HEADINGS CONTAIN ONLY THE MEMBER'S NAME. Nothing else. No "position 1", no "— Practitioner", no role descriptors. Just the name. The role/country/years go on the line BELOW the heading.
+
+CORRECT:
+## Helmut Schmidt
+Chancellor, West Germany 1974–82
+
+WRONG:
+## Helmut Schmidt — position 1
+## Helmut Schmidt (Practitioner)
+## Position 1: Helmut Schmidt
+
 ════════════════════════════════════════════════════════════════
 FORBIDDEN WORDS AND PHRASINGS
 ════════════════════════════════════════════════════════════════
@@ -376,10 +387,10 @@ REASONING CARD RULES
 OUTPUT FORMAT — produce exactly this structure
 ════════════════════════════════════════════════════════════════
 
-SPEAKING ORDER: [Member A] → [Member B] → [Member C] → [Member D]
+SPEAKING ORDER: [Member A name] → [Member B name] → [Member C name] → [Member D name]
 
 ---
-## [Member A — position 1]
+## [Member A name only — nothing else on this line]
 [Role, Country, Years]
 
 *[Framing line — maximum 15 words.]*
@@ -388,9 +399,9 @@ SPEAKING ORDER: [Member A] → [Member B] → [Member C] → [Member D]
 
 [Paragraph 2 — 70–130 words. The implication.]
 
-**Challenge to [Member B]:** [Exactly one sentence.]
+**Challenge to [Member B name]:** [Exactly one sentence.]
 ---
-## [Member B — position 2]
+## [Member B name only — nothing else on this line]
 [Role, Country, Years]
 
 *[Framing line.]*
@@ -399,13 +410,13 @@ SPEAKING ORDER: [Member A] → [Member B] → [Member C] → [Member D]
 
 [Paragraph 2 — implication.]
 
-**Challenge to [Member C]:** [One sentence.]
+**Challenge to [Member C name]:** [One sentence.]
 ---
 
 [... continue for each middle member ...]
 
 ---
-## [Member N — final position]
+## [Final member name only — nothing else on this line]
 [Role, Country, Years]
 
 *[Framing line.]*
@@ -441,26 +452,30 @@ Before writing, ask:
 
 Before emitting each card, check:
 
-1. ROSTER CHECK — ABSOLUTE PRIORITY:
+1. HEADING CHECK — ABSOLUTE:
+   - Does the ## heading contain ONLY the member's name?
+   - If there is ANY other text after the name (e.g. "— position 1", "(Practitioner)", "— Framer"), DELETE it. The heading must be name-only.
+
+2. ROSTER CHECK — ABSOLUTE PRIORITY:
    - Does this card name, address, or build on any person who is NOT in the SELECTED MEMBERS list?
    - If yes, rewrite. The only exceptions are historical persons referenced as part of the speaker's own experience (Kissinger as Schmidt's counterpart, not as a council member).
 
-2. SEQUENCING CHECK:
+3. SEQUENCING CHECK:
    - Does this card reference only members earlier in the SPEAKING ORDER? If it references someone later, rewrite.
    - If this is position 1, does it reference no prior speaker? If it references anyone, rewrite.
    - If this is the final position, does it OMIT the Challenge line? If the Challenge line is present, delete it.
 
-3. FORBIDDEN WORDS CHECK:
+4. FORBIDDEN WORDS CHECK:
    - Does "documented" appear in the prose? Rewrite.
    - Are there bracketed tags? Remove.
    - Does the card cite a book, chapter, or treatise by name? Rewrite the reference as a principle or event.
 
-4. STRUCTURE CHECK:
+5. STRUCTURE CHECK:
    - Is the framing line 15 words or fewer?
    - Does the reasoning consist of EXACTLY TWO paragraphs?
    - Is total reasoning 150–250 words?
 
-5. VOICE CHECK:
+6. VOICE CHECK:
    - Does the member sound like themselves, in modern English?
    - Any archaic, ceremonial, or pseudo-classical phrasing? Rewrite.`;
 
