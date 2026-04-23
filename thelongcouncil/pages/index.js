@@ -103,8 +103,10 @@ function parseCards(deliberationText) {
   // Strip the SPEAKING ORDER header line at the top
   let cleaned = deliberationText.replace(/^SPEAKING ORDER:.*$/im, '').trim();
 
-  // Split on horizontal-rule separator, tolerant of surrounding whitespace
-  const blocks = cleaned.split(/\n\s*---\s*\n/).map(b => b.trim()).filter(Boolean);
+  // Split on horizontal-rule separator, tolerant of surrounding whitespace.
+  // The (?:^|\n) prefix allows the FIRST --- to be a split point too,
+  // even when it appears at the very start of the string after trim().
+  const blocks = cleaned.split(/(?:^|\n)\s*---\s*\n/).map(b => b.trim()).filter(Boolean);
 
   // Preamble keywords that indicate a non-card block (title blocks, analysis sections etc.)
   // Removed "council" because it appears legitimately. Kept true preamble terms only.
@@ -144,7 +146,7 @@ function parseCards(deliberationText) {
 
 function parseConvergence(deliberationText) {
   if (!deliberationText) return null;
-  const blocks = deliberationText.split(/\n\s*---\s*\n/).map(b => b.trim()).filter(Boolean);
+  const blocks = deliberationText.split(/(?:^|\n)\s*---\s*\n/).map(b => b.trim()).filter(Boolean);
   const newBlock = blocks.find(b => /^##\s*The convergence note/i.test(b));
   if (newBlock) return newBlock;
   const oldMatch = deliberationText.match(/CONVERGENCE NOTE:\s*([\s\S]*?)$/i);
