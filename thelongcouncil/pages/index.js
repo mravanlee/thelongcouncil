@@ -100,40 +100,21 @@ function renderInline(text) {
 function parseCards(deliberationText) {
   if (!deliberationText) return [];
 
-  // Strip the SPEAKING ORDER header line at the top
   let cleaned = deliberationText.replace(/^SPEAKING ORDER:.*$/im, '').trim();
-
-  // Split on horizontal-rule separator, tolerant of surrounding whitespace.
-  // The (?:^|\n) prefix allows the FIRST --- to be a split point too,
-  // even when it appears at the very start of the string after trim().
   const blocks = cleaned.split(/(?:^|\n)\s*---\s*\n/).map(b => b.trim()).filter(Boolean);
 
-  // Preamble keywords that indicate a non-card block (title blocks, analysis sections etc.)
-  // Removed "council" because it appears legitimately. Kept true preamble terms only.
   const PREAMBLE_KEYWORDS = /\b(engine|output|analysis|preamble|overview|assembly|session context|introduction|deliberation engine|verdict engine|conclusion type)\b/i;
 
   return blocks.filter(b => {
     if (b.length < 50) return false;
-
     if (/^SPEAKING ORDER:/i.test(b)) return false;
     if (/^CONVERGENCE/i.test(b)) return false;
     if (/^##\s*The convergence note/i.test(b)) return false;
 
-    // If it has a heading, decide whether to keep it
     const firstHeadingMatch = b.match(/^##\s+(.+)$/m);
     if (firstHeadingMatch) {
       const headingText = firstHeadingMatch[1].trim();
-
-      // A heading "looks like a name" if it has capitalised words.
-      // Patterns:
-      //   "Deng Xiaoping" (two capitalised words)
-      //   "Hayek" (single capitalised word)
-      //   "John Maynard Keynes" (three capitalised words)
-      //   "Niccolò Machiavelli" (with accents)
-      //   "Ali ibn Abi Talib" (with lowercase connector)
       const looksLikeName = /^[A-ZÀ-Ý][\wÀ-ÿ'-]*(\s+(?:[a-zA-ZÀ-ÿ][\wÀ-ÿ'-]*))*$/.test(headingText);
-
-      // Only filter out preamble-keyword blocks if the heading does NOT look like a name
       if (PREAMBLE_KEYWORDS.test(headingText) && !looksLikeName) return false;
     }
 
@@ -177,13 +158,16 @@ export default function Home() {
   const [screen, setScreen] = useState('landing');
   const [question, setQuestion] = useState('');
 
+  // Sharpener state — new two-path model (READY / CLARIFY)
   const [chatHistory, setChatHistory] = useState([]);
-  const [sharpenerMessages, setSharpenerMessages] = useState([]);
-  const [proposedQuestion, setProposedQuestion] = useState(null);
-  const [confirmedQuestion, setConfirmedQuestion] = useState('');
+  const [sharpenerMode, setSharpenerMode] = useState(null); // 'ready' | 'clarify' | null
+  const [readyQuestion, setReadyQuestion] = useState(null);
+  const [clarifyingQuestion, setClarifyingQuestion] = useState(null);
+  const [sharpenerExplanation, setSharpenerExplanation] = useState('');
   const [sharpenerInput, setSharpenerInput] = useState('');
   const [sharpenerLoading, setSharpenerLoading] = useState(false);
 
+  const [confirmedQuestion, setConfirmedQuestion] = useState('');
   const [loadingStep, setLoadingStep] = useState(0);
   const [loadingMessage, setLoadingMessage] = useState('');
 
@@ -201,6 +185,19 @@ export default function Home() {
     }
   }, [question]);
 
+  function applySharpenerResponse(data) {
+    setSharpenerMode(data.mode);
+    setSharpenerExplanation(data.explanation || '');
+
+    if (data.mode === 'ready') {
+      setReadyQuestion(data.question);
+      setClarifyingQuestion(null);
+    } else if (data.mode === 'clarify') {
+      setClarifyingQuestion(data.clarifyingQuestion);
+      setReadyQuestion(null);
+    }
+  }
+
   async function handleSubmit() {
     const q = question.trim();
     if (!q) return;
@@ -216,12 +213,7 @@ export default function Home() {
       const data = await res.json();
 
       setChatHistory(msgs);
-      setSharpenerMessages([{ from: 'council', text: data.text }]);
-
-      if (data.isProposed) {
-        setProposedQuestion(data.proposedQuestion);
-      }
-
+      applySharpenerResponse(data);
       setScreen('sharpening');
     } catch (e) {
       alert('Something went wrong. Please try again.');
@@ -234,10 +226,11 @@ export default function Home() {
     const reply = sharpenerInput.trim();
     if (!reply || sharpenerLoading) return;
 
+    // The user is answering the clarifying question.
+    // We send their reply + the original question as combined context.
     const newUserMsg = { role: 'user', content: reply };
     const updatedHistory = [...chatHistory, newUserMsg];
 
-    setSharpenerMessages(prev => [...prev, { from: 'user', text: reply }]);
     setSharpenerInput('');
     setSharpenerLoading(true);
 
@@ -249,13 +242,9 @@ export default function Home() {
       });
       const data = await res.json();
 
-      const assistantMsg = { role: 'assistant', content: data.text };
+      const assistantMsg = { role: 'assistant', content: data.raw || '' };
       setChatHistory([...updatedHistory, assistantMsg]);
-      setSharpenerMessages(prev => [...prev, { from: 'council', text: data.text }]);
-
-      if (data.isProposed) {
-        setProposedQuestion(data.proposedQuestion);
-      }
+      applySharpenerResponse(data);
     } catch (e) {
       alert('Something went wrong. Please try again.');
     } finally {
@@ -345,10 +334,12 @@ export default function Home() {
     setScreen('landing');
     setQuestion('');
     setChatHistory([]);
-    setSharpenerMessages([]);
-    setProposedQuestion(null);
-    setConfirmedQuestion('');
+    setSharpenerMode(null);
+    setReadyQuestion(null);
+    setClarifyingQuestion(null);
+    setSharpenerExplanation('');
     setSharpenerInput('');
+    setConfirmedQuestion('');
     setSessionData(null);
     setShowConclusion(false);
     setShowBriefToggle(false);
@@ -418,7 +409,7 @@ export default function Home() {
             >
               {sharpenerLoading ? 'Considering...' : 'Raise this issue →'}
             </button>
-            <p className="landing-hint">The council will ask a clarifying question if your issue needs sharpening.</p>
+            <p className="landing-hint">The council will check if your question is clear before it assembles.</p>
           </div>
         </div>
       )}
@@ -428,57 +419,68 @@ export default function Home() {
           <div className="sharpener-heading">Before the council assembles</div>
           <div className="sharpener-original">Your question: {question}</div>
 
-          <div className="chat-thread">
-            {sharpenerMessages.map((msg, i) => (
-              <div key={i} className={`chat-msg ${msg.from}`}>
-                <div className="chat-bubble">
-                  {msg.text.replace(/^PROPOSED:\s*/i, '')}
-                </div>
-              </div>
-            ))}
-            {sharpenerLoading && (
+          {sharpenerLoading && (
+            <div className="chat-thread">
               <div className="chat-msg council">
                 <div className="chat-bubble" style={{ color: '#9a9a9a', fontStyle: 'italic' }}>
                   Considering...
                 </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
-          {proposedQuestion && (
+          {/* READY path — confirm and start */}
+          {!sharpenerLoading && sharpenerMode === 'ready' && readyQuestion && (
             <div className="proposed-box">
-              <div className="proposed-label">Proposed question</div>
-              <div className="proposed-text">{proposedQuestion}</div>
+              <div className="proposed-label">Your question is clear</div>
+              {sharpenerExplanation && (
+                <div className="proposed-explanation">{sharpenerExplanation}</div>
+              )}
+              <div className="proposed-text">{readyQuestion}</div>
               <div className="proposed-actions">
-                <button className="btn-accept" onClick={() => runPipeline(proposedQuestion)}>
-                  Accept — convene the council →
-                </button>
-                <button className="btn-original" onClick={() => runPipeline(question)}>
-                  Use my original question
+                <button className="btn-accept" onClick={() => runPipeline(readyQuestion)}>
+                  Convene the council →
                 </button>
               </div>
             </div>
           )}
 
-          {!proposedQuestion && !sharpenerLoading && (
-            <div className="sharpen-input-row">
-              <input
-                className="sharpen-input"
-                type="text"
-                placeholder="Reply..."
-                value={sharpenerInput}
-                onChange={e => setSharpenerInput(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') handleSharpenerReply(); }}
-                autoFocus
-              />
-              <button
-                className="sharpen-send"
-                onClick={handleSharpenerReply}
-                disabled={!sharpenerInput.trim() || sharpenerLoading}
-              >
-                →
-              </button>
-            </div>
+          {/* CLARIFY path — one clarifying question, user can reply or skip */}
+          {!sharpenerLoading && sharpenerMode === 'clarify' && clarifyingQuestion && (
+            <>
+              <div className="clarify-box">
+                <div className="clarify-label">One quick question</div>
+                <div className="clarify-question">{clarifyingQuestion}</div>
+                {sharpenerExplanation && (
+                  <div className="clarify-explanation">{sharpenerExplanation}</div>
+                )}
+              </div>
+
+              <div className="sharpen-input-row">
+                <input
+                  className="sharpen-input"
+                  type="text"
+                  placeholder="Your answer..."
+                  value={sharpenerInput}
+                  onChange={e => setSharpenerInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleSharpenerReply(); }}
+                  autoFocus
+                />
+                <button
+                  className="sharpen-send"
+                  onClick={handleSharpenerReply}
+                  disabled={!sharpenerInput.trim() || sharpenerLoading}
+                >
+                  →
+                </button>
+              </div>
+
+              <div className="skip-row">
+                <button className="btn-skip" onClick={() => runPipeline(question)}>
+                  Skip — use my original question
+                </button>
+              </div>
+            </>
           )}
         </div>
       )}
@@ -509,7 +511,6 @@ export default function Home() {
             {' · '}AI-generated counsel from historical figures
           </div>
 
-          {/* ─── The deliberation — Procession component with folding flow ─── */}
           {sessionData.cards.length > 0 ? (
             <Procession
               cards={sessionData.cards}
@@ -523,7 +524,6 @@ export default function Home() {
             </div>
           )}
 
-          {/* ─── Verdict ─── */}
           <div className={`conc-wrap ${showConclusion ? 'visible' : ''}`}>
             <div className="sec-head">
               <div className="sec-rule" />
@@ -543,7 +543,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* ─── Policy brief ─── */}
           <div className={`brief-toggle-row ${showBriefToggle ? 'visible' : ''}`}>
             <button
               className="brief-toggle-btn"
