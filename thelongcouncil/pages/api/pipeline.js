@@ -71,7 +71,7 @@ function extractSelectedMembers(assemblyOutput) {
 
   let match;
   while ((match = regex.exec(section)) !== null) {
-    const rawName = match[1].trim();
+    const rawName = match[1].trim().replace(/\*\*/g, '').replace(/^\*|\*$/g, '').trim();
     if (rawName.length < 3) continue;
     if (/^(Relevance|Coverage|Will argue):/i.test(rawName)) continue;
     names.push(rawName);
