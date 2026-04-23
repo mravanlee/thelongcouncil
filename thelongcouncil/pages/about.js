@@ -16,7 +16,7 @@ export default function About() {
 
       <Link href="/" className="mast mast-link">
         <div className="mast-name">The Long Council</div>
-        <div className="mast-tag">Counsel from those who governed</div>
+        <div className="mast-tag">History's counsel on today's questions</div>
       </Link>
 
       <nav className="nav">
