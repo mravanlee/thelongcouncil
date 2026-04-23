@@ -392,7 +392,6 @@ function Seat({ card, tier, state }) {
           margin-bottom: 0;
           max-width: 62ch;
           transition: margin-bottom 0.5s ease;
-    
         }
         .seat.state-speaking .framing,
         .seat.state-past .framing {
@@ -437,33 +436,42 @@ function Seat({ card, tier, state }) {
 
         .challenge {
           font-family: 'Crimson Pro', serif;
-          font-size: 13px;
+          font-size: 13.5px;
           color: #6b1a1a;
           font-style: italic;
-          line-height: 1.6;
+          line-height: 1.65;
           max-width: 62ch;
           max-height: 0;
           overflow: hidden;
           opacity: 0;
           margin-top: 0;
-          padding-top: 0;
-          border-top: 0.5px solid transparent;
+          padding: 0 14px;
+          border-left: 2px solid transparent;
+          background: transparent;
+          border-radius: 2px;
           transition:
             max-height 0.6s ease-in-out,
             opacity 0.5s ease,
             margin-top 0.4s ease,
-            padding-top 0.4s ease,
-            border-top-color 0.4s ease;
+            padding 0.4s ease,
+            border-left-color 0.4s ease,
+            background 0.4s ease;
         }
         .seat.state-speaking .challenge,
         .seat.state-past .challenge {
           max-height: 200px;
           opacity: 1;
-          margin-top: 14px;
-          padding-top: 10px;
-          border-top-color: #e8e4de;
+          margin-top: 18px;
+          padding: 12px 14px;
+          border-left-color: #c4897a;
+          background: rgba(107, 26, 26, 0.03);
         }
         .seat.framer .challenge { color: #2a5a2a; }
+        .seat.framer.state-speaking .challenge,
+        .seat.framer.state-past .challenge {
+          border-left-color: #7a9a7a;
+          background: rgba(42, 74, 42, 0.03);
+        }
         .challenge :global(strong) {
           font-weight: 600;
           font-style: normal;
@@ -473,7 +481,7 @@ function Seat({ card, tier, state }) {
           .name { font-size: 17px; }
           .framing { font-size: 14px; }
           .body { font-size: 15.5px; }
-          .challenge { font-size: 13.5px; }
+          .challenge { font-size: 14px; }
         }
       `}</style>
     </div>
