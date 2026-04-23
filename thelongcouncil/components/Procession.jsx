@@ -390,7 +390,9 @@ function Seat({ card, tier, state }) {
           line-height: 1.55;
           margin-top: 7px;
           margin-bottom: 0;
+          max-width: 62ch;
           transition: margin-bottom 0.5s ease;
+    
         }
         .seat.state-speaking .framing,
         .seat.state-past .framing {
@@ -402,6 +404,7 @@ function Seat({ card, tier, state }) {
           font-size: 15px;
           line-height: 1.8;
           color: #1a1a1a;
+          max-width: 62ch;
           max-height: 0;
           overflow: hidden;
           opacity: 0;
@@ -438,6 +441,7 @@ function Seat({ card, tier, state }) {
           color: #6b1a1a;
           font-style: italic;
           line-height: 1.6;
+          max-width: 62ch;
           max-height: 0;
           overflow: hidden;
           opacity: 0;
