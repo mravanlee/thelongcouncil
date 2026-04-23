@@ -566,7 +566,39 @@ footer { text-align: center; padding: 24px 32px; border-top: 0.5px solid #e8e4de
   color: #5a5a5a;
   margin-bottom: 0;
 }
+/* ══════════════════════════════════════════════════════════════════
+   DESIGN POLISH v2 — color reduction + challenge weight
+   ══════════════════════════════════════════════════════════════════ */
 
+/* Reduce bordeauxrood presence — reserve it for verdict + CTA */
+.mast-tag {
+  color: #6a6a6a;
+  font-style: italic;
+}
+
+.sec-lbl,
+.landing-eyebrow,
+.proposed-label {
+  color: #7a7a7a;
+}
+
+/* Challenge regels — more visual weight as hinge moment between speakers */
+.rcard .md-challenge {
+  font-size: 14px;
+  line-height: 1.7;
+  margin-top: 24px;
+  padding-top: 16px;
+  padding-left: 14px;
+  border-left: 2px solid #c4897a;
+  border-top: none;
+  background: rgba(107, 26, 26, 0.03);
+  padding: 14px 16px;
+  border-radius: 2px;
+}
+.rcard.framer .md-challenge {
+  border-left-color: #7a9a7a;
+  background: rgba(42, 74, 42, 0.03);
+}
 /* ── RESPONSIVE ── */
 @media (max-width: 600px) {
   .landing, .sharpener, .loading, .session { padding: 32px 20px; }
