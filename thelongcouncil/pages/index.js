@@ -100,11 +100,15 @@ function renderInline(text) {
 function parseCards(deliberationText) {
   if (!deliberationText) return [];
 
-  const cleaned = deliberationText.replace(/^SPEAKING ORDER:.*$/im, '').trim();
+  // Strip the SPEAKING ORDER header line at the top
+  let cleaned = deliberationText.replace(/^SPEAKING ORDER:.*$/im, '').trim();
 
-  const blocks = cleaned.split(/\n---\n/).map(b => b.trim()).filter(Boolean);
+  // Split on horizontal-rule separator, tolerant of surrounding whitespace
+  const blocks = cleaned.split(/\n\s*---\s*\n/).map(b => b.trim()).filter(Boolean);
 
-  const PREAMBLE_KEYWORDS = /\b(engine|output|analysis|tension|council|preamble|overview|assembly|session|issue|context|summary|introduction|deliberation|verdict|conclusion)\b/i;
+  // Preamble keywords that indicate a non-card block (title blocks, analysis sections etc.)
+  // Removed "council" because it appears legitimately. Kept true preamble terms only.
+  const PREAMBLE_KEYWORDS = /\b(engine|output|analysis|preamble|overview|assembly|session context|introduction|deliberation engine|verdict engine|conclusion type)\b/i;
 
   return blocks.filter(b => {
     if (b.length < 50) return false;
@@ -113,10 +117,22 @@ function parseCards(deliberationText) {
     if (/^CONVERGENCE/i.test(b)) return false;
     if (/^##\s*The convergence note/i.test(b)) return false;
 
+    // If it has a heading, decide whether to keep it
     const firstHeadingMatch = b.match(/^##\s+(.+)$/m);
     if (firstHeadingMatch) {
-      const headingText = firstHeadingMatch[1];
-      if (PREAMBLE_KEYWORDS.test(headingText)) return false;
+      const headingText = firstHeadingMatch[1].trim();
+
+      // A heading "looks like a name" if it has capitalised words.
+      // Patterns:
+      //   "Deng Xiaoping" (two capitalised words)
+      //   "Hayek" (single capitalised word)
+      //   "John Maynard Keynes" (three capitalised words)
+      //   "Niccolò Machiavelli" (with accents)
+      //   "Ali ibn Abi Talib" (with lowercase connector)
+      const looksLikeName = /^[A-ZÀ-Ý][\wÀ-ÿ'-]*(\s+(?:[a-zA-ZÀ-ÿ][\wÀ-ÿ'-]*))*$/.test(headingText);
+
+      // Only filter out preamble-keyword blocks if the heading does NOT look like a name
+      if (PREAMBLE_KEYWORDS.test(headingText) && !looksLikeName) return false;
     }
 
     if (/\*\*Central Tension:\*\*/i.test(b)) return false;
@@ -128,7 +144,7 @@ function parseCards(deliberationText) {
 
 function parseConvergence(deliberationText) {
   if (!deliberationText) return null;
-  const blocks = deliberationText.split(/\n---\n/).map(b => b.trim()).filter(Boolean);
+  const blocks = deliberationText.split(/\n\s*---\s*\n/).map(b => b.trim()).filter(Boolean);
   const newBlock = blocks.find(b => /^##\s*The convergence note/i.test(b));
   if (newBlock) return newBlock;
   const oldMatch = deliberationText.match(/CONVERGENCE NOTE:\s*([\s\S]*?)$/i);
