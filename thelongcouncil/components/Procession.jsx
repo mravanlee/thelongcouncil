@@ -23,6 +23,17 @@ function getInitials(name) {
   return cleaned.slice(0, 2).toUpperCase()
 }
 
+function slugify(name) {
+  if (!name) return ''
+  return name
+    .replace(/\s*\([^)]*\)/g, '')        // strip "(Chanakya)" and similar
+    .normalize('NFD')                      // decompose ò → o + combining grave
+    .replace(/[\u0300-\u036f]/g, '')      // remove combining diacritics
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')          // non-alphanumeric → underscore
+    .replace(/^_+|_+$/g, '')              // trim leading/trailing underscores
+}
+
 function parseCard(raw) {
   if (!raw || typeof raw !== 'string') return null
   const lines = raw.split('\n').map(l => l.trim())
@@ -285,10 +296,23 @@ function SectionMarker({ label, visible }) {
 function Seat({ card, tier, state }) {
   const { name, role, framing, body, challenge } = card
   const isFramer = tier === 'F'
+  const [imgFailed, setImgFailed] = useState(false)
+  const slug = slugify(name)
+  const showImage = !imgFailed && slug
 
   return (
     <div className={`seat ${isFramer ? 'framer' : 'practitioner'} state-${state}`}>
-      <div className={`avatar ${isFramer ? 'f' : 'p'}`}>{getInitials(name)}</div>
+      <div className={`avatar ${isFramer ? 'f' : 'p'}`}>
+        {showImage ? (
+          <img
+            src={`/avatars/avatar_${slug}.webp`}
+            alt={name}
+            onError={() => setImgFailed(true)}
+          />
+        ) : (
+          <span className="initials">{getInitials(name)}</span>
+        )}
+      </div>
 
       <div className="content">
         <div className="head">
@@ -329,6 +353,7 @@ function Seat({ card, tier, state }) {
           width: 28px;
           height: 28px;
           border-radius: 50%;
+          overflow: hidden;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -338,6 +363,17 @@ function Seat({ card, tier, state }) {
           z-index: 2;
           transition: box-shadow 0.4s ease;
           box-shadow: 0 0 0 2px #f8f6f2;
+        }
+        .avatar img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+        }
+        .avatar .initials {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
         }
         .avatar.p {
           background: #fdf5ec;
