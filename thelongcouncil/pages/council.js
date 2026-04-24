@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 
-// ── Council roster — 35 members ────────────────────────────────────────
+// ── Council roster — 37 members ────────────────────────────────────────
 const COUNCIL_MEMBERS = [
   { type: 'practitioner', monogram: 'LKY', name: 'Lee Kuan Yew', role: 'Prime Minister, Singapore 1959–90', lifespan: '1923 — 2015', country: 'Singapore', positions: ['Resilience over optimism: design policy for the worst case, not the most likely', 'Meritocracy and discipline as non-negotiable foundations of a functioning state', 'Small state survival requires making yourself indispensable to larger powers'] },
   { type: 'practitioner', monogram: 'DX', name: 'Deng Xiaoping', role: 'Paramount Leader, China 1978–92', lifespan: '1904 — 1997', country: 'China', positions: ['Cross the river by feeling the stones: pragmatic, non-ideological reform', 'Economic opening is compatible with political control if sequenced correctly', 'Absorb, adapt, indigenise: technology transfer as the engine of development'] },
