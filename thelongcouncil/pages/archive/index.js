@@ -329,9 +329,10 @@ function TimelineEntry({ session, isFirst }) {
           text-transform: uppercase;
           margin-bottom: 4px;
         }
-        .entry-title-link {
+        .entry-title-link,
+        .entry-title-link :global(h3) {
           display: inline-block;
-          text-decoration: none;
+          text-decoration: none !important;
           color: inherit;
           transition: opacity 0.2s ease;
         }
