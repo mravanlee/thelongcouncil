@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { getServiceSupabase, generateSlug } from '../../lib/supabase';
 
 export const config = { maxDuration: 300 };
 
@@ -85,6 +86,34 @@ function extractSelectedMembers(assemblyOutput) {
   return names;
 }
 
+// ── Member metadata extraction (name + type) from Prompt 1 output ──────
+// Used for archive filtering/browsing
+function extractMemberMetadata(assemblyOutput) {
+  const selectedMatch = assemblyOutput.match(
+    /SELECTED MEMBERS:\s*\n([\s\S]*?)(?=\n\s*(?:MEMBERS CONSIDERED|CONFIDENCE NOTE|$))/i
+  );
+  if (!selectedMatch) return { names: [], types: [] };
+
+  const section = selectedMatch[1];
+  const dashChars = '[—–\\-―]';
+  const regex = new RegExp(
+    `^\\s*\\d+\\.\\s+(.+?)(?:\\s+${dashChars}\\s+(Practitioner|Framer))?\\s*$`,
+    'gm'
+  );
+
+  const names = [];
+  const types = [];
+  let match;
+  while ((match = regex.exec(section)) !== null) {
+    const rawName = match[1].trim().replace(/\*\*/g, '').replace(/^\*|\*$/g, '').trim();
+    if (rawName.length < 3) continue;
+    if (/^(Relevance|Coverage|Will argue):/i.test(rawName)) continue;
+    names.push(rawName);
+    types.push(match[2] ? match[2].toLowerCase() : 'unknown');
+  }
+  return { names, types };
+}
+
 // ── Roster validator ────────────────────────────────────────────────────
 const ALL_COUNCIL_MEMBERS = [
   'Lee Kuan Yew', 'Helmut Schmidt', 'Margaret Thatcher', 'Franklin Roosevelt',
@@ -133,6 +162,78 @@ function validateRoster(deliberationOutput, selectedNames) {
   return violations;
 }
 
+// ── Session storage ─────────────────────────────────────────────────────
+async function saveSessionToDatabase({
+  originalIssue,
+  sharpenedIssue,
+  assemblyOutput,
+  deliberationOutput,
+  verdictOutput,
+  briefOutput,
+  memberNames,
+  memberTypes,
+}) {
+  try {
+    const supabase = getServiceSupabase();
+
+    // Pack all the pipeline outputs into a single structured object
+    const cards = {
+      assembly: assemblyOutput,
+      deliberation: deliberationOutput,
+      verdict: verdictOutput,
+      brief: briefOutput,
+    };
+
+    // Generate a short, URL-friendly slug with random suffix
+    // Try up to 3 times in case of collision (extremely rare with 4-char suffix)
+    let slug = generateSlug(sharpenedIssue || originalIssue);
+    let attempt = 0;
+    let inserted = null;
+    let lastError = null;
+
+    while (attempt < 3 && !inserted) {
+      const { data, error } = await supabase
+        .from('sessions')
+        .insert({
+          slug,
+          original_issue: originalIssue,
+          sharpened_issue: sharpenedIssue || null,
+          cards,
+          member_names: memberNames,
+          member_types: memberTypes,
+        })
+        .select()
+        .single();
+
+      if (error && error.code === '23505') {
+        // Unique constraint violation on slug — regenerate and retry
+        attempt += 1;
+        slug = generateSlug(sharpenedIssue || originalIssue);
+        lastError = error;
+        continue;
+      }
+
+      if (error) {
+        lastError = error;
+        break;
+      }
+
+      inserted = data;
+    }
+
+    if (!inserted) {
+      console.error('[pipeline] Failed to save session to database:', lastError);
+      return null;
+    }
+
+    console.log('[pipeline] Session saved:', inserted.slug);
+    return inserted;
+  } catch (err) {
+    console.error('[pipeline] Database save error:', err);
+    return null;
+  }
+}
+
 // ── Claude API call ─────────────────────────────────────────────────────
 async function callClaude(system, user, maxTokens = 4000) {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -158,6 +259,7 @@ async function callClaude(system, user, maxTokens = 4000) {
 }
 
 // ── Prompts ─────────────────────────────────────────────────────────────
+// (PROMPT1_SYSTEM, PROMPT2_SYSTEM, PROMPT3_SYSTEM, PROMPT4_SYSTEM — unchanged from original)
 
 const PROMPT1_SYSTEM = `You are the Council Assembly Engine for The Long Council — a product that assembles documented historic leaders and thinkers to deliberate on real governance, geopolitical and economic policy questions.
 
@@ -671,6 +773,7 @@ export default async function handler(req, res) {
 
     // ── Extract selected members, load only their profiles ───────────
     const selectedNames = extractSelectedMembers(assemblyOutput);
+    const metadata = extractMemberMetadata(assemblyOutput);
 
     let profilesForDeliberation = null;
     let loadInfo = null;
@@ -730,7 +833,28 @@ export default async function handler(req, res) {
     );
     send('brief', { data: briefOutput });
 
-    send('complete', { message: 'Session complete' });
+    // ── Save session to database (non-blocking for UX) ────────────────
+    // Sharpened issue = the ISSUE SUMMARY line from prompt 1 if we can find it
+    let sharpenedIssue = null;
+    const summaryMatch = assemblyOutput.match(/ISSUE SUMMARY:\s*(.+?)(?:\n|$)/i);
+    if (summaryMatch) sharpenedIssue = summaryMatch[1].trim();
+
+    const saved = await saveSessionToDatabase({
+      originalIssue: question,
+      sharpenedIssue,
+      assemblyOutput,
+      deliberationOutput,
+      verdictOutput,
+      briefOutput,
+      memberNames: metadata.names,
+      memberTypes: metadata.types,
+    });
+
+    send('complete', {
+      message: 'Session complete',
+      slug: saved ? saved.slug : null,
+      saved: !!saved,
+    });
   } catch (err) {
     console.error('Pipeline error:', err);
     const isOverloaded = err.message && err.message.includes('529');
