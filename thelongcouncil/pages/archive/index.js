@@ -306,10 +306,13 @@ function TimelineEntry({ session, isFirst }) {
       </div>
 
       <style jsx>{`
+       .entry-link,
+        .entry-link :global(*) {
+          text-decoration: none !important;
+          color: inherit;
+        }
         .entry-link {
           display: block;
-          text-decoration: none;
-          color: inherit;
         }
         .entry {
           position: relative;
