@@ -4,8 +4,6 @@ import Link from 'next/link';
 import { supabase } from '../../lib/supabase';
 
 // ── Server-side data fetching ──────────────────────────────────────────
-// Runs on the Vercel server for every page load — gives fresh data
-// without the user seeing a loading spinner
 export async function getServerSideProps() {
   const { data: sessions, error } = await supabase
     .from('sessions')
@@ -18,8 +16,6 @@ export async function getServerSideProps() {
     return { props: { sessions: [], error: error.message } };
   }
 
-  // Extract the verdict teaser from the verdict output
-  // This is the short 1-2 sentence summary shown under each issue in the timeline
   const enriched = (sessions || []).map(s => ({
     id: s.id,
     slug: s.slug,
@@ -34,14 +30,11 @@ export async function getServerSideProps() {
   return { props: { sessions: enriched, error: null } };
 }
 
-// Pull a short teaser from the verdict markdown
-// Looks for the first paragraph after "## Verdict"
 function extractTeaser(cards) {
   if (!cards || !cards.verdict) return '';
   const match = cards.verdict.match(/##\s*Verdict\s*\n+([^\n#]+(?:\n[^\n#]+)*)/i);
   if (!match) return '';
   const firstPara = match[1].trim().split(/\n\s*\n/)[0];
-  // Trim to reasonable length
   if (firstPara.length > 240) {
     const trimmed = firstPara.substring(0, 240);
     const lastPeriod = trimmed.lastIndexOf('.');
@@ -50,7 +43,6 @@ function extractTeaser(cards) {
   return firstPara;
 }
 
-// ── Date formatting ────────────────────────────────────────────────────
 function formatDate(iso) {
   const d = new Date(iso);
   return d.toLocaleDateString('en-GB', {
@@ -64,7 +56,6 @@ function getDayOfMonth(iso) {
   return new Date(iso).getDate();
 }
 
-// ── Framer set (mirrors Procession.jsx for tier display) ──────────────
 const FRAMER_NAMES = new Set([
   'John Maynard Keynes', 'Friedrich Hayek', 'Milton Friedman', 'John Locke',
   'Jean-Jacques Rousseau', 'John Rawls', 'Hannah Arendt', 'Amartya Sen',
@@ -79,7 +70,6 @@ function isFramer(name) {
   if (!name) return false;
   const trimmed = name.trim();
   if (FRAMER_NAMES.has(trimmed)) return true;
-  // Fuzzy match on last name for when the model says "Schmidt" instead of "Helmut Schmidt"
   for (const full of FRAMER_NAMES) {
     if (full.toLowerCase().includes(trimmed.toLowerCase()) && trimmed.length > 3) {
       return true;
@@ -88,7 +78,6 @@ function isFramer(name) {
   return false;
 }
 
-// ── Page component ─────────────────────────────────────────────────────
 export default function Archive({ sessions, error }) {
   const [search, setSearch] = useState('');
 
@@ -271,57 +260,43 @@ export default function Archive({ sessions, error }) {
 
 // ── One session in the timeline ─────────────────────────────────────────
 function TimelineEntry({ session, isFirst }) {
-  const memberChips = session.member_names.map((name, i) => ({
+  const memberChips = session.member_names.map((name) => ({
     name,
     framer: isFramer(name),
   }));
 
   return (
-    <Link href={`/archive/${session.slug}`} className="entry-link">
-      <div className="entry">
-        <div className={`entry-dot ${isFirst ? 'entry-dot-new' : ''}`}>
-          {getDayOfMonth(session.created_at)}
-        </div>
-        <div className="entry-meta">
-          {formatDate(session.created_at)}
-        </div>
-        <div className="entry-title">
-          {session.original_issue}
-        </div>
-        {session.teaser && (
-          <div className="entry-teaser">{session.teaser}</div>
-        )}
-        {memberChips.length > 0 && (
-          <div className="entry-members">
-            {memberChips.map((m, i) => (
-              <span
-                key={i}
-                className={`member-chip ${m.framer ? 'chip-framer' : 'chip-practitioner'}`}
-              >
-                {m.name}
-              </span>
-            ))}
-          </div>
-        )}
+    <div className="entry">
+      <div className={`entry-dot ${isFirst ? 'entry-dot-new' : ''}`}>
+        {getDayOfMonth(session.created_at)}
       </div>
+      <div className="entry-meta">
+        {formatDate(session.created_at)}
+      </div>
+      <Link href={`/archive/${session.slug}`} className="entry-title-link">
+        <h3 className="entry-title">{session.original_issue}</h3>
+      </Link>
+      {session.teaser && (
+        <div className="entry-teaser">{session.teaser}</div>
+      )}
+      {memberChips.length > 0 && (
+        <div className="entry-members">
+          {memberChips.map((m, i) => (
+            <span
+              key={i}
+              className={`member-chip ${m.framer ? 'chip-framer' : 'chip-practitioner'}`}
+            >
+              {m.name}
+            </span>
+          ))}
+        </div>
+      )}
 
       <style jsx>{`
-       .entry-link,
-        .entry-link :global(*) {
-          text-decoration: none !important;
-          color: inherit;
-        }
-        .entry-link {
-          display: block;
-        }
         .entry {
           position: relative;
           margin-bottom: 2.25rem;
           padding: 0.5rem 0;
-          transition: opacity 0.2s ease;
-        }
-        .entry-link:hover .entry {
-          opacity: 0.78;
         }
         .entry-dot {
           position: absolute;
@@ -354,14 +329,25 @@ function TimelineEntry({ session, isFirst }) {
           text-transform: uppercase;
           margin-bottom: 4px;
         }
+        .entry-title-link {
+          display: inline-block;
+          text-decoration: none;
+          color: inherit;
+          transition: opacity 0.2s ease;
+        }
+        .entry-title-link:hover {
+          opacity: 0.7;
+          text-decoration: none;
+        }
         .entry-title {
           font-family: 'Playfair Display', Georgia, serif;
           font-size: 18px;
           color: #0f0f0f;
           font-weight: 600;
           line-height: 1.4;
-          margin-bottom: 6px;
+          margin: 0 0 6px 0;
           max-width: 62ch;
+          text-decoration: none;
         }
         .entry-teaser {
           font-family: 'Crimson Pro', Georgia, serif;
@@ -383,6 +369,7 @@ function TimelineEntry({ session, isFirst }) {
           padding: 2px 8px;
           border-radius: 2px;
           white-space: nowrap;
+          text-decoration: none;
         }
         .chip-practitioner {
           background: #fdf5ec;
@@ -400,6 +387,6 @@ function TimelineEntry({ session, isFirst }) {
           .entry-teaser { font-size: 15px; }
         }
       `}</style>
-    </Link>
+    </div>
   );
 }
