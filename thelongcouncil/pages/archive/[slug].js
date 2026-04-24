@@ -238,9 +238,10 @@ export default function ArchiveDetail({ session }) {
           margin: 0 auto;
           padding: 0 1.25rem;
         }
-
-        .back-link,
-        .back-link :global(*) {
+       .back-link,
+        .back-link :global(*),
+        .back-link:hover,
+        .back-link:visited {
           text-decoration: none !important;
           color: #7a7a7a;
         }
@@ -384,8 +385,10 @@ export default function ArchiveDetail({ session }) {
         .detail-nudge > div {
           margin-bottom: 0.5rem;
         }
-        .nudge-link,
-        .nudge-link :global(*) {
+       .nudge-link,
+        .nudge-link :global(*),
+        .nudge-link:hover,
+        .nudge-link:visited {
           color: #6b1a1a !important;
           text-decoration: none !important;
         }
