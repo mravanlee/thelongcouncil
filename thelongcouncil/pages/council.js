@@ -2,6 +2,43 @@ import { useState, useMemo } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 
+function slugify(name) {
+  if (!name) return '';
+  return name
+    .replace(/\s*\([^)]*\)/g, '')        // strip "(Chanakya)" and similar
+    .normalize('NFD')                      // decompose ò → o + combining grave
+    .replace(/[\u0300-\u036f]/g, '')      // remove combining diacritics
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')          // non-alphanumeric → underscore
+    .replace(/^_+|_+$/g, '');             // trim leading/trailing underscores
+}
+
+function MemberAvatar({ member }) {
+  const [imgFailed, setImgFailed] = useState(false);
+  const slug = slugify(member.name);
+  const baseClass = `mc-av ${member.type === 'framer' ? 'mc-av-f' : 'mc-av-p'}`;
+
+  if (imgFailed || !slug) {
+    return <div className={baseClass}>{member.monogram}</div>;
+  }
+
+  return (
+    <div className={baseClass} style={{ overflow: 'hidden', padding: 0 }}>
+      <img
+        src={`/avatars/avatar_${slug}.webp`}
+        alt={member.name}
+        onError={() => setImgFailed(true)}
+        style={{
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          display: 'block',
+        }}
+      />
+    </div>
+  );
+}
+
 // ── Council roster — 37 members ────────────────────────────────────────
 const COUNCIL_MEMBERS = [
   { type: 'practitioner', monogram: 'LKY', name: 'Lee Kuan Yew', role: 'Prime Minister, Singapore 1959–90', lifespan: '1923 — 2015', country: 'Singapore', positions: ['Resilience over optimism: design policy for the worst case, not the most likely', 'Meritocracy and discipline as non-negotiable foundations of a functioning state', 'Small state survival requires making yourself indispensable to larger powers'] },
@@ -124,9 +161,7 @@ export default function Council() {
         {visible.map(m => (
           <div key={m.name} className={`mc ${m.type === 'framer' ? 'mc-framer' : 'mc-practitioner'}`}>
             <div className="mc-top">
-              <div className={`mc-av ${m.type === 'framer' ? 'mc-av-f' : 'mc-av-p'}`}>
-                {m.monogram}
-              </div>
+              <MemberAvatar member={m} />
               <div className="mc-top-text">
                 <div className={`mc-badge ${m.type === 'framer' ? 'mc-badge-f' : 'mc-badge-p'}`}>
                   {m.type === 'framer' ? 'Framer' : 'Practitioner'}
