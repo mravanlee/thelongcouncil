@@ -204,7 +204,97 @@ a:link, a:visited {
   text-decoration-thickness: 0.5px;
 }
 .btn-skip:hover { color: #6b1a1a; }
+/* ══════════════════════════════════════════════════════════════════
+   RECENT SESSIONS — homepage section below the issue form
+   ══════════════════════════════════════════════════════════════════ */
 
+.recent-sessions {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 32px 64px;
+}
+
+.recent-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 32px;
+  padding-top: 32px;
+  border-top: 0.5px solid #d4cfc8;
+}
+.recent-rule { flex: 1; height: 0.5px; background: #d4cfc8; }
+.recent-lbl {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: #7a7a7a;
+  text-transform: uppercase;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.recent-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.recent-item {
+  display: block;
+  padding: 18px 0;
+  border-bottom: 0.5px solid #e8e4de;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.recent-item:last-child { border-bottom: none; }
+.recent-item:hover { opacity: 0.7; }
+
+.recent-date {
+  font-family: 'Crimson Pro', serif;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: #8a8a8a;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.recent-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 19px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #0f0f0f;
+  margin: 0 0 10px 0;
+  max-width: 62ch;
+}
+
+.recent-teaser {
+  font-family: 'Crimson Pro', serif;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #4a4a4a;
+  margin: 0;
+  max-width: 62ch;
+}
+
+.recent-footer {
+  text-align: center;
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 0.5px solid #e8e4de;
+}
+.recent-see-all {
+  font-family: 'Crimson Pro', serif;
+  font-size: 13px;
+  color: #6b1a1a;
+  letter-spacing: 0.02em;
+  transition: opacity 0.2s;
+}
+.recent-see-all:hover { opacity: 0.7; }
+
+@media (max-width: 600px) {
+  .recent-sessions { padding: 0 20px 48px; }
+  .recent-title { font-size: 17px; }
+  .recent-teaser { font-size: 13.5px; }
+}
 /* ── LOADING ── */
 .loading { max-width: 720px; margin: 0 auto; padding: 80px 32px; text-align: center; }
 .loading-question { font-family: 'Playfair Display', serif; font-size: 18px; font-style: italic; color: #3a3a3a; margin-bottom: 52px; line-height: 1.55; }
