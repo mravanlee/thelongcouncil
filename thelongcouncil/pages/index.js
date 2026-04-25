@@ -417,7 +417,6 @@ export default function Home() {
       {screen === 'sharpening' && (
         <div className="sharpener">
           <div className="sharpener-heading">Before the council assembles</div>
-          <div className="sharpener-original">Your question: {question}</div>
 
           {sharpenerLoading && (
             <div className="chat-thread">
@@ -430,24 +429,39 @@ export default function Home() {
           )}
 
           {/* READY path — confirm and start */}
-          {!sharpenerLoading && sharpenerMode === 'ready' && readyQuestion && (
-            <div className="proposed-box">
-              <div className="proposed-label">Your question is clear</div>
-              {sharpenerExplanation && (
-                <div className="proposed-explanation">{sharpenerExplanation}</div>
-              )}
-              <div className="proposed-text">{readyQuestion}</div>
-              <div className="proposed-actions">
-                <button className="btn-accept" onClick={() => runPipeline(readyQuestion)}>
-                  Convene the council →
-                </button>
+          {!sharpenerLoading && sharpenerMode === 'ready' && readyQuestion && (() => {
+            // Compare normalised: strip whitespace, lowercase, drop trailing punctuation
+            const normalise = (s) => (s || '').trim().toLowerCase().replace(/[?!.\s]+$/, '');
+            const wasSharpened = normalise(readyQuestion) !== normalise(question);
+
+            return (
+              <div className="proposed-box">
+                <div className="proposed-label">
+                  {wasSharpened ? 'The council will deliberate on' : 'Your question is clear'}
+                </div>
+                <div className="proposed-text">{readyQuestion}</div>
+                {wasSharpened && (
+                  <div className="proposed-original">
+                    You asked: <span>{question}</span>
+                  </div>
+                )}
+                {sharpenerExplanation && (
+                  <div className="proposed-explanation">{sharpenerExplanation}</div>
+                )}
+                <div className="proposed-actions">
+                  <button className="btn-accept" onClick={() => runPipeline(readyQuestion)}>
+                    Convene the council →
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* CLARIFY path — one clarifying question, user can reply or skip */}
           {!sharpenerLoading && sharpenerMode === 'clarify' && clarifyingQuestion && (
             <>
+              <div className="sharpener-original">Your question: {question}</div>
+
               <div className="clarify-box">
                 <div className="clarify-label">One quick question</div>
                 <div className="clarify-question">{clarifyingQuestion}</div>
