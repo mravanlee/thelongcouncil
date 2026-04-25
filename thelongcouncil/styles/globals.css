@@ -5,13 +5,18 @@ html { scroll-behavior: smooth; }
 body { background: #f8f6f2; font-family: 'Crimson Pro', serif; color: #0f0f0f; min-height: 100vh; }
 
 /* ── GLOBAL LINK RESET ── */
-/* Browsers default to purple for visited links. Reset everywhere; */
-/* per-context colors are set below. */
-a, a:link, a:visited, a:active {
+/* Neutralise default visited-link purple. Per-context colors below */
+/* must use class selectors which override these via specificity. */
+a:link, a:visited {
   color: inherit;
   text-decoration: none;
 }
-a:hover { color: inherit; }
+
+/* Restore link colors for specific contexts (visited must be explicit) */
+.nav-raise:link, .nav-raise:visited { color: #f8f0e8; }
+.nav-raise:hover { color: #f8f0e8; }
+.about a:link, .about a:visited { color: #6b1a1a; text-decoration: underline; }
+.about a:hover { color: #8b2a2a; }
 
 /* ── MASTHEAD ── */
 .mast { text-align: center; padding: 32px 32px 22px; border-bottom: 1.5px solid #0f0f0f; cursor: pointer; display: block; text-decoration: none; color: inherit; }
