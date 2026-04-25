@@ -116,7 +116,7 @@ export default function Council() {
 
       <nav className="nav">
         <Link href="/council" className="nav-link nav-active">The Council</Link>
-        <span className="nav-link nav-disabled" title="Coming soon">The Archive</span>
+        <Link href="/archive" className="nav-link">The Archive</Link>
         <Link href="/about" className="nav-link">About</Link>
         <Link href="/" className="nav-raise">Raise an issue</Link>
       </nav>
@@ -125,7 +125,7 @@ export default function Council() {
         <h2>The Council</h2>
         <p>
           37 leaders and thinkers, selected for the depth and specificity of their documented
-          record. Together they form the deliberative body — not a pantheon, but a working
+          record. Together they form the deliberative body — a working
           council drawn from different centuries, continents and traditions.
         </p>
         <div className="council-filters">
@@ -185,7 +185,7 @@ export default function Council() {
       )}
 
       <footer>
-        © The Long Council · AI-generated counsel from historical figures · Not advice
+        © The Long Council · Counsel from history's greatest minds, bought to life by AI ·
       </footer>
     </>
   );
