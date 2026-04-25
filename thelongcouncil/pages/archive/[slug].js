@@ -242,8 +242,8 @@ export default function ArchiveDetail({ session }) {
           display: inline-block;
           font-family: 'Crimson Pro', Georgia, serif;
           font-size: 13px;
-          margin-top: 1.5rem;
-          margin-bottom: 2rem;
+          margin-top: 2.5rem;
+          margin-bottom: 3rem;
           transition: color 0.2s ease;
         }
         .back-link:hover,
