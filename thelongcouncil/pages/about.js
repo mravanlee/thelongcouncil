@@ -8,7 +8,7 @@ export default function About() {
         <title>About — The Long Council</title>
         <meta
           name="description"
-          content="About The Long Council — a project bringing the reasoning of 35 historical figures to bear on present-day questions."
+          content="About The Long Council — a project bringing the reasoning of 37 historical figures to bear on present-day questions."
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
@@ -21,7 +21,7 @@ export default function About() {
 
       <nav className="nav">
         <Link href="/council" className="nav-link">The Council</Link>
-        <span className="nav-link nav-disabled" title="Coming soon">The Archive</span>
+        <Link href="/archive" className="nav-link">The Archive</Link>
         <Link href="/about" className="nav-link nav-active">About</Link>
         <Link href="/" className="nav-raise">Raise an issue</Link>
       </nav>
@@ -30,20 +30,20 @@ export default function About() {
         <h1 className="about-title">About The Long Council</h1>
 
         <p className="about-lead">
-          The Long Council brings together 35 figures from the past — leaders, thinkers,
+          The Long Council brings together 37 figures from the past — leaders, thinkers,
           strategists — chosen for their insights, wisdom, or landmark decisions. Between them
           they built states, governed countries through challenging periods, wrote philosophy
           that still shapes how we think. Their work sits in libraries. Their frameworks almost
-          never reach the tables where current decisions are made.
+          never reaches the tables where current decisions are made.
         </p>
 
         <p>
           This project is a way of bringing them back into the room. When you ask a question
-          about governance, economics or geopolitics, the product assembles the relevant voices
+          about governance, economics or geopolitics, the most relevant voices assmble 
           from the roster and produces their collective reasoning — grounded in what they
           actually wrote, said, and decided. The aim is not to impersonate. It is to let
           documented frameworks speak to questions those people never lived to see. History does
-          not repeat itself, but it rhymes — and the rhymes are worth listening to.
+          not repeat itself, but it rhymes — and we feel these voices are very much worth listening to.
         </p>
 
         <h2>How to read the counsel</h2>
@@ -63,8 +63,8 @@ export default function About() {
           This is AI-generated reasoning, not the counsel of these people. It is what a model
           trained on the historical record thinks their frameworks suggest. It is not the word
           of Hannah Arendt. It is not legal or medical advice. It is not a forecast. Treat it
-          as you would the opinion of a very knowledgeable friend: worth listening to, sometimes
-          wrong, never a substitute for expertise or judgment.
+          as you would the opinion of a very knowledgeable group of friends: worth listening to, but 
+          never a substitute for expertise or judgment.
         </p>
 
         <h2>How to use it well</h2>
@@ -87,7 +87,7 @@ export default function About() {
             >
               Alex van Leeuwen
             </a>
-            {' '}— an Amsterdam-based tech entrepreneur, investor, and political scientist
+            {' '}— A tech entrepreneur, investor, and political scientist
             (University of Amsterdam). The Long Council is non-profit: no accounts, no ads,
             no data collection.
           </p>
