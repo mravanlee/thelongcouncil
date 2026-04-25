@@ -39,7 +39,7 @@ export default function About() {
 
         <p>
           This project is a way of bringing them back into the room. When you ask a question
-          about governance, economics or geopolitics, the most relevant voices assmble 
+          about governance, economics or geopolitics, the most relevant voices assemble 
           from the roster and produces their collective reasoning — grounded in what they
           actually wrote, said, and decided. The aim is not to impersonate. It is to let
           documented frameworks speak to questions those people never lived to see. History does
