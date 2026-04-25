@@ -166,12 +166,6 @@ export default function ArchiveDetail({ session }) {
 
         <h1 className="detail-title">{session.original_issue}</h1>
 
-        {session.sharpened_issue && session.sharpened_issue !== session.original_issue && (
-          <div className="detail-sharpened">
-            Sharpened: {session.sharpened_issue}
-          </div>
-        )}
-
         {verdict && (
           <div className="verdict-block">
             <div className="verdict-label">Verdict</div>
@@ -238,12 +232,11 @@ export default function ArchiveDetail({ session }) {
           margin: 0 auto;
           padding: 0 1.25rem;
         }
-       .back-link,
+        .back-link,
         .back-link :global(*),
-        .back-link:hover,
         .back-link:visited {
           text-decoration: none !important;
-          color: #7a7a7a;
+          color: #7a7a7a !important;
         }
         .back-link {
           display: inline-block;
@@ -252,8 +245,9 @@ export default function ArchiveDetail({ session }) {
           margin-bottom: 0.75rem;
           transition: color 0.2s ease;
         }
-        .back-link:hover {
-          color: #6b1a1a;
+        .back-link:hover,
+        .back-link:hover :global(*) {
+          color: #6b1a1a !important;
         }
 
         .detail-meta {
@@ -271,16 +265,7 @@ export default function ArchiveDetail({ session }) {
           color: #0f0f0f;
           font-weight: 600;
           line-height: 1.3;
-          margin: 0 0 0.5rem;
-          max-width: 62ch;
-        }
-
-        .detail-sharpened {
-          font-family: 'Crimson Pro', Georgia, serif;
-          font-size: 13px;
-          color: #7a7a7a;
-          font-style: italic;
-          margin-bottom: 2rem;
+          margin: 0 0 2rem;
           max-width: 62ch;
         }
 
@@ -385,7 +370,7 @@ export default function ArchiveDetail({ session }) {
         .detail-nudge > div {
           margin-bottom: 0.5rem;
         }
-       .nudge-link,
+        .nudge-link,
         .nudge-link :global(*),
         .nudge-link:hover,
         .nudge-link:visited {
