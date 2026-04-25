@@ -2,6 +2,53 @@ import { useState, useRef, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import Procession from '../components/Procession';
+import { supabase } from '../lib/supabase';
+
+// ── Server-side: fetch 3 most recent sessions for homepage ─────────────
+export async function getServerSideProps() {
+  const { data: sessions, error } = await supabase
+    .from('sessions')
+    .select('id, slug, original_issue, created_at, cards')
+    .order('created_at', { ascending: false })
+    .limit(3);
+
+  if (error) {
+    console.error('[homepage] Failed to load recent sessions:', error);
+    return { props: { recentSessions: [] } };
+  }
+
+  const enriched = (sessions || []).map(s => ({
+    id: s.id,
+    slug: s.slug,
+    original_issue: s.original_issue,
+    created_at: s.created_at,
+    teaser: extractTeaser(s.cards),
+  }));
+
+  return { props: { recentSessions: enriched } };
+}
+
+function extractTeaser(cards) {
+  if (!cards || !cards.verdict) return '';
+  const match = cards.verdict.match(/##\s*Verdict\s*\n+([^\n#]+(?:\n[^\n#]+)*)/i);
+  if (!match) return '';
+  const firstPara = match[1].trim().split(/\n\s*\n/)[0];
+  if (firstPara.length > 240) {
+    const trimmed = firstPara.substring(0, 240);
+    const lastPeriod = trimmed.lastIndexOf('.');
+    return lastPeriod > 100 ? trimmed.substring(0, lastPeriod + 1) : trimmed + '…';
+  }
+  return firstPara;
+}
+
+function formatDate(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}
 
 // ── Tiny inline markdown renderer (used for verdict + brief) ───────────
 function Markdown({ text }) {
@@ -154,13 +201,13 @@ function parseVerdict(verdictText) {
   };
 }
 
-export default function Home() {
+export default function Home({ recentSessions = [] }) {
   const [screen, setScreen] = useState('landing');
   const [question, setQuestion] = useState('');
 
   // Sharpener state — new two-path model (READY / CLARIFY)
   const [chatHistory, setChatHistory] = useState([]);
-  const [sharpenerMode, setSharpenerMode] = useState(null); // 'ready' | 'clarify' | null
+  const [sharpenerMode, setSharpenerMode] = useState(null);
   const [readyQuestion, setReadyQuestion] = useState(null);
   const [clarifyingQuestion, setClarifyingQuestion] = useState(null);
   const [sharpenerExplanation, setSharpenerExplanation] = useState('');
@@ -226,8 +273,6 @@ export default function Home() {
     const reply = sharpenerInput.trim();
     if (!reply || sharpenerLoading) return;
 
-    // The user is answering the clarifying question.
-    // We send their reply + the original question as combined context.
     const newUserMsg = { role: 'user', content: reply };
     const updatedHistory = [...chatHistory, newUserMsg];
 
@@ -381,37 +426,63 @@ export default function Home() {
       </nav>
 
       {screen === 'landing' && (
-        <div className="landing">
-          <div className="landing-eyebrow">Raise an issue</div>
-          <h1 className="landing-heading">
-            What policy question would you like<br />the council to consider?
-          </h1>
-          <p className="landing-sub">
-            Submit a governance, economic or geopolitical question. 35 of history's greatest
-            leaders and thinkers — from Lee Kuan Yew to Hannah Arendt, from Keynes to
-            Machiavelli — will deliberate on it and deliver their collective counsel.
-          </p>
+        <>
+          <div className="landing">
+            <div className="landing-eyebrow">Raise an issue</div>
+            <h1 className="landing-heading">
+              What policy question would you like<br />the council to consider?
+            </h1>
+            <p className="landing-sub">
+              Submit a governance, economic or geopolitical question. 35 of history's greatest
+              leaders and thinkers — from Lee Kuan Yew to Hannah Arendt, from Keynes to
+              Machiavelli — will deliberate on it and deliver their collective counsel.
+            </p>
 
-          <div className="issue-form">
-            <textarea
-              ref={textareaRef}
-              className="issue-input"
-              rows={3}
-              placeholder="e.g. Should the EU introduce a carbon border adjustment mechanism?"
-              value={question}
-              onChange={e => setQuestion(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(); } }}
-            />
-            <button
-              className="submit-btn"
-              onClick={handleSubmit}
-              disabled={!question.trim() || sharpenerLoading}
-            >
-              {sharpenerLoading ? 'Considering...' : 'Raise this issue →'}
-            </button>
-            <p className="landing-hint">The council will check if your question is clear before it assembles.</p>
+            <div className="issue-form">
+              <textarea
+                ref={textareaRef}
+                className="issue-input"
+                rows={3}
+                placeholder="e.g. Should the EU introduce a carbon border adjustment mechanism?"
+                value={question}
+                onChange={e => setQuestion(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(); } }}
+              />
+              <button
+                className="submit-btn"
+                onClick={handleSubmit}
+                disabled={!question.trim() || sharpenerLoading}
+              >
+                {sharpenerLoading ? 'Considering...' : 'Raise this issue →'}
+              </button>
+              <p className="landing-hint">The council will check if your question is clear before it assembles.</p>
+            </div>
           </div>
-        </div>
+
+          {recentSessions.length > 0 && (
+            <div className="recent-sessions">
+              <div className="recent-head">
+                <div className="recent-rule" />
+                <div className="recent-lbl">Recent sessions</div>
+                <div className="recent-rule" />
+              </div>
+
+              <div className="recent-list">
+                {recentSessions.map((s) => (
+                  <Link key={s.id} href={`/archive/${s.slug}`} className="recent-item">
+                    <div className="recent-date">{formatDate(s.created_at)}</div>
+                    <h3 className="recent-title">{s.original_issue}</h3>
+                    {s.teaser && <p className="recent-teaser">{s.teaser}</p>}
+                  </Link>
+                ))}
+              </div>
+
+              <div className="recent-footer">
+                <Link href="/archive" className="recent-see-all">See all in The Archive →</Link>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {screen === 'sharpening' && (
@@ -428,9 +499,7 @@ export default function Home() {
             </div>
           )}
 
-          {/* READY path — confirm and start */}
           {!sharpenerLoading && sharpenerMode === 'ready' && readyQuestion && (() => {
-            // Compare normalised: strip whitespace, lowercase, drop trailing punctuation
             const normalise = (s) => (s || '').trim().toLowerCase().replace(/[?!.\s]+$/, '');
             const wasSharpened = normalise(readyQuestion) !== normalise(question);
 
@@ -457,7 +526,6 @@ export default function Home() {
             );
           })()}
 
-          {/* CLARIFY path — one clarifying question, user can reply or skip */}
           {!sharpenerLoading && sharpenerMode === 'clarify' && clarifyingQuestion && (
             <>
               <div className="sharpener-original">Your question: {question}</div>
