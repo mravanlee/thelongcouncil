@@ -408,7 +408,7 @@ export default function Home({ recentSessions = [] }) {
     <>
       <Head>
         <title>The Long Council</title>
-        <meta name="description" content="Counsel from those who governed. AI-generated deliberation from 35 historic leaders and thinkers." />
+        <meta name="description" content="Ask a hard question. Watch history's greatest minds debate it. See what they decide." />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
