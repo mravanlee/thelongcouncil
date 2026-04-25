@@ -238,11 +238,12 @@ export default function ArchiveDetail({ session }) {
           text-decoration: none !important;
           color: #7a7a7a !important;
         }
-        .back-link {
+       .back-link {
           display: inline-block;
           font-family: 'Crimson Pro', Georgia, serif;
           font-size: 13px;
-          margin-bottom: 0.75rem;
+          margin-top: 1.5rem;
+          margin-bottom: 2rem;
           transition: color 0.2s ease;
         }
         .back-link:hover,
@@ -250,13 +251,13 @@ export default function ArchiveDetail({ session }) {
           color: #6b1a1a !important;
         }
 
-        .detail-meta {
+       .detail-meta {
           font-family: 'Crimson Pro', Georgia, serif;
           font-size: 11px;
           color: #7a7a7a;
           letter-spacing: 0.08em;
           text-transform: uppercase;
-          margin-bottom: 8px;
+          margin-bottom: 12px;
         }
 
         .detail-title {
