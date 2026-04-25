@@ -399,7 +399,7 @@ export default function Home({ recentSessions = [] }) {
 
   const STEPS = [
     { label: 'Assembling the council', step: 1 },
-    { label: 'The council is deliberating', step: 2 },
+    { label: 'The council is in session', step: 2 },
     { label: 'Forming the verdict', step: 3 },
     { label: 'Writing the policy brief', step: 4 },
   ];
