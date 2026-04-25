@@ -670,7 +670,7 @@ footer { text-align: center; padding: 24px 32px; border-top: 0.5px solid #e8e4de
 @media (max-width: 600px) {
   .landing, .sharpener, .loading, .session { padding: 32px 20px; }
   .landing-heading { font-size: 24px; }
-  .session-issue { font-size: 19px; }
+ .session-issue { font-size: 22px; line-height: 1.35; }
   .rcard { padding-left: 16px; }
   .rcard .md-h2 { font-size: 17px; }
   .rcard .md-framing { font-size: 15px; padding-left: 12px; }
