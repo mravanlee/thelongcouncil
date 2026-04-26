@@ -84,8 +84,18 @@ export default async function handler(req, res) {
   // Defensive: reject empty or whitespace-only content before calling Anthropic
   const lastMessage = messages[messages.length - 1];
   if (!lastMessage?.content || typeof lastMessage.content !== 'string' || !lastMessage.content.trim()) {
-    console.warn('Sharpen rejected: empty or invalid content', { messages });
+    console.warn('[sharpen] Rejected empty input:', JSON.stringify(messages).slice(0, 300));
     return res.status(400).json({ error: 'Please type a question first.' });
+  }
+
+  // Defensive: warn (but don't reject) if message roles don't alternate user/assistant
+  // This catches a class of frontend bugs where chat history is malformed
+  for (let i = 0; i < messages.length; i++) {
+    const expectedRole = i % 2 === 0 ? 'user' : 'assistant';
+    if (messages[i].role !== expectedRole) {
+      console.warn(`[sharpen] Message role mismatch at index ${i}: expected ${expectedRole}, got ${messages[i].role}. Full sequence: ${messages.map(m => m.role).join(' -> ')}`);
+      break;
+    }
   }
 
   try {
@@ -104,24 +114,24 @@ export default async function handler(req, res) {
       }),
     });
 
-    // Capture the full Anthropic error body — this is what we were missing in logs
+    // Capture the full Anthropic error body — this is what we were missing
     if (!response.ok) {
       let errorBody = '<could not read body>';
       try {
         errorBody = await response.text();
-      } catch (e) {
+      } catch (readErr) {
         // Swallow read errors
       }
-      console.error(`Anthropic API ${response.status} error body:`, errorBody);
-      console.error('Sent messages:', JSON.stringify(messages).slice(0, 500));
-      throw new Error(`Anthropic ${response.status}: ${errorBody.slice(0, 200)}`);
+      console.error(`[sharpen] Anthropic ${response.status} error:`, errorBody);
+      console.error(`[sharpen] Sent messages (truncated):`, JSON.stringify(messages).slice(0, 500));
+      throw new Error(`Anthropic ${response.status}: ${errorBody.slice(0, 300)}`);
     }
 
     const data = await response.json();
 
     // Defensive: make sure response shape is what we expect
-    if (!data.content || !data.content[0] || !data.content[0].text) {
-      console.error('Unexpected Anthropic response shape:', JSON.stringify(data).slice(0, 500));
+    if (!data?.content?.[0]?.text) {
+      console.error('[sharpen] Unexpected response shape:', JSON.stringify(data).slice(0, 500));
       throw new Error('Unexpected response from sharpener');
     }
 
@@ -146,6 +156,7 @@ export default async function handler(req, res) {
       explanation = lines.slice(1).join(' ').trim();
     } else {
       // Defensive fallback — if the model didn't use a tag, treat it as clarify
+      console.warn('[sharpen] Model output had no READY/CLARIFY tag. Raw:', text.slice(0, 200));
       mode = 'clarify';
       mainLine = text;
       explanation = '';
@@ -159,7 +170,7 @@ export default async function handler(req, res) {
       raw: text,
     });
   } catch (err) {
-    console.error('Sharpen error:', err);
+    console.error('[sharpen] Caught error:', err.message);
     res.status(500).json({ error: err.message });
   }
 }
