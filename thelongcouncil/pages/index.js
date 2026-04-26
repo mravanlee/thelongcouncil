@@ -223,6 +223,9 @@ export default function Home({ recentSessions = [] }) {
   const [showBriefToggle, setShowBriefToggle] = useState(false);
   const [briefOpen, setBriefOpen] = useState(false);
 
+  // Error state — replaces alert() so users see a clear message instead of a blank screen
+  const [error, setError] = useState(null);
+
   const textareaRef = useRef(null);
 
   useEffect(() => {
@@ -248,6 +251,7 @@ export default function Home({ recentSessions = [] }) {
   async function handleSubmit() {
     const q = question.trim();
     if (!q) return;
+    setError(null);
     setSharpenerLoading(true);
 
     try {
@@ -259,15 +263,23 @@ export default function Home({ recentSessions = [] }) {
       });
       const data = await res.json();
 
-      // FIX: include assistant response in chat history so messages alternate
-      // properly when user replies to a CLARIFY question
+      if (!res.ok) {
+        throw new Error(data.error || 'The sharpener could not process your question.');
+      }
+
+      // Include assistant response in chat history so messages alternate properly
       const assistantMsg = { role: 'assistant', content: data.raw || '' };
       setChatHistory([...msgs, assistantMsg]);
 
       applySharpenerResponse(data);
       setScreen('sharpening');
     } catch (e) {
-      alert('Something went wrong. Please try again.');
+      setError({
+        title: 'Something went wrong',
+        message: e.message || 'The council could not be reached. Please try again.',
+        action: 'submit',
+      });
+      setScreen('error');
     } finally {
       setSharpenerLoading(false);
     }
@@ -281,6 +293,7 @@ export default function Home({ recentSessions = [] }) {
     const updatedHistory = [...chatHistory, newUserMsg];
 
     setSharpenerInput('');
+    setError(null);
     setSharpenerLoading(true);
 
     try {
@@ -291,11 +304,20 @@ export default function Home({ recentSessions = [] }) {
       });
       const data = await res.json();
 
+      if (!res.ok) {
+        throw new Error(data.error || 'The sharpener could not process your reply.');
+      }
+
       const assistantMsg = { role: 'assistant', content: data.raw || '' };
       setChatHistory([...updatedHistory, assistantMsg]);
       applySharpenerResponse(data);
     } catch (e) {
-      alert('Something went wrong. Please try again.');
+      setError({
+        title: 'Something went wrong',
+        message: e.message || 'The council could not be reached. Please try again.',
+        action: 'reply',
+      });
+      setScreen('error');
     } finally {
       setSharpenerLoading(false);
     }
@@ -303,6 +325,7 @@ export default function Home({ recentSessions = [] }) {
 
   async function runPipeline(finalQuestion) {
     setConfirmedQuestion(finalQuestion);
+    setError(null);
     setScreen('loading');
     setLoadingStep(1);
     setLoadingMessage('Assembling the council...');
@@ -374,8 +397,12 @@ export default function Home({ recentSessions = [] }) {
 
       setScreen('session');
     } catch (err) {
-      alert(`Something went wrong: ${err.message}\n\nPlease try again.`);
-      setScreen('landing');
+      setError({
+        title: 'The council could not convene',
+        message: err.message || 'Something went wrong while preparing the deliberation.',
+        action: 'pipeline',
+      });
+      setScreen('error');
     }
   }
 
@@ -394,6 +421,24 @@ export default function Home({ recentSessions = [] }) {
     setShowBriefToggle(false);
     setBriefOpen(false);
     setLoadingStep(0);
+    setError(null);
+  }
+
+  function handleErrorRetry() {
+    if (!error) return;
+    const retryAction = error.action;
+    setError(null);
+
+    if (retryAction === 'submit') {
+      setScreen('landing');
+      handleSubmit();
+    } else if (retryAction === 'reply') {
+      setScreen('sharpening');
+    } else if (retryAction === 'pipeline') {
+      runPipeline(confirmedQuestion);
+    } else {
+      setScreen('landing');
+    }
   }
 
   function handleProcessionComplete() {
@@ -586,6 +631,23 @@ export default function Home({ recentSessions = [] }) {
             ))}
           </div>
           <p className="loading-note">This takes 1–2 minutes. The council does not rush.</p>
+        </div>
+      )}
+
+      {screen === 'error' && error && (
+        <div className="error-screen">
+          <div className="error-box">
+            <div className="error-title">{error.title}</div>
+            <div className="error-message">{error.message}</div>
+            <div className="error-actions">
+              <button className="error-retry" onClick={handleErrorRetry}>
+                Try again
+              </button>
+              <button className="error-reset" onClick={reset}>
+                Start over
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
