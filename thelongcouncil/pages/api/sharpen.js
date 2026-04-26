@@ -77,7 +77,16 @@ If the user asks what you're doing, just say you're checking if the question is 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
   const { messages } = req.body;
-  if (!messages || !messages.length) return res.status(400).json({ error: 'No messages' });
+  if (!messages || !messages.length) {
+    return res.status(400).json({ error: 'No messages' });
+  }
+
+  // Defensive: reject empty or whitespace-only content before calling Anthropic
+  const lastMessage = messages[messages.length - 1];
+  if (!lastMessage?.content || typeof lastMessage.content !== 'string' || !lastMessage.content.trim()) {
+    console.warn('Sharpen rejected: empty or invalid content', { messages });
+    return res.status(400).json({ error: 'Please type a question first.' });
+  }
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -95,8 +104,27 @@ export default async function handler(req, res) {
       }),
     });
 
-    if (!response.ok) throw new Error(`API error ${response.status}`);
+    // Capture the full Anthropic error body — this is what we were missing in logs
+    if (!response.ok) {
+      let errorBody = '<could not read body>';
+      try {
+        errorBody = await response.text();
+      } catch (e) {
+        // Swallow read errors
+      }
+      console.error(`Anthropic API ${response.status} error body:`, errorBody);
+      console.error('Sent messages:', JSON.stringify(messages).slice(0, 500));
+      throw new Error(`Anthropic ${response.status}: ${errorBody.slice(0, 200)}`);
+    }
+
     const data = await response.json();
+
+    // Defensive: make sure response shape is what we expect
+    if (!data.content || !data.content[0] || !data.content[0].text) {
+      console.error('Unexpected Anthropic response shape:', JSON.stringify(data).slice(0, 500));
+      throw new Error('Unexpected response from sharpener');
+    }
+
     const text = data.content[0].text.trim();
 
     // Parse the two-path output
