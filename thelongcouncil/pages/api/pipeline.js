@@ -180,7 +180,7 @@ async function precreateSession(originalIssue) {
           slug,
           original_issue: originalIssue,
           sharpened_issue: null,
-          cards: null,
+          cards: {},
           member_names: [],
           member_types: [],
         })
