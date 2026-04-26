@@ -1,8 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
 import Procession from '../components/Procession';
 import { supabase } from '../lib/supabase';
+
+// ── Recovery constants ──────────────────────────────────────────────────
+const ACTIVE_SESSION_KEY = 'tlc-active-session';
+const RECOVERY_TIMEOUT_MINUTES = 10;
+const RECOVERY_POLL_INTERVAL_MS = 5000;
+const RECOVERY_MAX_ATTEMPTS = 60; // 5 minutes of polling
 
 // ── Server-side: fetch 3 most recent sessions for homepage ─────────────
 export async function getServerSideProps() {
@@ -17,13 +24,16 @@ export async function getServerSideProps() {
     return { props: { recentSessions: [] } };
   }
 
-  const enriched = (sessions || []).map(s => ({
-    id: s.id,
-    slug: s.slug,
-    original_issue: s.original_issue,
-    created_at: s.created_at,
-    teaser: extractTeaser(s.cards),
-  }));
+  // Filter out incomplete sessions (pre-created but not yet finalized)
+  const enriched = (sessions || [])
+    .filter(s => s.cards && s.cards.brief)
+    .map(s => ({
+      id: s.id,
+      slug: s.slug,
+      original_issue: s.original_issue,
+      created_at: s.created_at,
+      teaser: extractTeaser(s.cards),
+    }));
 
   return { props: { recentSessions: enriched } };
 }
@@ -48,6 +58,42 @@ function formatDate(iso) {
     month: 'long',
     year: 'numeric',
   });
+}
+
+// ── localStorage helpers (safe — survive disabled storage / quota errors) ─
+function saveActiveSession(slug, question) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(ACTIVE_SESSION_KEY, JSON.stringify({
+      slug,
+      question,
+      startedAt: Date.now(),
+    }));
+  } catch (e) {
+    // localStorage might be full, disabled, or in private mode — non-fatal
+  }
+}
+
+function clearActiveSession() {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.removeItem(ACTIVE_SESSION_KEY);
+  } catch (e) {
+    // ignore
+  }
+}
+
+function readActiveSession() {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(ACTIVE_SESSION_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || !parsed.slug || !parsed.startedAt) return null;
+    return parsed;
+  } catch (e) {
+    return null;
+  }
 }
 
 // ── Tiny inline markdown renderer (used for verdict + brief) ───────────
@@ -202,6 +248,8 @@ function parseVerdict(verdictText) {
 }
 
 export default function Home({ recentSessions = [] }) {
+  const router = useRouter();
+
   const [screen, setScreen] = useState('landing');
   const [question, setQuestion] = useState('');
 
@@ -234,6 +282,93 @@ export default function Home({ recentSessions = [] }) {
       textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
     }
   }, [question]);
+
+  // ── Session recovery on mount ──────────────────────────────────────────
+  // If localStorage has a recent active session, the previous page load
+  // probably crashed/was suspended (e.g., phone screen locked) before the
+  // SSE pipeline finished. Check if the session has been finalized in
+  // Supabase, and if so redirect to the archive page.
+  useEffect(() => {
+    let cancelled = false;
+    let pollTimer = null;
+
+    async function recoverSession() {
+      const stored = readActiveSession();
+      if (!stored) return;
+
+      const ageMinutes = (Date.now() - stored.startedAt) / 60000;
+      if (ageMinutes > RECOVERY_TIMEOUT_MINUTES) {
+        clearActiveSession();
+        return;
+      }
+
+      // Show recovering screen so user sees something is happening
+      setConfirmedQuestion(stored.question || '');
+      setScreen('recovering');
+
+      let attempts = 0;
+
+      const tryFetch = async () => {
+        if (cancelled) return;
+        attempts += 1;
+
+        try {
+          const { data, error: dbError } = await supabase
+            .from('sessions')
+            .select('slug, cards')
+            .eq('slug', stored.slug)
+            .single();
+
+          if (cancelled) return;
+
+          // Row doesn't exist (orphan was cleaned up) — give up
+          if (dbError || !data) {
+            clearActiveSession();
+            setScreen('landing');
+            return;
+          }
+
+          // Session is complete — go to archive
+          if (data.cards && data.cards.brief) {
+            clearActiveSession();
+            router.push(`/archive/${stored.slug}`);
+            return;
+          }
+
+          // Still processing — try again
+          if (attempts < RECOVERY_MAX_ATTEMPTS) {
+            pollTimer = setTimeout(tryFetch, RECOVERY_POLL_INTERVAL_MS);
+          } else {
+            clearActiveSession();
+            setError({
+              title: 'The council could not be reached',
+              message: 'Your previous session is taking longer than expected. Please try again.',
+              action: 'reset',
+            });
+            setScreen('error');
+          }
+        } catch (e) {
+          if (cancelled) return;
+          if (attempts < RECOVERY_MAX_ATTEMPTS) {
+            pollTimer = setTimeout(tryFetch, RECOVERY_POLL_INTERVAL_MS);
+          } else {
+            clearActiveSession();
+            setScreen('landing');
+          }
+        }
+      };
+
+      tryFetch();
+    }
+
+    recoverSession();
+
+    return () => {
+      cancelled = true;
+      if (pollTimer) clearTimeout(pollTimer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function applySharpenerResponse(data) {
     setSharpenerMode(data.mode);
@@ -357,7 +492,12 @@ export default function Home({ recentSessions = [] }) {
           } else if (line.startsWith('data: ')) {
             try {
               const data = JSON.parse(line.slice(6));
-              if (currentEvent === 'progress') {
+              if (currentEvent === 'session-started') {
+                // Save slug to localStorage so we can recover if connection drops
+                if (data.slug) {
+                  saveActiveSession(data.slug, finalQuestion);
+                }
+              } else if (currentEvent === 'progress') {
                 setLoadingMessage(data.message);
                 if (data.step) setLoadingStep(data.step);
               } else if (currentEvent === 'assembly') {
@@ -370,6 +510,9 @@ export default function Home({ recentSessions = [] }) {
                 setLoadingStep(4);
               } else if (currentEvent === 'brief') {
                 result.brief = data.data;
+              } else if (currentEvent === 'complete') {
+                // Successful completion — clear recovery state
+                clearActiveSession();
               } else if (currentEvent === 'error') {
                 throw new Error(data.message);
               }
@@ -395,8 +538,14 @@ export default function Home({ recentSessions = [] }) {
         deliberation: result.deliberation || '',
       });
 
+      // Final safety: clear any leftover recovery state on successful display
+      clearActiveSession();
       setScreen('session');
     } catch (err) {
+      // Note: we deliberately do NOT clear localStorage here. The error might
+      // be a transient connection drop (e.g., phone sleep), and the server
+      // may have completed the session. The mount-time recovery effect will
+      // handle it on the next page load.
       setError({
         title: 'The council could not convene',
         message: err.message || 'Something went wrong while preparing the deliberation.',
@@ -422,6 +571,7 @@ export default function Home({ recentSessions = [] }) {
     setBriefOpen(false);
     setLoadingStep(0);
     setError(null);
+    clearActiveSession();
   }
 
   function handleErrorRetry() {
@@ -436,6 +586,8 @@ export default function Home({ recentSessions = [] }) {
       setScreen('sharpening');
     } else if (retryAction === 'pipeline') {
       runPipeline(confirmedQuestion);
+    } else if (retryAction === 'reset') {
+      reset();
     } else {
       setScreen('landing');
     }
@@ -631,6 +783,28 @@ export default function Home({ recentSessions = [] }) {
             ))}
           </div>
           <p className="loading-note">This takes 1–2 minutes. The council does not rush.</p>
+        </div>
+      )}
+
+      {screen === 'recovering' && (
+        <div className="loading">
+          <div className="loading-question">
+            {confirmedQuestion ? `"${confirmedQuestion}"` : 'Recovering your session...'}
+          </div>
+          <div className="loading-steps">
+            <div className="loading-step active">
+              <div className="step-dot" />
+              <span>Recovering your previous session</span>
+            </div>
+          </div>
+          <p className="loading-note">
+            Your previous session was interrupted. We're checking if the council finished its work.
+          </p>
+          <div style={{ marginTop: 24, textAlign: 'center' }}>
+            <button className="btn-skip" onClick={reset}>
+              Cancel and start over
+            </button>
+          </div>
         </div>
       )}
 
