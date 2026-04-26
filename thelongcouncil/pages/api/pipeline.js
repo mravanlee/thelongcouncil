@@ -163,6 +163,100 @@ function validateRoster(deliberationOutput, selectedNames) {
 }
 
 // ── Session storage ─────────────────────────────────────────────────────
+
+// NEW: Pre-create an empty session row at the start of the pipeline.
+// This lets the frontend recover the slug if the SSE connection drops mid-pipeline
+// (e.g., on mobile when the screen locks).
+async function precreateSession(originalIssue) {
+  try {
+    const supabase = getServiceSupabase();
+    let slug = generateSlug(originalIssue);
+    let attempt = 0;
+
+    while (attempt < 3) {
+      const { data, error } = await supabase
+        .from('sessions')
+        .insert({
+          slug,
+          original_issue: originalIssue,
+          sharpened_issue: null,
+          cards: null,
+          member_names: [],
+          member_types: [],
+        })
+        .select()
+        .single();
+
+      if (error && error.code === '23505') {
+        // Slug collision — regenerate and retry
+        attempt += 1;
+        slug = generateSlug(originalIssue);
+        continue;
+      }
+
+      if (error) {
+        console.error('[pipeline] Pre-create error:', error);
+        return null;
+      }
+
+      console.log('[pipeline] Session pre-created:', slug);
+      return slug;
+    }
+
+    console.error('[pipeline] Pre-create failed after 3 attempts');
+    return null;
+  } catch (err) {
+    console.error('[pipeline] Pre-create exception:', err);
+    return null;
+  }
+}
+
+// NEW: Update the pre-existing session row with full data after pipeline completes.
+async function finalizeSession({
+  slug,
+  sharpenedIssue,
+  assemblyOutput,
+  deliberationOutput,
+  verdictOutput,
+  briefOutput,
+  memberNames,
+  memberTypes,
+}) {
+  try {
+    const supabase = getServiceSupabase();
+    const cards = {
+      assembly: assemblyOutput,
+      deliberation: deliberationOutput,
+      verdict: verdictOutput,
+      brief: briefOutput,
+    };
+
+    const { data, error } = await supabase
+      .from('sessions')
+      .update({
+        sharpened_issue: sharpenedIssue || null,
+        cards,
+        member_names: memberNames,
+        member_types: memberTypes,
+      })
+      .eq('slug', slug)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('[pipeline] Finalize error:', error);
+      return null;
+    }
+
+    console.log('[pipeline] Session finalized:', slug);
+    return data;
+  } catch (err) {
+    console.error('[pipeline] Finalize exception:', err);
+    return null;
+  }
+}
+
+// Fallback: original INSERT-at-end path, used only if pre-create failed.
 async function saveSessionToDatabase({
   originalIssue,
   sharpenedIssue,
@@ -176,7 +270,6 @@ async function saveSessionToDatabase({
   try {
     const supabase = getServiceSupabase();
 
-    // Pack all the pipeline outputs into a single structured object
     const cards = {
       assembly: assemblyOutput,
       deliberation: deliberationOutput,
@@ -184,8 +277,6 @@ async function saveSessionToDatabase({
       brief: briefOutput,
     };
 
-    // Generate a short, URL-friendly slug with random suffix
-    // Try up to 3 times in case of collision (extremely rare with 4-char suffix)
     let slug = generateSlug(sharpenedIssue || originalIssue);
     let attempt = 0;
     let inserted = null;
@@ -206,7 +297,6 @@ async function saveSessionToDatabase({
         .single();
 
       if (error && error.code === '23505') {
-        // Unique constraint violation on slug — regenerate and retry
         attempt += 1;
         slug = generateSlug(sharpenedIssue || originalIssue);
         lastError = error;
@@ -226,11 +316,22 @@ async function saveSessionToDatabase({
       return null;
     }
 
-    console.log('[pipeline] Session saved:', inserted.slug);
+    console.log('[pipeline] Session saved (fallback path):', inserted.slug);
     return inserted;
   } catch (err) {
     console.error('[pipeline] Database save error:', err);
     return null;
+  }
+}
+
+// NEW: Clean up an orphaned pre-created row when the pipeline fails mid-way.
+async function deleteOrphanSession(slug) {
+  try {
+    const supabase = getServiceSupabase();
+    await supabase.from('sessions').delete().eq('slug', slug);
+    console.log('[pipeline] Cleaned up orphan session:', slug);
+  } catch (err) {
+    console.error('[pipeline] Cleanup failed:', err);
   }
 }
 
@@ -759,7 +860,19 @@ export default async function handler(req, res) {
     if (res.flush) res.flush();
   };
 
+  // Declared outside try/catch so the catch block can clean up if needed
+  let preSlug = null;
+
   try {
+    // ── Pre-create session and send slug to client immediately ────────
+    // This lets the client recover the session if the SSE connection drops
+    // mid-pipeline (e.g., on mobile when the screen locks). If pre-create
+    // fails, we silently fall back to the old INSERT-at-end path.
+    preSlug = await precreateSession(question);
+    if (preSlug) {
+      send('session-started', { slug: preSlug });
+    }
+
     const allProfiles = loadAllProfiles();
 
     // ── Prompt 1 — Assemble the council ──────────────────────────────
@@ -833,30 +946,50 @@ export default async function handler(req, res) {
     );
     send('brief', { data: briefOutput });
 
-    // ── Save session to database (non-blocking for UX) ────────────────
-    // Sharpened issue = the ISSUE SUMMARY line from prompt 1 if we can find it
+    // ── Save session — finalize pre-existing row, or insert as fallback
     let sharpenedIssue = null;
     const summaryMatch = assemblyOutput.match(/ISSUE SUMMARY:\s*(.+?)(?:\n|$)/i);
     if (summaryMatch) sharpenedIssue = summaryMatch[1].trim();
 
-    const saved = await saveSessionToDatabase({
-      originalIssue: question,
-      sharpenedIssue,
-      assemblyOutput,
-      deliberationOutput,
-      verdictOutput,
-      briefOutput,
-      memberNames: metadata.names,
-      memberTypes: metadata.types,
-    });
+    let saved;
+    if (preSlug) {
+      saved = await finalizeSession({
+        slug: preSlug,
+        sharpenedIssue,
+        assemblyOutput,
+        deliberationOutput,
+        verdictOutput,
+        briefOutput,
+        memberNames: metadata.names,
+        memberTypes: metadata.types,
+      });
+    } else {
+      // Fallback: pre-create failed at start, so insert now
+      saved = await saveSessionToDatabase({
+        originalIssue: question,
+        sharpenedIssue,
+        assemblyOutput,
+        deliberationOutput,
+        verdictOutput,
+        briefOutput,
+        memberNames: metadata.names,
+        memberTypes: metadata.types,
+      });
+    }
 
     send('complete', {
       message: 'Session complete',
-      slug: saved ? saved.slug : null,
+      slug: saved ? saved.slug : (preSlug || null),
       saved: !!saved,
     });
   } catch (err) {
     console.error('Pipeline error:', err);
+
+    // Clean up orphan pre-created row so the recovery flow doesn't get stuck on it
+    if (preSlug) {
+      await deleteOrphanSession(preSlug);
+    }
+
     const isOverloaded = err.message && err.message.includes('529');
     const userMessage = isOverloaded ? 'The AI service is under high demand right now. Please try again in a few minutes.' : (err.message || 'Something went wrong. Please try again.');
     send('error', { message: userMessage });
