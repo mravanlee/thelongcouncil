@@ -482,9 +482,9 @@ export default function Home({ recentSessions = [] }) {
               What policy question would you like<br />the council to consider?
             </h1>
             <p className="landing-sub">
-              Submit a governance, economic or geopolitical question. 35 of history's greatest
+              Bring a hard question about governance, economics, society, or geopolitics. History's greatest
               leaders and thinkers — from Lee Kuan Yew to Hannah Arendt, from Keynes to
-              Machiavelli — will deliberate on it and deliver their collective counsel.
+              Machiavelli — will debate it and deliver their verdict.
             </p>
 
             <div className="issue-form">
