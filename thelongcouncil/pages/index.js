@@ -492,7 +492,7 @@ export default function Home({ recentSessions = [] }) {
                 ref={textareaRef}
                 className="issue-input"
                 rows={3}
-                placeholder={"e.g. Should social media be regulated like tobacco?\nShould the EU have its own army?\nShould we tax wealth, not income?"}
+                placeholder={"e.g. Should social media be regulated?\nShould the EU have its own army?\nShould we tax wealth, not income?"}
                 value={question}
                 onChange={e => setQuestion(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(); } }}
