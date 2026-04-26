@@ -5,11 +5,10 @@ import Link from 'next/link';
 import Procession from '../components/Procession';
 import { supabase } from '../lib/supabase';
 
-// ── Recovery constants ──────────────────────────────────────────────────
-const ACTIVE_SESSION_KEY = 'tlc-active-session';
-const RECOVERY_TIMEOUT_MINUTES = 10;
-const RECOVERY_POLL_INTERVAL_MS = 5000;
-const RECOVERY_MAX_ATTEMPTS = 60; // 5 minutes of polling
+// ── Recovery polling constants ──────────────────────────────────────────
+const FINALIZE_POLL_INTERVAL_MS = 3000;
+const FINALIZE_MAX_ATTEMPTS = 15; // ~45 seconds total
+const RECENT_SESSION_WINDOW_MINUTES = 10;
 
 // ── Server-side: fetch 3 most recent sessions for homepage ─────────────
 export async function getServerSideProps() {
@@ -60,37 +59,26 @@ function formatDate(iso) {
   });
 }
 
-// ── localStorage helpers (safe — survive disabled storage / quota errors) ─
-function saveActiveSession(slug, question) {
-  if (typeof window === 'undefined') return;
+// ── Look up a recent session by question (recovery fallback) ───────────
+// Used when the SSE pipeline call fails on the frontend (e.g. mobile Safari
+// suspends the connection when the screen locks). The backend usually
+// completes the session anyway, so we check whether a finished session for
+// this question exists in the last few minutes.
+async function findRecentSessionByQuestion(question) {
+  const sinceIso = new Date(Date.now() - RECENT_SESSION_WINDOW_MINUTES * 60_000).toISOString();
   try {
-    localStorage.setItem(ACTIVE_SESSION_KEY, JSON.stringify({
-      slug,
-      question,
-      startedAt: Date.now(),
-    }));
-  } catch (e) {
-    // localStorage might be full, disabled, or in private mode — non-fatal
-  }
-}
-
-function clearActiveSession() {
-  if (typeof window === 'undefined') return;
-  try {
-    localStorage.removeItem(ACTIVE_SESSION_KEY);
-  } catch (e) {
-    // ignore
-  }
-}
-
-function readActiveSession() {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = localStorage.getItem(ACTIVE_SESSION_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (!parsed || !parsed.slug || !parsed.startedAt) return null;
-    return parsed;
+    const { data, error } = await supabase
+      .from('sessions')
+      .select('slug, cards, created_at')
+      .eq('original_issue', question)
+      .gte('created_at', sinceIso)
+      .order('created_at', { ascending: false })
+      .limit(1);
+    if (error) return null;
+    if (!data || data.length === 0) return null;
+    const session = data[0];
+    if (!session.cards || !session.cards.brief) return null;
+    return session;
   } catch (e) {
     return null;
   }
@@ -283,93 +271,6 @@ export default function Home({ recentSessions = [] }) {
     }
   }, [question]);
 
-  // ── Session recovery on mount ──────────────────────────────────────────
-  // If localStorage has a recent active session, the previous page load
-  // probably crashed/was suspended (e.g., phone screen locked) before the
-  // SSE pipeline finished. Check if the session has been finalized in
-  // Supabase, and if so redirect to the archive page.
-  useEffect(() => {
-    let cancelled = false;
-    let pollTimer = null;
-
-    async function recoverSession() {
-      const stored = readActiveSession();
-      if (!stored) return;
-
-      const ageMinutes = (Date.now() - stored.startedAt) / 60000;
-      if (ageMinutes > RECOVERY_TIMEOUT_MINUTES) {
-        clearActiveSession();
-        return;
-      }
-
-      // Show recovering screen so user sees something is happening
-      setConfirmedQuestion(stored.question || '');
-      setScreen('recovering');
-
-      let attempts = 0;
-
-      const tryFetch = async () => {
-        if (cancelled) return;
-        attempts += 1;
-
-        try {
-          const { data, error: dbError } = await supabase
-            .from('sessions')
-            .select('slug, cards')
-            .eq('slug', stored.slug)
-            .single();
-
-          if (cancelled) return;
-
-          // Row doesn't exist (orphan was cleaned up) — give up
-          if (dbError || !data) {
-            clearActiveSession();
-            setScreen('landing');
-            return;
-          }
-
-          // Session is complete — go to archive
-          if (data.cards && data.cards.brief) {
-            clearActiveSession();
-            router.push(`/archive/${stored.slug}`);
-            return;
-          }
-
-          // Still processing — try again
-          if (attempts < RECOVERY_MAX_ATTEMPTS) {
-            pollTimer = setTimeout(tryFetch, RECOVERY_POLL_INTERVAL_MS);
-          } else {
-            clearActiveSession();
-            setError({
-              title: 'The council could not be reached',
-              message: 'Your previous session is taking longer than expected. Please try again.',
-              action: 'reset',
-            });
-            setScreen('error');
-          }
-        } catch (e) {
-          if (cancelled) return;
-          if (attempts < RECOVERY_MAX_ATTEMPTS) {
-            pollTimer = setTimeout(tryFetch, RECOVERY_POLL_INTERVAL_MS);
-          } else {
-            clearActiveSession();
-            setScreen('landing');
-          }
-        }
-      };
-
-      tryFetch();
-    }
-
-    recoverSession();
-
-    return () => {
-      cancelled = true;
-      if (pollTimer) clearTimeout(pollTimer);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   function applySharpenerResponse(data) {
     setSharpenerMode(data.mode);
     setSharpenerExplanation(data.explanation || '');
@@ -458,6 +359,20 @@ export default function Home({ recentSessions = [] }) {
     }
   }
 
+  // ── Pipeline-failure recovery ──────────────────────────────────────────
+  // Polls Supabase to see whether the backend completed the session despite
+  // the frontend SSE connection being interrupted. Returns a slug if found.
+  async function pollForCompletedSession(originalQuestion) {
+    for (let attempt = 0; attempt < FINALIZE_MAX_ATTEMPTS; attempt++) {
+      const session = await findRecentSessionByQuestion(originalQuestion);
+      if (session && session.slug) {
+        return session.slug;
+      }
+      await new Promise(resolve => setTimeout(resolve, FINALIZE_POLL_INTERVAL_MS));
+    }
+    return null;
+  }
+
   async function runPipeline(finalQuestion) {
     setConfirmedQuestion(finalQuestion);
     setError(null);
@@ -492,12 +407,7 @@ export default function Home({ recentSessions = [] }) {
           } else if (line.startsWith('data: ')) {
             try {
               const data = JSON.parse(line.slice(6));
-              if (currentEvent === 'session-started') {
-                // Save slug to localStorage so we can recover if connection drops
-                if (data.slug) {
-                  saveActiveSession(data.slug, finalQuestion);
-                }
-              } else if (currentEvent === 'progress') {
+              if (currentEvent === 'progress') {
                 setLoadingMessage(data.message);
                 if (data.step) setLoadingStep(data.step);
               } else if (currentEvent === 'assembly') {
@@ -510,9 +420,6 @@ export default function Home({ recentSessions = [] }) {
                 setLoadingStep(4);
               } else if (currentEvent === 'brief') {
                 result.brief = data.data;
-              } else if (currentEvent === 'complete') {
-                // Successful completion — clear recovery state
-                clearActiveSession();
               } else if (currentEvent === 'error') {
                 throw new Error(data.message);
               }
@@ -538,14 +445,23 @@ export default function Home({ recentSessions = [] }) {
         deliberation: result.deliberation || '',
       });
 
-      // Final safety: clear any leftover recovery state on successful display
-      clearActiveSession();
       setScreen('session');
     } catch (err) {
-      // Note: we deliberately do NOT clear localStorage here. The error might
-      // be a transient connection drop (e.g., phone sleep), and the server
-      // may have completed the session. The mount-time recovery effect will
-      // handle it on the next page load.
+      // The SSE stream broke — but the backend may still complete the session.
+      // (Common on mobile Safari when the screen locks mid-pipeline.)
+      // Show a friendly "wrapping up" screen and poll the database for a
+      // finished session before falling back to an error.
+      setScreen('finalizing');
+
+      const slug = await pollForCompletedSession(finalQuestion);
+
+      if (slug) {
+        // Session completed in the background — go straight to the archive.
+        router.push(`/archive/${slug}`);
+        return;
+      }
+
+      // Genuinely failed — show the error screen.
       setError({
         title: 'The council could not convene',
         message: err.message || 'Something went wrong while preparing the deliberation.',
@@ -571,7 +487,6 @@ export default function Home({ recentSessions = [] }) {
     setBriefOpen(false);
     setLoadingStep(0);
     setError(null);
-    clearActiveSession();
   }
 
   function handleErrorRetry() {
@@ -586,8 +501,6 @@ export default function Home({ recentSessions = [] }) {
       setScreen('sharpening');
     } else if (retryAction === 'pipeline') {
       runPipeline(confirmedQuestion);
-    } else if (retryAction === 'reset') {
-      reset();
     } else {
       setScreen('landing');
     }
@@ -786,25 +699,18 @@ export default function Home({ recentSessions = [] }) {
         </div>
       )}
 
-      {screen === 'recovering' && (
+      {screen === 'finalizing' && (
         <div className="loading">
-          <div className="loading-question">
-            {confirmedQuestion ? `"${confirmedQuestion}"` : 'Recovering your session...'}
-          </div>
+          <div className="loading-question">"{confirmedQuestion}"</div>
           <div className="loading-steps">
             <div className="loading-step active">
               <div className="step-dot" />
-              <span>Recovering your previous session</span>
+              <span>Wrapping up the council's verdict</span>
             </div>
           </div>
           <p className="loading-note">
-            Your previous session was interrupted. We're checking if the council finished its work.
+            Just a moment — the council is finishing its work.
           </p>
-          <div style={{ marginTop: 24, textAlign: 'center' }}>
-            <button className="btn-skip" onClick={reset}>
-              Cancel and start over
-            </button>
-          </div>
         </div>
       )}
 
