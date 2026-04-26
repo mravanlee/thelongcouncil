@@ -259,7 +259,11 @@ export default function Home({ recentSessions = [] }) {
       });
       const data = await res.json();
 
-      setChatHistory(msgs);
+      // FIX: include assistant response in chat history so messages alternate
+      // properly when user replies to a CLARIFY question
+      const assistantMsg = { role: 'assistant', content: data.raw || '' };
+      setChatHistory([...msgs, assistantMsg]);
+
       applySharpenerResponse(data);
       setScreen('sharpening');
     } catch (e) {
