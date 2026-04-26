@@ -777,3 +777,59 @@ footer { text-align: center; padding: 24px 32px; border-top: 0.5px solid #e8e4de
   .about-lead { font-size: 16px; }
   .about p { font-size: 15px; }
 }
+/* ─── Error screen (Commit 3) ─────────────────────────────────────────── */
+.error-screen {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 60px 32px;
+}
+.error-box {
+  background: #f3eeea;
+  border: 0.5px solid #d4cdbf;
+  border-left: 3px solid #6b1a1a;
+  padding: 28px 32px;
+}
+.error-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 22px;
+  font-weight: 600;
+  color: #6b1a1a;
+  margin-bottom: 12px;
+}
+.error-message {
+  font-family: 'Crimson Pro', serif;
+  font-size: 15px;
+  color: #3a3a3a;
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+.error-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.error-retry {
+  background: #6b1a1a;
+  color: #f8f0e8;
+  border: none;
+  padding: 10px 22px;
+  font-family: 'Crimson Pro', serif;
+  font-size: 14px;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: background 0.2s;
+}
+.error-retry:hover { background: #8b2a2a; }
+.error-reset {
+  background: transparent;
+  color: #6b1a1a;
+  border: 0.5px solid #6b1a1a;
+  padding: 10px 22px;
+  font-family: 'Crimson Pro', serif;
+  font-size: 14px;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  border-radius: 2px;
+}
+.error-reset:hover { background: #6b1a1a; color: #f8f0e8; }
