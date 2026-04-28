@@ -1,10 +1,10 @@
 # The Long Council
 
-> History's counsel on today's questions. The Long Council assembles 37 documented historic leaders and thinkers to deliberate on real governance, geopolitical, and economic policy questions.
+> History's counsel on today's questions. The Long Council assembles documented historic leaders and thinkers to deliberate on real governance, geopolitical, and economic policy questions.
 
 The Long Council is a public deliberation tool. A user submits a hard policy question, and a curated council of historical figures debates it through a structured AI pipeline. Each session produces a verdict and a full policy brief, grounded in the documented positions and reasoning patterns of the council members. All sessions are public, archived, and citable.
 
-The 37 council members span 2,500 years of political and economic thought, divided into two broad traditions:
+The council members span 2,500 years of political, social and economic thought, divided into two broad traditions:
 
 **Practitioners (those who governed):** Ali ibn Abi Talib, David Ben-Gurion, Deng Xiaoping, Eleanor Roosevelt, Ellen Johnson Sirleaf, Franklin D. Roosevelt, Helmut Schmidt, Indira Gandhi, Jawaharlal Nehru, Julius Nyerere, Konrad Adenauer, Lee Kuan Yew, Mahathir Mohamad, Margaret Thatcher, Mustafa Kemal Atatürk, Nelson Mandela, Olof Palme, Simón Bolívar.
 
@@ -17,7 +17,7 @@ Output is grounded in T1–T5 documented positions from each member's profile. C
 ## Key pages
 
 - [Homepage](https://www.thelongcouncil.com/): submit a question, see recent sessions
-- [The Council](https://www.thelongcouncil.com/council): full roster of 37 members with biographical context
+- [The Council](https://www.thelongcouncil.com/council): full roster of the members with biographical context
 - [The Archive](https://www.thelongcouncil.com/archive): all past deliberations, fully readable and citable
 - [About](https://www.thelongcouncil.com/about): methodology, sources, and project context
 
