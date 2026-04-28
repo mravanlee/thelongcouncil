@@ -10,6 +10,31 @@ const FINALIZE_POLL_INTERVAL_MS = 3000;
 const FINALIZE_MAX_ATTEMPTS = 15; // ~45 seconds total
 const RECENT_SESSION_WINDOW_MINUTES = 10;
 
+// ── Wake Lock helpers ───────────────────────────────────────────────────
+// Keep the screen awake while the pipeline runs. Mobile browsers
+// (especially iOS Safari) auto-lock the screen, which suspends the SSE
+// connection. If the Wake Lock API isn't supported or the request is
+// denied, these helpers fail silently — the Supabase poll fallback in
+// runPipeline() still recovers the session in that case.
+async function acquireScreenLock(ref) {
+  if (typeof navigator === 'undefined' || !('wakeLock' in navigator)) return;
+  try {
+    ref.current = await navigator.wakeLock.request('screen');
+  } catch (e) {
+    // Silently ignore — Wake Lock may be denied if page isn't visible.
+  }
+}
+
+async function releaseScreenLock(ref) {
+  if (!ref || !ref.current) return;
+  try {
+    await ref.current.release();
+  } catch (e) {
+    // Silently ignore.
+  }
+  ref.current = null;
+}
+
 // ── Server-side: fetch 3 most recent sessions for homepage ─────────────
 export async function getServerSideProps() {
   const { data: sessions, error } = await supabase
@@ -264,12 +289,27 @@ export default function Home({ recentSessions = [] }) {
 
   const textareaRef = useRef(null);
 
+  // ── Wake Lock ref — holds the active sentinel while the pipeline runs ─
+  const wakeLockRef = useRef(null);
+
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
       textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
     }
   }, [question]);
+
+  // ── Wake Lock cleanup on unmount ──────────────────────────────────────
+  // Safety net in case the user navigates away mid-pipeline (e.g. via the
+  // nav menu) without runPipeline's finally block being reached.
+  useEffect(() => {
+    return () => {
+      if (wakeLockRef.current) {
+        wakeLockRef.current.release().catch(() => {});
+        wakeLockRef.current = null;
+      }
+    };
+  }, []);
 
   function applySharpenerResponse(data) {
     setSharpenerMode(data.mode);
@@ -380,6 +420,12 @@ export default function Home({ recentSessions = [] }) {
     setLoadingStep(1);
     setLoadingMessage('Assembling the council...');
 
+    // ── Wake Lock — keep screen awake during pipeline ───────────────────
+    // Prevents mobile auto-lock from killing the SSE connection. If the
+    // user backgrounds the tab the lock will be released by the browser;
+    // the poll fallback in the catch below still recovers the session.
+    await acquireScreenLock(wakeLockRef);
+
     try {
       const res = await fetch('/api/pipeline', {
         method: 'POST',
@@ -468,6 +514,9 @@ export default function Home({ recentSessions = [] }) {
         action: 'pipeline',
       });
       setScreen('error');
+    } finally {
+      // ── Wake Lock — release on every exit path (success, recovery, fail) ─
+      await releaseScreenLock(wakeLockRef);
     }
   }
 
