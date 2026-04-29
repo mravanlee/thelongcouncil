@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { supabase } from '../../lib/supabase';
+import Procession from '../../components/Procession';
 
 // ── Server-side data fetching ──────────────────────────────────────────
 export async function getServerSideProps(context) {
@@ -51,6 +52,30 @@ function cleanDeliberation(md) {
   return md
     .replace(/^SPEAKING ORDER:.*$/m, '')
     .trim();
+}
+
+// Split the deliberation markdown into individual card blocks plus an optional
+// convergence note section. Cards are passed to <Procession instant /> for
+// avatar rendering; the convergence note is rendered separately as markdown.
+function parseDeliberation(deliberationText) {
+  if (!deliberationText) return { cards: [], convergence: null };
+  const blocks = deliberationText
+    .split(/(?:^|\n)\s*---\s*\n/)
+    .map(b => b.trim())
+    .filter(Boolean);
+
+  const cards = [];
+  let convergence = null;
+
+  for (const block of blocks) {
+    if (/^##\s+The convergence note/i.test(block)) {
+      convergence = block;
+    } else if (block.startsWith('## ') || block.includes('·')) {
+      cards.push(block);
+    }
+  }
+
+  return { cards, convergence };
 }
 
 // ── Collapsible section component ──────────────────────────────────────
@@ -128,6 +153,7 @@ export default function ArchiveDetail({ session }) {
   const cards = session.cards || {};
   const { verdict, reasoning } = parseVerdict(cards.verdict);
   const deliberationText = cleanDeliberation(cards.deliberation);
+  const { cards: deliberationCards, convergence } = parseDeliberation(deliberationText);
   const briefText = cards.brief || '';
   const assemblyText = cards.assembly || '';
 
@@ -188,9 +214,20 @@ export default function ArchiveDetail({ session }) {
             title="The deliberation"
             subtitle={memberSummary ? `Hear from each member in turn — ${memberSummary}` : 'Hear from each member in turn'}
           >
-            <div className="md-body">
-              <ReactMarkdown>{deliberationText}</ReactMarkdown>
-            </div>
+            {deliberationCards.length > 0 ? (
+              <div className="deliberation-procession">
+                <Procession cards={deliberationCards} instant={true} />
+              </div>
+            ) : (
+              <div className="md-body">
+                <ReactMarkdown>{deliberationText}</ReactMarkdown>
+              </div>
+            )}
+            {convergence && (
+              <div className="md-body convergence-block">
+                <ReactMarkdown>{convergence}</ReactMarkdown>
+              </div>
+            )}
           </CollapsibleSection>
         )}
 
@@ -306,6 +343,15 @@ export default function ArchiveDetail({ session }) {
           margin: 0 0 12px;
         }
         .verdict-reasoning :global(p:last-child) { margin-bottom: 0; }
+
+        .deliberation-procession {
+          padding-top: 1.25rem;
+        }
+        .convergence-block {
+          margin-top: 1.5rem;
+          padding-top: 1.5rem;
+          border-top: 0.5px solid #d4cfc8;
+        }
 
         .md-body {
           padding-top: 1rem;
