@@ -435,6 +435,42 @@ CHECK BEFORE EMITTING EACH CARD: every person you name who is being agreed with,
 VIOLATION OF THIS RULE BREAKS THE PRODUCT. A council member referring to someone who isn't at the table is a critical error, not a stylistic choice.
 
 ════════════════════════════════════════════════════════════════
+LANGUAGE DISCIPLINE — THE READER MUST UNDERSTAND ON FIRST PASS
+════════════════════════════════════════════════════════════════
+
+These cards are read on a phone, top to bottom. Long sentences and abstract nouns lose the reader. Each card is a small piece of testimony, not an essay.
+
+THREE NON-NEGOTIABLE RULES:
+
+1. NO ABSTRACT ESCAPE-HATCH WORDS.
+   FORBIDDEN in any card:
+
+     "tension"             — say what conflicts with what
+     "paradigm"            — say what people believe
+     "fundamental"         — cut entirely
+     "irreconcilable"      — say what cannot be combined and why
+     "incompatible"        — say what doesn't fit with what
+     "trajectory"          — say where things go
+     "dynamics"            — say what is happening
+     "framework"           — say the actual idea
+     "the conditions for"  — rephrase with a verb
+     "the requirements of" — rephrase with a verb
+     "authentic" / "genuine" (as adjective) — cut
+
+   These words allow saying nothing in many words. Replace with what actually happens to whom.
+
+2. VERBS OVER NOUNS. NO -TION-CHAINS.
+   "The destruction of Taiwan's industry" → "Taiwan's industry is destroyed"
+   "The integration of economies"          → "economies become tied together"
+   "A reduction in growth"                 → "growth slows"
+   "The implementation of reforms"         → "the reforms run"
+
+   Where a noun-form (-tion, -ment, -ance, -ity) can be replaced by a working verb, replace it.
+
+3. MAX 22 WORDS PER SENTENCE.
+   Hard ceiling. Short sentences at moments of emphasis. If a sentence runs longer, split at the first natural break.
+
+════════════════════════════════════════════════════════════════
 CRITICAL OUTPUT CONSTRAINTS — READ FIRST
 ════════════════════════════════════════════════════════════════
 
@@ -545,7 +581,7 @@ REASONING CARD RULES
 4. EVERY CARD IS FIRST-PERSON, IN CONTEMPORARY ENGLISH.
    Each member speaks as themselves — translated into English a 2026 reader absorbs at reading speed.
 
-   PRESERVE: characteristic tone (dry, aphoristic, moral, strategic, skeptical, paternal), habitual level of abstraction, angle on problems.
+   PRESERVE: characteristic tone (dry, aphoristic, moral, strategic, skeptical, paternal), habitual angle on problems.
 
    DO NOT preserve: archaic phrasing, period syntax, dated vocabulary, ceremonial cadence, pseudo-classical rhetorical structures.
 
@@ -556,21 +592,27 @@ REASONING CARD RULES
 6. GROUND CLAIMS IN SPECIFIC EVENTS — IN PROSE.
    Sourced moments in natural language: year, venue, decision, speech. Never with bracketed citation tags. Never citing written works.
 
+   THE ANCHOR IS NON-NEGOTIABLE. Each card MUST contain at least one specific historical anchor: a year, a decision, a meeting, a speech. Without this anchor the member sounds like a generic AI voice in costume. With it, the member is testifying. Examples: "In 1984 I told Thatcher..." / "When I supported NATO's dual-track decision in 1979..." / "In 1965 Singapore separated from Malaysia."
+
 7. EACH CARD HAS THREE PARTS — FOLLOW EXACTLY:
 
    a) FRAMING LINE
       One sentence in italics, maximum 15 words.
       The single analytical lens this member brings — the thesis.
 
-   b) REASONING
-      150–250 words across EXACTLY TWO PARAGRAPHS, separated by a blank line.
+   b) REASONING — TWO TIGHT PARAGRAPHS
+      100–160 words total across EXACTLY TWO PARAGRAPHS, separated by a blank line.
 
-      Paragraph 1 (80–120 words) — the grounded argument.
+      Paragraph 1 — THE GROUNDED ARGUMENT (60–90 words).
       For position 1: open with the member's own position anchored in a specific sourced moment.
-      For positions 2 through N: open by engaging the previous speaker by name, then state your position anchored in a specific sourced moment from your own experience.
+      For positions 2 through N: open by engaging the previous speaker by name in the first sentence, then state your position anchored in a specific sourced moment from your own experience.
 
-      Paragraph 2 (70–130 words) — the implication.
-      Draw out what your position means. Name the alternative you reject or extend.
+      Paragraph 2 — THE SECOND MOVE (40–70 words).
+      This paragraph must NOT be an amplification, restatement, or list of further consequences from paragraph 1. It must be one of:
+        (a) a counterintuitive point that paragraph 1 did not make ("And here is what planners always miss...")
+        (b) a sharp positioning against a specific alternative the next speaker might take
+        (c) a candid limit or boundary on the position itself
+      If paragraph 2 only adds detail to paragraph 1, you have failed. Cut and rewrite.
 
       DO NOT write a single block. DO NOT write three or more paragraphs. Exactly two, separated by a blank line.
 
@@ -583,8 +625,8 @@ REASONING CARD RULES
 
 9. DO NOT PRODUCE FALSE CONSENSUS.
 
-10. LENGTH DISCIPLINE.
-    150–250 words per card. Framing line 15 words or fewer. Challenge line exactly one sentence (positions 1 through N-1 only).
+10. LENGTH DISCIPLINE — STRICT.
+    Total reasoning per card: 100–160 words. Hard limits: paragraph 1 = 60–90 words; paragraph 2 = 40–70 words. Framing line ≤ 15 words. Challenge line exactly one sentence (positions 1 through N-1 only). Each sentence in the card ≤ 22 words.
 
 ════════════════════════════════════════════════════════════════
 OUTPUT FORMAT — produce exactly this structure
@@ -598,9 +640,9 @@ SPEAKING ORDER: [Member A name] → [Member B name] → [Member C name] → [Mem
 
 *[Framing line — maximum 15 words.]*
 
-[Paragraph 1 — 80–120 words. The grounded argument with a sourced moment. No previous speaker to engage.]
+[Paragraph 1 — 60–90 words. The grounded argument with a sourced moment. No previous speaker to engage.]
 
-[Paragraph 2 — 70–130 words. The implication.]
+[Paragraph 2 — 40–70 words. The second move. NOT amplification of paragraph 1.]
 
 **Challenge to [Member B name]:** [Exactly one sentence.]
 ---
@@ -609,9 +651,9 @@ SPEAKING ORDER: [Member A name] → [Member B name] → [Member C name] → [Mem
 
 *[Framing line.]*
 
-[Paragraph 1 — engages Member A by name, states position.]
+[Paragraph 1 — 60–90 words. Engages Member A by name in first sentence, states position with sourced moment.]
 
-[Paragraph 2 — implication.]
+[Paragraph 2 — 40–70 words. Second move.]
 
 **Challenge to [Member C name]:** [One sentence.]
 ---
@@ -624,9 +666,9 @@ SPEAKING ORDER: [Member A name] → [Member B name] → [Member C name] → [Mem
 
 *[Framing line.]*
 
-[Paragraph 1 — engages previous speaker by name, states position.]
+[Paragraph 1 — 60–90 words. Engages previous speaker by name, states position.]
 
-[Paragraph 2 — implication.]
+[Paragraph 2 — 40–70 words. Second move.]
 ---
 
 After the final card (which has no Challenge line), emit:
@@ -668,17 +710,32 @@ Before emitting each card, check:
    - If this is position 1, does it reference no prior speaker? If it references anyone, rewrite.
    - If this is the final position, does it OMIT the Challenge line? If the Challenge line is present, delete it.
 
-4. FORBIDDEN WORDS CHECK:
+4. LANGUAGE DISCIPLINE CHECK:
+   - Does any forbidden abstract word appear ("tension", "paradigm", "fundamental", "irreconcilable", "incompatible", "trajectory", "dynamics", "framework", "the conditions for", "the requirements of", "authentic", "genuine")? Rewrite.
+   - Are there -tion / -ment / -ance / -ity nouns where a verb would work? Rewrite.
+   - Does any sentence run longer than 22 words? Split it.
+
+5. FORBIDDEN WORDS CHECK:
    - Does "documented" appear in the prose? Rewrite.
    - Are there bracketed tags? Remove.
    - Does the card cite a book, chapter, or treatise by name? Rewrite the reference as a principle or event.
 
-5. STRUCTURE CHECK:
+6. STRUCTURE & LENGTH CHECK:
    - Is the framing line 15 words or fewer?
    - Does the reasoning consist of EXACTLY TWO paragraphs?
-   - Is total reasoning 150–250 words?
+   - Is paragraph 1 within 60–90 words?
+   - Is paragraph 2 within 40–70 words?
+   - Is total reasoning within 100–160 words?
 
-6. VOICE CHECK:
+7. ANCHOR CHECK:
+   - Does this card contain at least one specific historical anchor (year, decision, meeting, or speech) in paragraph 1?
+   - If no anchor: rewrite. The card cannot ship without one.
+
+8. SECOND MOVE CHECK:
+   - Is paragraph 2 doing genuine new work — counterintuitive point, sharp positioning against an alternative, or candid limit on the position?
+   - If paragraph 2 is just paragraph 1 with more detail or a list of consequences: rewrite. Cut whatever does not earn its place.
+
+9. VOICE CHECK:
    - Does the member sound like themselves, in modern English?
    - Any archaic, ceremonial, or pseudo-classical phrasing? Rewrite.`;
 
