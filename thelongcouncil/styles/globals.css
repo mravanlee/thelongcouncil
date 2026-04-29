@@ -397,36 +397,46 @@ a:link, a:visited {
 
 .conc-wrap { opacity: 0; transition: opacity 0.7s; margin: 10px 0 24px; }
 .conc-wrap.visible { opacity: 1; }
-.conc-bar { background: #6b1a1a; border-radius: 2px; padding: 28px 32px; }
+
+/* Verdict block — cream surface with bordeauxrood left accent.
+   Matches archive-detail page styling (consistent across live + archive). */
+.conc-bar {
+  background: #f3eeea;
+  border: 0.5px solid #d4cdbf;
+  border-left: 3px solid #6b1a1a;
+  border-radius: 2px;
+  padding: 28px 32px;
+}
 .conc-lbl {
-  font-size: 9px;
+  font-size: 10px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #c4897a;
+  color: #6b1a1a;
   margin-bottom: 14px;
+  font-weight: 500;
 }
 
 .conc-verdict {
   font-family: 'Playfair Display', serif;
-  color: #f5ede4;
+  color: #0f0f0f;
   margin-bottom: 18px;
 }
 .conc-verdict .md-p {
-  font-size: 17px;
-  font-style: italic;
-  line-height: 1.65;
+  font-size: 18px;
+  line-height: 1.5;
+  font-weight: 500;
   margin-bottom: 8px;
 }
 .conc-verdict .md-p:last-child { margin-bottom: 0; }
 
 .conc-summary {
   padding-top: 18px;
-  border-top: 0.5px solid rgba(232, 214, 198, 0.25);
+  border-top: 0.5px solid #d4cdbf;
 }
 .conc-summary .md-p {
   font-size: 14px;
   line-height: 1.75;
-  color: #e8d6c6;
+  color: #2a2a2a;
   margin-bottom: 14px;
 }
 .conc-summary .md-p:last-child { margin-bottom: 0; }
@@ -765,7 +775,7 @@ footer { text-align: center; padding: 24px 32px; border-top: 0.5px solid #e8e4de
   .rcard .md-h2 { font-size: 17px; }
   .rcard .md-framing { font-size: 15px; padding-left: 12px; }
   .conc-bar { padding: 22px 22px; }
-  .conc-verdict .md-p { font-size: 15px; }
+  .conc-verdict .md-p { font-size: 16px; }
   .proposed-actions { flex-direction: column; }
   .nav { gap: 16px; padding: 11px 16px; flex-wrap: wrap; }
   .council-hd { padding: 24px 20px 20px; }
