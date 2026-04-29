@@ -1,7 +1,7 @@
 import { useMemo, useEffect, useState, Fragment } from 'react'
 import { getTier, getInitials, slugify, parseCard, renderInline } from '../lib/cardParser'
 
-export default function Procession({ cards = [], onComplete }) {
+export default function Procession({ cards = [], onComplete, instant = false }) {
   const parsed = useMemo(() => cards.map(parseCard).filter(Boolean), [cards])
 
   const [seatedCount, setSeatedCount] = useState(0)
@@ -20,6 +20,7 @@ export default function Procession({ cards = [], onComplete }) {
   const allFramers = parsed.length > 0 && parsed.every(c => getTier(c.name) === 'F')
 
   useEffect(() => {
+    if (instant) return  // Static render — skip animation entirely
     if (parsed.length === 0) return
     const timers = []
 
@@ -54,9 +55,10 @@ export default function Procession({ cards = [], onComplete }) {
 
     return () => timers.forEach(clearTimeout)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [parsed.length])
+  }, [parsed.length, instant])
 
   const getSeatState = (i) => {
+    if (instant) return 'past'  // Static render — all seats fully visible
     if (i >= seatedCount) return 'empty'
     if (sessionComplete) return 'past'
     if (speakingIndex === i) return 'speaking'
@@ -66,20 +68,24 @@ export default function Procession({ cards = [], onComplete }) {
 
   const renderArchMarkerHere = (i) => splitIndex > 0 && i === splitIndex
 
+  // In instant mode, section markers are immediately visible
+  const govVisible = instant || showGovSection
+  const archVisible = instant || showArchSection
+
   return (
     <div className="procession">
       <div className="rail">
         {!allFramers && (
-          <SectionMarker label="Those who governed" visible={showGovSection} />
+          <SectionMarker label="Those who governed" visible={govVisible} />
         )}
         {allFramers && (
-          <SectionMarker label="The intellectual architecture" visible={showArchSection} />
+          <SectionMarker label="The intellectual architecture" visible={archVisible} />
         )}
 
         {parsed.map((card, i) => {
           const state = getSeatState(i)
           if (state === 'empty') {
-            if (renderArchMarkerHere(i) && showArchSection) {
+            if (renderArchMarkerHere(i) && archVisible) {
               return (
                 <SectionMarker
                   key={`marker-${i}`}
@@ -95,7 +101,7 @@ export default function Procession({ cards = [], onComplete }) {
           return (
             <Fragment key={i}>
               {renderArchMarkerHere(i) && (
-                <SectionMarker label="The intellectual architecture" visible={showArchSection} />
+                <SectionMarker label="The intellectual architecture" visible={archVisible} />
               )}
               <Seat card={card} tier={tier} state={state} />
             </Fragment>
