@@ -165,9 +165,6 @@ function validateRoster(deliberationOutput, selectedNames) {
 
 // ── Session storage ─────────────────────────────────────────────────────
 
-// NEW: Pre-create an empty session row at the start of the pipeline.
-// This lets the frontend recover the slug if the SSE connection drops mid-pipeline
-// (e.g., on mobile when the screen locks).
 async function precreateSession(originalIssue) {
   try {
     const supabase = getServiceSupabase();
@@ -189,7 +186,6 @@ async function precreateSession(originalIssue) {
         .single();
 
       if (error && error.code === '23505') {
-        // Slug collision — regenerate and retry
         attempt += 1;
         slug = generateSlug(originalIssue);
         continue;
@@ -212,7 +208,6 @@ async function precreateSession(originalIssue) {
   }
 }
 
-// NEW: Update the pre-existing session row with full data after pipeline completes.
 async function finalizeSession({
   slug,
   sharpenedIssue,
@@ -257,7 +252,6 @@ async function finalizeSession({
   }
 }
 
-// Fallback: original INSERT-at-end path, used only if pre-create failed.
 async function saveSessionToDatabase({
   originalIssue,
   sharpenedIssue,
@@ -325,7 +319,6 @@ async function saveSessionToDatabase({
   }
 }
 
-// NEW: Clean up an orphaned pre-created row when the pipeline fails mid-way.
 async function deleteOrphanSession(slug) {
   try {
     const supabase = getServiceSupabase();
@@ -361,7 +354,6 @@ async function callClaude(system, user, maxTokens = 4000) {
 }
 
 // ── Prompts ─────────────────────────────────────────────────────────────
-// (PROMPT1_SYSTEM, PROMPT2_SYSTEM, PROMPT3_SYSTEM, PROMPT4_SYSTEM — unchanged from original)
 
 const PROMPT1_SYSTEM = `You are the Council Assembly Engine for The Long Council — a product that assembles documented historic leaders and thinkers to deliberate on real governance, geopolitical and economic policy questions.
 
@@ -457,6 +449,11 @@ THREE NON-NEGOTIABLE RULES:
      "the conditions for"  — rephrase with a verb
      "the requirements of" — rephrase with a verb
      "authentic" / "genuine" (as adjective) — cut
+     "the key is..."        — meta-narration of your own argument
+     "the principle is..."  — same; just state the principle in action
+     "what this teaches..." — same; let the example teach
+     "X requires X-thinking"— empty tautology ("strategic infrastructure requires strategic thinking")
+     "the deeper principle" — almost always announces filler
 
    These words allow saying nothing in many words. Replace with what actually happens to whom.
 
@@ -560,7 +557,7 @@ ABSENT      — no recorded position. Do not fill the gap.
 Communicate confidence through the prose:
 
 - GROUNDED: name the decision, year, speech, or event. "In his November 1973 Bundestag address, Schmidt argued..."
-- CONSISTENT: state the claim directly. "The deeper principle is that alliance relationships constrain but also enable security policy."
+- CONSISTENT: state the claim directly. "Alliance relationships constrain but also enable security policy."
 - EXTENDED: frame the leap explicitly. "I did not govern in an era of cyber warfare — but I governed during the oil embargo, and the structure of the problem is identical."
 - ABSENT: acknowledge silence plainly. "On 21st-century digital currency I have no position to offer."
 
@@ -601,6 +598,9 @@ REASONING CARD RULES
       One sentence in italics, maximum 15 words.
       The single analytical lens this member brings — the thesis.
 
+      THE FRAMING LINE IS A PROMISE THE REASONING MUST PAY OFF — NOT A SUMMARY THE REASONING REPEATS.
+      Paragraph 1 must NOT restate, paraphrase, or expand the framing line. Paragraph 1 contains the lived evidence (the year, decision, event) that BACKS the framing — never the framing dressed in different words. If you find yourself writing "designated zones with subsidized energy..." after a framing line about designated zones and subsidies, you are repeating yourself. Cut it.
+
    b) REASONING — TWO TIGHT PARAGRAPHS
       100–160 words total across EXACTLY TWO PARAGRAPHS, separated by a blank line.
 
@@ -614,6 +614,10 @@ REASONING CARD RULES
         (b) a sharp positioning against a specific alternative the next speaker might take
         (c) a candid limit or boundary on the position itself
       If paragraph 2 only adds detail to paragraph 1, you have failed. Cut and rewrite.
+
+      TEST FOR PARAGRAPH 2: After writing it, ask — "could a reader skip paragraph 2 and lose nothing meaningful?" If yes, rewrite. The second move surfaces something paragraph 1 deliberately held back: the awkward limit, the harder follow-on question, the move the next speaker won't see coming.
+
+      AVOID META-EXPLANATION OF YOUR OWN ARGUMENT. Do not write "the key is sequencing" or "the principle is X" or "what this teaches us is Y". State the principle by demonstrating it, not by labelling it.
 
       DO NOT write a single block. DO NOT write three or more paragraphs. Exactly two, separated by a blank line.
 
@@ -712,7 +716,7 @@ Before emitting each card, check:
    - If this is the final position, does it OMIT the Challenge line? If the Challenge line is present, delete it.
 
 4. LANGUAGE DISCIPLINE CHECK:
-   - Does any forbidden abstract word appear ("tension", "paradigm", "fundamental", "irreconcilable", "incompatible", "trajectory", "dynamics", "framework", "the conditions for", "the requirements of", "authentic", "genuine")? Rewrite.
+   - Does any forbidden abstract word appear ("tension", "paradigm", "fundamental", "irreconcilable", "incompatible", "trajectory", "dynamics", "framework", "the conditions for", "the requirements of", "authentic", "genuine", "the key is", "the principle is", "what this teaches", "the deeper principle")? Rewrite.
    - Are there -tion / -ment / -ance / -ity nouns where a verb would work? Rewrite.
    - Does any sentence run longer than 22 words? Split it.
 
@@ -735,6 +739,8 @@ Before emitting each card, check:
 8. SECOND MOVE CHECK:
    - Is paragraph 2 doing genuine new work — counterintuitive point, sharp positioning against an alternative, or candid limit on the position?
    - If paragraph 2 is just paragraph 1 with more detail or a list of consequences: rewrite. Cut whatever does not earn its place.
+   - REPETITION CHECK: do paragraph 1 and the framing line make the same claim in different words? If yes, rewrite paragraph 1 to add lived evidence (year, decision, event) that the framing does NOT contain.
+   - META-LABEL CHECK: does any sentence start with "the key is", "the principle is", "what this teaches", or "the deeper X"? If yes, cut that sentence — let the example carry the meaning.
 
 9. VOICE CHECK:
    - Does the member sound like themselves, in modern English?
@@ -768,6 +774,11 @@ THREE NON-NEGOTIABLE RULES:
      "the conditions for"  — rephrase with verbs
      "the requirements of" — rephrase with verbs
      "authentic" / "genuine" (as adjective on democracy etc.) — cut
+     "the key is..."        — meta-narration of your own argument
+     "the principle is..."  — same; just state the principle in action
+     "what this teaches..." — same; let the example teach
+     "X requires X-thinking"— empty tautology ("strategic infrastructure requires strategic thinking")
+     "the deeper principle" — almost always announces filler
      "scale required for"  — rephrase with verbs
 
    These words allow saying nothing in many words. They sound serious but commit to nothing. Replace with what is actually happening to whom.
@@ -879,7 +890,7 @@ QUALITY CHECKS
 Before emitting, check every sentence against this list. Rewrite any that fails.
 
 - Does the sentence run longer than 20 words? Split it.
-- Does any forbidden word appear ("tension", "paradigm", "fundamental", "irreconcilable", "incompatible", "trajectory", "dynamics", "framework", "the conditions for", "the requirements of", "authentic", "genuine democracy", "scale required for")? Rewrite with concrete language.
+- Does any forbidden word appear ("tension", "paradigm", "fundamental", "irreconcilable", "incompatible", "trajectory", "dynamics", "framework", "the conditions for", "the requirements of", "authentic", "genuine democracy", "scale required for", "the key is", "the principle is", "what this teaches", "the deeper principle")? Rewrite with concrete language.
 - Are there -tion / -ment / -ance / -ity nouns where a verb would work? Rewrite.
 - Does "documented" appear? Rewrite.
 - Does it open with "The council establishes that..." or "The council cannot resolve..."? Rewrite to lead with the positive finding.
@@ -982,14 +993,9 @@ export default async function handler(req, res) {
     if (res.flush) res.flush();
   };
 
-  // Declared outside try/catch so the catch block can clean up if needed
   let preSlug = null;
 
   try {
-    // ── Pre-create session and send slug to client immediately ────────
-    // This lets the client recover the session if the SSE connection drops
-    // mid-pipeline (e.g., on mobile when the screen locks). If pre-create
-    // fails, we silently fall back to the old INSERT-at-end path.
     preSlug = await precreateSession(question);
     if (preSlug) {
       send('session-started', { slug: preSlug });
@@ -997,7 +1003,6 @@ export default async function handler(req, res) {
 
     const allProfiles = loadAllProfiles();
 
-    // ── Prompt 1 — Assemble the council ──────────────────────────────
     send('progress', { step: 1, message: 'Assembling the council...' });
     const assemblyOutput = await callClaude(
       PROMPT1_SYSTEM,
@@ -1006,7 +1011,6 @@ export default async function handler(req, res) {
     );
     send('assembly', { data: assemblyOutput });
 
-    // ── Extract selected members, load only their profiles ───────────
     const selectedNames = extractSelectedMembers(assemblyOutput);
     const metadata = extractMemberMetadata(assemblyOutput);
 
@@ -1025,7 +1029,6 @@ export default async function handler(req, res) {
       ? `SELECTED MEMBERS FOR THIS DELIBERATION (the only members at the table):\n${selectedNames.map((n, i) => `${i + 1}. ${n}`).join('\n')}\n\n`
       : '';
 
-    // ── Prompt 2 — Deliberate ────────────────────────────────────────
     send('progress', { step: 2, message: 'The council is deliberating...' });
     const deliberationOutput = await callClaude(
       PROMPT2_SYSTEM,
@@ -1034,13 +1037,11 @@ export default async function handler(req, res) {
     );
     send('deliberation', { data: deliberationOutput });
 
-    // ── Roster violation check ───────────────────────────────────────
     let violations = [];
     if (selectedNames.length > 0) {
       violations = validateRoster(deliberationOutput, selectedNames);
     }
 
-    // ── DEBUG: send diagnostics to the browser via SSE ───────────────
     send('debug', {
       selectedNames,
       violations,
@@ -1050,7 +1051,6 @@ export default async function handler(req, res) {
       prompt1Preview: assemblyOutput.substring(0, 1500),
     });
 
-    // ── Prompt 3 — Verdict ────────────────────────────────────────────
     send('progress', { step: 3, message: 'Forming the verdict...' });
     const verdictOutput = await callClaude(
       PROMPT3_SYSTEM,
@@ -1059,7 +1059,6 @@ export default async function handler(req, res) {
     );
     send('verdict', { data: verdictOutput });
 
-    // ── Prompt 4 — Policy Brief ───────────────────────────────────────
     send('progress', { step: 4, message: 'Writing the policy brief...' });
     const briefOutput = await callClaude(
       PROMPT4_SYSTEM,
@@ -1068,7 +1067,6 @@ export default async function handler(req, res) {
     );
     send('brief', { data: briefOutput });
 
-    // ── Save session — finalize pre-existing row, or insert as fallback
     let sharpenedIssue = null;
     const summaryMatch = assemblyOutput.match(/ISSUE SUMMARY:\s*(.+?)(?:\n|$)/i);
     if (summaryMatch) sharpenedIssue = summaryMatch[1].trim();
@@ -1086,7 +1084,6 @@ export default async function handler(req, res) {
         memberTypes: metadata.types,
       });
     } else {
-      // Fallback: pre-create failed at start, so insert now
       saved = await saveSessionToDatabase({
         originalIssue: question,
         sharpenedIssue,
@@ -1107,7 +1104,6 @@ export default async function handler(req, res) {
   } catch (err) {
     console.error('Pipeline error:', err);
 
-    // Clean up orphan pre-created row so the recovery flow doesn't get stuck on it
     if (preSlug) {
       await deleteOrphanSession(preSlug);
     }
