@@ -330,7 +330,9 @@ async function deleteOrphanSession(slug) {
 }
 
 // ── Claude API call ─────────────────────────────────────────────────────
-async function callClaude(system, user, maxTokens = 4000) {
+// Now accepts a temperature parameter (default 1.0 for backwards compatibility).
+// Lower values (0.7) make the model more rule-following at the cost of variation.
+async function callClaude(system, user, maxTokens = 4000, temperature = 1.0) {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -341,6 +343,7 @@ async function callClaude(system, user, maxTokens = 4000) {
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
       max_tokens: maxTokens,
+      temperature,
       system,
       messages: [{ role: 'user', content: user }],
     }),
@@ -456,6 +459,27 @@ THREE NON-NEGOTIABLE RULES:
      "the deeper principle" — almost always announces filler
 
    These words allow saying nothing in many words. Replace with what actually happens to whom.
+
+   ALSO FORBIDDEN — ABSTRACTION-CHAIN CONSTRUCTIONS:
+
+   The model often invents new abstractions to evade the list above. The following SENTENCE PATTERNS are forbidden, regardless of which words they use:
+
+   PATTERN 1 — "X requires Y" / "X demands Y" where X and Y are both abstract nouns.
+     ✗ "Datacenter policy requires the same experimental approach."
+     ✗ "Energy allocation decisions require sovereign strategic calculation."
+     ✗ "This requires governance institutions that neither Brussels nor markets can provide."
+     ✓ Rewrite with verbs: "We must build datacenters the way I built Shenzhen — start with one region, prove it works, then scale."
+
+   PATTERN 2 — "the [abstract noun] [verb]" stacks: "the speed sovereignty requires", "the gradualism stability demands", "the conditions stability requires".
+     ✗ "Europe faces an unsolvable trade-off between the speed sovereignty requires and the gradualism stability demands."
+     ✓ "Europe must either build datacenters fast and risk political backlash, or build them slowly and lose the technology race."
+
+   PATTERN 3 — Abstract subject + abstract verb + abstract object across the whole sentence.
+     ✗ "Polycentric governance coordinates competing demands across scarce energy resources."
+     ✓ "Local towns, national grids, and EU regulators each control different pieces of the energy system. They have to negotiate, and that negotiation is slow but legitimate."
+
+   IF A SENTENCE CONTAINS NO PERSON, NO PLACE, NO YEAR, AND NO CONCRETE OBJECT — REWRITE IT.
+   The reader should be able to picture what the sentence describes. If they cannot, the sentence is not yet finished.
 
 2. VERBS OVER NOUNS. NO -TION-CHAINS.
    "The destruction of Taiwan's industry" → "Taiwan's industry is destroyed"
@@ -717,6 +741,9 @@ Before emitting each card, check:
 
 4. LANGUAGE DISCIPLINE CHECK:
    - Does any forbidden abstract word appear ("tension", "paradigm", "fundamental", "irreconcilable", "incompatible", "trajectory", "dynamics", "framework", "the conditions for", "the requirements of", "authentic", "genuine", "the key is", "the principle is", "what this teaches", "the deeper principle")? Rewrite.
+   - Does any sentence follow PATTERN 1 ("X requires Y" / "X demands Y" where both are abstract)? Rewrite with verbs.
+   - Does any sentence follow PATTERN 2 (abstract noun chains like "the speed X requires")? Rewrite.
+   - Does any sentence have NO concrete content (no person, place, year, or object)? Rewrite.
    - Are there -tion / -ment / -ance / -ity nouns where a verb would work? Rewrite.
    - Does any sentence run longer than 22 words? Split it.
 
@@ -783,6 +810,26 @@ THREE NON-NEGOTIABLE RULES:
 
    These words allow saying nothing in many words. They sound serious but commit to nothing. Replace with what is actually happening to whom.
 
+   ALSO FORBIDDEN — ABSTRACTION-CHAIN CONSTRUCTIONS:
+
+   The model often invents new abstractions to evade the list above. The following SENTENCE PATTERNS are forbidden, regardless of which words they use:
+
+   PATTERN 1 — "X requires Y" / "X demands Y" where X and Y are both abstract nouns.
+     ✗ "Datacenter expansion requires polycentric governance design."
+     ✗ "Energy allocation decisions require sovereign strategic calculation."
+     ✓ Rewrite with verbs: "We must build datacenters fast or accept losing the technology race."
+
+   PATTERN 2 — "the [abstract noun] [abstract verb]" stacks: "the speed sovereignty requires", "the gradualism stability demands", "the conditions stability requires".
+     ✗ "Europe must build datacenter capacity to avoid digital colonization, but faces an unsolvable trade-off between the speed sovereignty requires and the gradualism stability demands."
+     ✓ "Europe must either build datacenters fast and risk political backlash, or build them slowly and lose the technology race to America and China."
+
+   PATTERN 3 — Abstract subject + abstract verb + abstract object across the whole sentence.
+     ✗ "Polycentric governance coordinates competing demands across scarce energy resources."
+     ✓ "Local towns, national grids, and EU regulators each control parts of the energy system. They must negotiate."
+
+   IF A SENTENCE CONTAINS NO PERSON, NO PLACE, NO YEAR, AND NO CONCRETE OBJECT — REWRITE IT.
+   The reader should be able to picture what the sentence describes. If they cannot, the sentence is not yet finished.
+
 2. VERBS OVER NOUNS. NO -TION-CHAINS.
    "The destruction of Taiwan's industry" → "Taiwan's industry is destroyed"
    "The construction of legitimacy"        → "How leaders earn trust"
@@ -801,6 +848,9 @@ EXAMPLES OF VERDICT LINES THAT FAIL:
    ✗ "China's military strategy operates within a fundamental paradigm of strategic patience."
      — "Fundamental paradigm" hides what is actually being claimed.
 
+   ✗ "Europe must build datacenter capacity to avoid digital colonization, but faces an unsolvable trade-off between the speed sovereignty requires and the gradualism stability demands."
+     — PATTERN 2 violation. "The speed sovereignty requires" / "the gradualism stability demands" — abstract noun stacks. 24 words.
+
 EXAMPLES OF VERDICT LINES THAT WORK:
    ✓ "Military force would set China back decades and still not deliver Taiwan."
      — 12 words. Concrete consequence. No abstraction.
@@ -810,6 +860,9 @@ EXAMPLES OF VERDICT LINES THAT WORK:
 
    ✓ "Removing the Senate would speed lawmaking but lose the second look that catches bad bills."
      — 15 words. Concrete trade.
+
+   ✓ "Europe must choose between cheap energy for consumers today and digital infrastructure that prevents technological dependence tomorrow."
+     — 17 words. "Wat-vs-wat" sharply named. No abstraction.
 
 ════════════════════════════════════════════════════════════════
 CONFIDENCE — INTERNAL REASONING DISCIPLINE
@@ -891,6 +944,9 @@ Before emitting, check every sentence against this list. Rewrite any that fails.
 
 - Does the sentence run longer than 20 words? Split it.
 - Does any forbidden word appear ("tension", "paradigm", "fundamental", "irreconcilable", "incompatible", "trajectory", "dynamics", "framework", "the conditions for", "the requirements of", "authentic", "genuine democracy", "scale required for", "the key is", "the principle is", "what this teaches", "the deeper principle")? Rewrite with concrete language.
+- Does any sentence follow PATTERN 1 ("X requires Y" / "X demands Y" where both are abstract)? Rewrite with verbs and concrete subjects.
+- Does any sentence follow PATTERN 2 (abstract noun chains like "the speed X requires", "the gradualism Y demands")? Rewrite.
+- Does any sentence have NO concrete content (no person, place, year, or object)? Rewrite.
 - Are there -tion / -ment / -ance / -ity nouns where a verb would work? Rewrite.
 - Does "documented" appear? Rewrite.
 - Does it open with "The council establishes that..." or "The council cannot resolve..."? Rewrite to lead with the positive finding.
@@ -1003,6 +1059,7 @@ export default async function handler(req, res) {
 
     const allProfiles = loadAllProfiles();
 
+    // Prompt 1 — temperature 1.0 (default) — selection benefits from variation
     send('progress', { step: 1, message: 'Assembling the council...' });
     const assemblyOutput = await callClaude(
       PROMPT1_SYSTEM,
@@ -1029,11 +1086,13 @@ export default async function handler(req, res) {
       ? `SELECTED MEMBERS FOR THIS DELIBERATION (the only members at the table):\n${selectedNames.map((n, i) => `${i + 1}. ${n}`).join('\n')}\n\n`
       : '';
 
+    // Prompt 2 — temperature 0.7 — language discipline benefits from rule-following
     send('progress', { step: 2, message: 'The council is deliberating...' });
     const deliberationOutput = await callClaude(
       PROMPT2_SYSTEM,
       `ISSUE:\n${question}\n\n${rosterLine}PROMPT 1 OUTPUT:\n${assemblyOutput}\n\nMEMBER PROFILES:\n${profilesForDeliberation}`,
-      5000
+      5000,
+      0.7
     );
     send('deliberation', { data: deliberationOutput });
 
@@ -1051,14 +1110,17 @@ export default async function handler(req, res) {
       prompt1Preview: assemblyOutput.substring(0, 1500),
     });
 
+    // Prompt 3 — temperature 0.7 — verdict precision over creativity
     send('progress', { step: 3, message: 'Forming the verdict...' });
     const verdictOutput = await callClaude(
       PROMPT3_SYSTEM,
       `ISSUE:\n${question}\n\nPROMPT 2 OUTPUT — REASONING CARDS AND CONVERGENCE NOTE:\n${deliberationOutput}`,
-      1500
+      1500,
+      0.7
     );
     send('verdict', { data: verdictOutput });
 
+    // Prompt 4 — temperature 1.0 (default) — brief benefits from narrative variation
     send('progress', { step: 4, message: 'Writing the policy brief...' });
     const briefOutput = await callClaude(
       PROMPT4_SYSTEM,
