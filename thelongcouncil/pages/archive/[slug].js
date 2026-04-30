@@ -32,12 +32,9 @@ function formatDate(iso) {
   });
 }
 
-// Extract the verdict and reasoning blocks from the verdict markdown
 function parseVerdict(verdictMd) {
   if (!verdictMd) return { verdict: '', reasoning: '' };
-  // Strip the "CONCLUSION TYPE:" line if present
   const cleaned = verdictMd.replace(/^CONCLUSION TYPE:.*$/m, '').trim();
-  // Match ## Verdict ... until ## Reasoning
   const verdictMatch = cleaned.match(/##\s*Verdict\s*\n+([\s\S]*?)(?=\n##\s*Reasoning|$)/i);
   const reasoningMatch = cleaned.match(/##\s*Reasoning\s*\n+([\s\S]*?)(?=\n---|$)/i);
   return {
@@ -46,7 +43,6 @@ function parseVerdict(verdictMd) {
   };
 }
 
-// Strip the SPEAKING ORDER line and leading/trailing --- dividers from deliberation
 function cleanDeliberation(md) {
   if (!md) return '';
   return md
@@ -54,9 +50,6 @@ function cleanDeliberation(md) {
     .trim();
 }
 
-// Split the deliberation markdown into individual card blocks plus an optional
-// convergence note section. Cards are passed to <Procession instant /> for
-// avatar rendering; the convergence note is rendered separately as markdown.
 function parseDeliberation(deliberationText) {
   if (!deliberationText) return { cards: [], convergence: null };
   const blocks = deliberationText
@@ -127,13 +120,13 @@ function CollapsibleSection({ title, subtitle, children, defaultOpen = false }) 
           color: #0f0f0f;
         }
         .collapsible-subtitle {
-          font-family: 'Crimson Pro', Georgia, serif;
+          font-family: 'Inter', sans-serif;
           font-size: 13px;
           color: #7a7a7a;
           margin-top: 2px;
         }
         .collapsible-toggle {
-          font-family: 'Crimson Pro', Georgia, serif;
+          font-family: 'Inter', sans-serif;
           font-size: 13px;
           color: #6b1a1a;
           white-space: nowrap;
@@ -277,7 +270,7 @@ export default function ArchiveDetail({ session }) {
         }
        .back-link {
           display: inline-block;
-          font-family: 'Crimson Pro', Georgia, serif;
+          font-family: 'Inter', sans-serif;
           font-size: 13px;
           margin-top: 2.5rem;
           margin-bottom: 3rem;
@@ -289,7 +282,7 @@ export default function ArchiveDetail({ session }) {
         }
 
        .detail-meta {
-          font-family: 'Crimson Pro', Georgia, serif;
+          font-family: 'Inter', sans-serif;
           font-size: 11px;
           color: #7a7a7a;
           letter-spacing: 0.08em;
@@ -315,7 +308,7 @@ export default function ArchiveDetail({ session }) {
           margin-bottom: 2rem;
         }
         .verdict-label {
-          font-family: 'Crimson Pro', Georgia, serif;
+          font-family: 'Inter', sans-serif;
           font-size: 11px;
           color: #6b1a1a;
           letter-spacing: 0.12em;
@@ -336,7 +329,7 @@ export default function ArchiveDetail({ session }) {
         }
         .verdict-text :global(p:last-child) { margin-bottom: 0; }
         .verdict-reasoning :global(p) {
-          font-family: 'Crimson Pro', Georgia, serif;
+          font-family: 'Inter', sans-serif;
           font-size: 15px;
           color: #2a2a2a;
           line-height: 1.7;
@@ -355,7 +348,7 @@ export default function ArchiveDetail({ session }) {
 
         .md-body {
           padding-top: 1rem;
-          font-family: 'Crimson Pro', Georgia, serif;
+          font-family: 'Inter', sans-serif;
           color: #1a1a1a;
           line-height: 1.7;
         }
@@ -409,7 +402,7 @@ export default function ArchiveDetail({ session }) {
           margin-top: 3rem;
           padding-top: 1.5rem;
           border-top: 0.5px solid #d4cfc8;
-          font-family: 'Crimson Pro', Georgia, serif;
+          font-family: 'Inter', sans-serif;
           font-size: 13px;
           color: #7a7a7a;
           text-align: center;
