@@ -535,7 +535,7 @@ export default function Home({ recentSessions = [] }) {
         <meta name="description" content="Ask a hard question. Watch history's greatest minds debate it. See what they decide." />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
       </Head>
 
       <div className="mast mast-link" onClick={reset}>
@@ -547,7 +547,7 @@ export default function Home({ recentSessions = [] }) {
         <Link href="/council" className="nav-link">The Council</Link>
         <Link href="/archive" className="nav-link">The Archive</Link>
         <Link href="/about" className="nav-link">About</Link>
-        <a className="nav-raise" onClick={reset}>Raise an issue</a>
+        <a className="nav-raise nav-raise-hide-mobile" onClick={reset}>Raise an issue</a>
       </nav>
 
       {screen === 'landing' && (
@@ -846,6 +846,12 @@ export default function Home({ recentSessions = [] }) {
         .issue-input:focus {
           border-color: #6b1a1a;
           background: #faf6f3;
+        }
+
+        @media (max-width: 720px) {
+          .nav-raise-hide-mobile {
+            display: none;
+          }
         }
       `}</style>
     </>
