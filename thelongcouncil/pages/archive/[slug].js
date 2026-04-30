@@ -260,7 +260,7 @@ export default function ArchiveDetail({ session }) {
       </div>
 
       <footer>
-        © The Long Council · AI-generated counsel from historical figures · Not advice
+        The Long Council · Counsel from history's greatest minds, brought to life by AI
       </footer>
 
       <style jsx>{`
