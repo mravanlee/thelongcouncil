@@ -7,31 +7,22 @@ import { supabase } from '../lib/supabase';
 
 // ── Recovery polling constants ──────────────────────────────────────────
 const FINALIZE_POLL_INTERVAL_MS = 3000;
-const FINALIZE_MAX_ATTEMPTS = 15; // ~45 seconds total
+const FINALIZE_MAX_ATTEMPTS = 15;
 const RECENT_SESSION_WINDOW_MINUTES = 10;
 
 // ── Wake Lock helpers ───────────────────────────────────────────────────
-// Keep the screen awake while the pipeline runs. Mobile browsers
-// (especially iOS Safari) auto-lock the screen, which suspends the SSE
-// connection. If the Wake Lock API isn't supported or the request is
-// denied, these helpers fail silently — the Supabase poll fallback in
-// runPipeline() still recovers the session in that case.
 async function acquireScreenLock(ref) {
   if (typeof navigator === 'undefined' || !('wakeLock' in navigator)) return;
   try {
     ref.current = await navigator.wakeLock.request('screen');
-  } catch (e) {
-    // Silently ignore — Wake Lock may be denied if page isn't visible.
-  }
+  } catch (e) {}
 }
 
 async function releaseScreenLock(ref) {
   if (!ref || !ref.current) return;
   try {
     await ref.current.release();
-  } catch (e) {
-    // Silently ignore.
-  }
+  } catch (e) {}
   ref.current = null;
 }
 
@@ -48,7 +39,6 @@ export async function getServerSideProps() {
     return { props: { recentSessions: [] } };
   }
 
-  // Filter out incomplete sessions (pre-created but not yet finalized)
   const enriched = (sessions || [])
     .filter(s => s.cards && s.cards.brief)
     .map(s => ({
@@ -84,11 +74,6 @@ function formatDate(iso) {
   });
 }
 
-// ── Look up a recent session by question (recovery fallback) ───────────
-// Used when the SSE pipeline call fails on the frontend (e.g. mobile Safari
-// suspends the connection when the screen locks). The backend usually
-// completes the session anyway, so we check whether a finished session for
-// this question exists in the last few minutes.
 async function findRecentSessionByQuestion(question) {
   const sinceIso = new Date(Date.now() - RECENT_SESSION_WINDOW_MINUTES * 60_000).toISOString();
   try {
@@ -109,7 +94,6 @@ async function findRecentSessionByQuestion(question) {
   }
 }
 
-// ── Tiny inline markdown renderer (used for verdict + brief) ───────────
 function Markdown({ text }) {
   if (!text) return null;
 
@@ -202,7 +186,6 @@ function renderInline(text) {
   return parts.length === 0 ? text : parts;
 }
 
-// ── Parsers ──────────────────────────────────────────────────────────────
 function parseCards(deliberationText) {
   if (!deliberationText) return [];
 
@@ -266,7 +249,6 @@ export default function Home({ recentSessions = [] }) {
   const [screen, setScreen] = useState('landing');
   const [question, setQuestion] = useState('');
 
-  // Sharpener state — new two-path model (READY / CLARIFY)
   const [chatHistory, setChatHistory] = useState([]);
   const [sharpenerMode, setSharpenerMode] = useState(null);
   const [readyQuestion, setReadyQuestion] = useState(null);
@@ -284,12 +266,9 @@ export default function Home({ recentSessions = [] }) {
   const [showBriefToggle, setShowBriefToggle] = useState(false);
   const [briefOpen, setBriefOpen] = useState(false);
 
-  // Error state — replaces alert() so users see a clear message instead of a blank screen
   const [error, setError] = useState(null);
 
   const textareaRef = useRef(null);
-
-  // ── Wake Lock ref — holds the active sentinel while the pipeline runs ─
   const wakeLockRef = useRef(null);
 
   useEffect(() => {
@@ -299,9 +278,6 @@ export default function Home({ recentSessions = [] }) {
     }
   }, [question]);
 
-  // ── Wake Lock cleanup on unmount ──────────────────────────────────────
-  // Safety net in case the user navigates away mid-pipeline (e.g. via the
-  // nav menu) without runPipeline's finally block being reached.
   useEffect(() => {
     return () => {
       if (wakeLockRef.current) {
@@ -343,7 +319,6 @@ export default function Home({ recentSessions = [] }) {
         throw new Error(data.error || 'The sharpener could not process your question.');
       }
 
-      // Include assistant response in chat history so messages alternate properly
       const assistantMsg = { role: 'assistant', content: data.raw || '' };
       setChatHistory([...msgs, assistantMsg]);
 
@@ -399,9 +374,6 @@ export default function Home({ recentSessions = [] }) {
     }
   }
 
-  // ── Pipeline-failure recovery ──────────────────────────────────────────
-  // Polls Supabase to see whether the backend completed the session despite
-  // the frontend SSE connection being interrupted. Returns a slug if found.
   async function pollForCompletedSession(originalQuestion) {
     for (let attempt = 0; attempt < FINALIZE_MAX_ATTEMPTS; attempt++) {
       const session = await findRecentSessionByQuestion(originalQuestion);
@@ -420,10 +392,6 @@ export default function Home({ recentSessions = [] }) {
     setLoadingStep(1);
     setLoadingMessage('Assembling the council...');
 
-    // ── Wake Lock — keep screen awake during pipeline ───────────────────
-    // Prevents mobile auto-lock from killing the SSE connection. If the
-    // user backgrounds the tab the lock will be released by the browser;
-    // the poll fallback in the catch below still recovers the session.
     await acquireScreenLock(wakeLockRef);
 
     try {
@@ -493,21 +461,15 @@ export default function Home({ recentSessions = [] }) {
 
       setScreen('session');
     } catch (err) {
-      // The SSE stream broke — but the backend may still complete the session.
-      // (Common on mobile Safari when the screen locks mid-pipeline.)
-      // Show a friendly "wrapping up" screen and poll the database for a
-      // finished session before falling back to an error.
       setScreen('finalizing');
 
       const slug = await pollForCompletedSession(finalQuestion);
 
       if (slug) {
-        // Session completed in the background — go straight to the archive.
         router.push(`/archive/${slug}`);
         return;
       }
 
-      // Genuinely failed — show the error screen.
       setError({
         title: 'The council could not convene',
         message: err.message || 'Something went wrong while preparing the deliberation.',
@@ -515,7 +477,6 @@ export default function Home({ recentSessions = [] }) {
       });
       setScreen('error');
     } finally {
-      // ── Wake Lock — release on every exit path (success, recovery, fail) ─
       await releaseScreenLock(wakeLockRef);
     }
   }
@@ -593,7 +554,7 @@ export default function Home({ recentSessions = [] }) {
           <div className="landing">
             <div className="landing-eyebrow">Raise an issue</div>
             <h1 className="landing-heading">
-              What policy question would you like<br />the council to consider?
+              What policy question would you like the council to consider?
             </h1>
             <p className="landing-sub">
               Bring a hard question about governance, economics, society or geopolitics. History's greatest
@@ -844,6 +805,48 @@ export default function Home({ recentSessions = [] }) {
       <footer>
         © The Long Council · AI-generated counsel from historical figures · Not advice
       </footer>
+
+      <style jsx global>{`
+        .issue-input {
+          width: 100%;
+          box-sizing: border-box;
+          background: #f3eeea;
+          border: 1px solid #d8cfc7;
+          border-radius: 2px;
+          padding: 16px 18px;
+          font-family: 'Inter', sans-serif;
+          font-size: 15px;
+          line-height: 1.7;
+          color: #1a1a1a;
+          resize: none;
+          outline: none;
+          transition: border-color 0.2s ease, background 0.2s ease;
+          -webkit-appearance: none;
+          appearance: none;
+        }
+
+        .issue-input::placeholder {
+          color: #a09a92;
+          font-style: italic;
+          line-height: 1.7;
+          opacity: 1;
+        }
+
+        .issue-input::-webkit-input-placeholder {
+          color: #a09a92;
+          font-style: italic;
+          line-height: 1.7;
+        }
+
+        .issue-input:hover {
+          border-color: #c4b8ad;
+        }
+
+        .issue-input:focus {
+          border-color: #6b1a1a;
+          background: #faf6f3;
+        }
+      `}</style>
     </>
   );
 }
