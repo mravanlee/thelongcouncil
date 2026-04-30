@@ -107,6 +107,7 @@ export default function Council() {
         <meta name="description" content="37 historic leaders and thinkers who form The Long Council." />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
       </Head>
 
       <Link href="/" className="mast mast-link">
