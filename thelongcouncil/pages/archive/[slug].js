@@ -159,7 +159,7 @@ export default function ArchiveDetail({ session }) {
     <>
       <Head>
         <title>{session.original_issue ? session.original_issue.substring(0, 60) : 'Archive'} — The Long Council</title>
-        <meta name="description" content={verdict ? verdict.substring(0, 155) : 'A past council deliberation.'} />
+        <meta name="description" content={verdict ? verdict.substring(0, 155) : 'A past council debate.'} />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
@@ -204,7 +204,7 @@ export default function ArchiveDetail({ session }) {
 
         {deliberationText && (
           <CollapsibleSection
-            title="The deliberation"
+            title="The debate"
             subtitle={memberSummary ? `Hear from each member in turn — ${memberSummary}` : 'Hear from each member in turn'}
           >
             {deliberationCards.length > 0 ? (
