@@ -472,7 +472,7 @@ export default function Home({ recentSessions = [] }) {
 
       setError({
         title: 'The council could not convene',
-        message: err.message || 'Something went wrong while preparing the deliberation.',
+        message: err.message || 'Something went wrong while preparing the debate.',
         action: 'pipeline',
       });
       setScreen('error');
@@ -630,7 +630,7 @@ export default function Home({ recentSessions = [] }) {
             return (
               <div className="proposed-box">
                 <div className="proposed-label">
-                  {wasSharpened ? 'The council will deliberate on' : 'Your question is clear'}
+                  {wasSharpened ? 'The council will start the debate' : 'Your question is clear'}
                 </div>
                 <div className="proposed-text">{readyQuestion}</div>
                 {wasSharpened && (
@@ -746,7 +746,7 @@ export default function Home({ recentSessions = [] }) {
           <div className="session-issue">{sessionData.question}</div>
           <div className="session-meta">
             {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
-            {' · '}AI-generated counsel from historical figures
+            {' · '}Counsel from history's greatest minds
           </div>
 
           {sessionData.cards.length > 0 ? (
@@ -757,7 +757,7 @@ export default function Home({ recentSessions = [] }) {
           ) : (
             <div className="rcard visible">
               <div className="card-body">
-                <Markdown text={sessionData.deliberation || 'Deliberation not available.'} />
+                <Markdown text={sessionData.deliberation || 'Debate not available.'} />
               </div>
             </div>
           )}
