@@ -158,8 +158,9 @@ function SectionMarker({ label, visible }) {
           background: #b8ad9c;
         }
         .marker-label {
-          font-family: 'Crimson Pro', serif;
+          font-family: 'Inter', sans-serif;
           font-size: 10px;
+          font-weight: 500;
           letter-spacing: 0.12em;
           color: #8a8a8a;
           text-transform: uppercase;
@@ -294,7 +295,7 @@ function Seat({ card, tier, state }) {
         }
         .seat.framer .name { color: #1a2a1a; }
         .role {
-          font-family: 'Crimson Pro', serif;
+          font-family: 'Inter', sans-serif;
           font-size: 11px;
           color: #7a7a7a;
           font-style: italic;
@@ -302,24 +303,25 @@ function Seat({ card, tier, state }) {
 
         .framing {
           font-family: 'Playfair Display', serif;
-          font-size: 13.5px;
-          color: #2a2a2a;
-          font-style: italic;
-          line-height: 1.55;
-          margin-top: 7px;
+          font-size: 17.5px;
+          font-weight: 500;
+          color: #0f0f0f;
+          line-height: 1.4;
+          letter-spacing: -0.005em;
+          margin-top: 10px;
           margin-bottom: 0;
           max-width: 62ch;
           transition: margin-bottom 0.5s ease;
         }
         .seat.state-speaking .framing,
         .seat.state-past .framing {
-          margin-bottom: 14px;
+          margin-bottom: 16px;
         }
 
         .body {
-          font-family: 'Crimson Pro', serif;
-          font-size: 15px;
-          line-height: 1.8;
+          font-family: 'Inter', sans-serif;
+          font-size: 14.5px;
+          line-height: 1.7;
           color: #1a1a1a;
           max-width: 62ch;
           max-height: 0;
@@ -340,7 +342,7 @@ function Seat({ card, tier, state }) {
         }
         .body :global(.sig) {
           display: inline-block;
-          font-family: 'Crimson Pro', serif;
+          font-family: 'Inter', sans-serif;
           font-size: 10px;
           color: #7a7a7a;
           background: #f0ede8;
@@ -353,7 +355,7 @@ function Seat({ card, tier, state }) {
         }
 
         .challenge {
-          font-family: 'Crimson Pro', serif;
+          font-family: 'Inter', sans-serif;
           font-size: 13.5px;
           color: #6b1a1a;
           font-style: italic;
@@ -397,8 +399,8 @@ function Seat({ card, tier, state }) {
 
         @media (min-width: 768px) {
           .name { font-size: 17px; }
-          .framing { font-size: 14px; }
-          .body { font-size: 15.5px; }
+          .framing { font-size: 18px; }
+          .body { font-size: 15px; }
           .challenge { font-size: 14px; }
         }
       `}</style>
