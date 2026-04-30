@@ -60,8 +60,8 @@ export default function About() {
         </p>
 
         <p>
-          What you read is AI-generated reasoning grounded in the historical record. Not
-          the counsel of these people themselves. Treat it as the opinion of a
+          What you read is AI-generated reasoning grounded in the historical record — not
+          the counsel of these people themselves. Treat it as you would the opinion of a
           very knowledgeable group of friends: worth listening to, but never a substitute
           for expertise or judgment.
         </p>
