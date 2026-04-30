@@ -535,6 +535,7 @@ export default function Home({ recentSessions = [] }) {
         <meta name="description" content="Ask a hard question. Watch history's greatest minds debate it. See what they decide." />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
       </Head>
 
       <div className="mast mast-link" onClick={reset}>
