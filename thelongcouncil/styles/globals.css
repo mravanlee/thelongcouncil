@@ -104,7 +104,7 @@ a:link, a:visited {
   gap: 10px;
 }
 .submit-btn:hover { background: #8b2a2a; }
-.submit-btn:disabled { background: #c0b8a8; cursor: not-allowed; }
+.submit-btn:disabled { background: #6b1a1a; opacity: 0.35; cursor: not-allowed; }
 
 .landing-hint { font-size: 13px; color: #8a8a8a; font-style: italic; margin-top: 8px; }
 
