@@ -52,7 +52,7 @@ function nameToAvatarPath(name) {
     .replace(/[^a-z0-9\s]/g, '')
     .trim()
     .replace(/\s+/g, '_');
-  return `https://www.thelongcouncil.com/avatars/avatar_${slug}.webp`;
+  return `https://www.thelongcouncil.com/avatars/avatar_${slug}.png`;
 }
 
 export default async function handler(req, res) {
