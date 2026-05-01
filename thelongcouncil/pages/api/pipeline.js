@@ -705,14 +705,18 @@ After the final card (which has no Challenge line), emit:
 ---
 ## The convergence note
 
-**Where the council converges**
-[1–2 sentences naming the principle all members accept.]
+**Where the council converges:**
 
-**Where it divides**
-[1–3 sentences naming the specific disagreement and why it is not resolvable through argument alone.]
+[1–2 sentences naming the principle all members accept. Max 20 words per sentence. No abstraction-chain patterns.]
 
-**What only the policymaker can resolve**
-[1–2 sentences naming the decision-point requiring a judgment the council cannot make.]
+**Where it divides:**
+
+[1–3 sentences naming the specific disagreement and why it is not resolvable through argument alone. Max 20 words per sentence. No abstraction-chain patterns.]
+
+**What only the policymaker can resolve:**
+
+[1–2 sentences naming the decision-point in concrete terms. Max 20 words per sentence. No abstraction-chain patterns. Name the actual choice in concrete language — not "institutional reform" or "strategic reorientation" type lists, but what the policymaker has to choose between.]
+
 ---
 
 ════════════════════════════════════════════════════════════════
