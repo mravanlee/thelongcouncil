@@ -66,8 +66,39 @@ a:link, a:visited {
 /* ── LANDING ── */
 .landing { max-width: 720px; margin: 0 auto; padding: 64px 32px; }
 .landing-eyebrow { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: #6b1a1a; margin-bottom: 20px; }
-.landing-heading { font-family: 'Playfair Display', serif; font-size: 32px; font-weight: 600; line-height: 1.35; color: #0f0f0f; margin-bottom: 16px; }
+
+/* Heading — sized down for new lead-then-H1 hierarchy (May 2026) */
+.landing-heading {
+  font-family: 'Playfair Display', serif;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: #0f0f0f;
+  margin-bottom: 16px;
+}
+
 .landing-sub { font-size: 16px; color: #4a4a4a; line-height: 1.8; margin-bottom: 48px; max-width: 560px; }
+
+/* Lead paragraph — new hero opener (May 2026) */
+.landing-lead {
+  font-family: 'Inter', sans-serif;
+  font-size: 17px;
+  line-height: 1.5;
+  color: #2a2a2a;
+  font-weight: 400;
+  margin: 0 0 24px;
+}
+.landing-lead em {
+  font-style: italic;
+}
+
+/* Divider between lead and H1 (May 2026) */
+.landing-divider {
+  width: 60px;
+  height: 1px;
+  background: #d4cfc8;
+  margin: 0 0 24px;
+}
 
 .issue-form { display: flex; flex-direction: column; gap: 12px; }
 .issue-input {
@@ -769,8 +800,9 @@ footer { text-align: center; padding: 24px 32px; border-top: 0.5px solid #e8e4de
 /* ── RESPONSIVE ── */
 @media (max-width: 600px) {
   .landing, .sharpener, .loading, .session { padding: 32px 20px; }
-  .landing-heading { font-size: 24px; }
- .session-issue { font-size: 22px; line-height: 1.35; }
+  .landing-heading { font-size: 22px; }
+  .landing-lead { font-size: 16px; line-height: 1.5; }
+  .session-issue { font-size: 22px; line-height: 1.35; }
   .rcard { padding-left: 16px; }
   .rcard .md-h2 { font-size: 17px; }
   .rcard .md-framing { font-size: 15px; padding-left: 12px; }
