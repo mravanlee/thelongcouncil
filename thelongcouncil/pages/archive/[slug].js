@@ -155,13 +155,31 @@ export default function ArchiveDetail({ session }) {
     ? session.member_names.slice(0, 4).join(', ') + (session.member_names.length > 4 ? `, +${session.member_names.length - 4} more` : '')
     : '';
 
+  const pageTitle = session.original_issue ? session.original_issue.substring(0, 60) : 'Archive';
+  const pageDescription = verdict ? verdict.substring(0, 155) : 'A past council debate.';
+  const shareUrl = `https://www.thelongcouncil.com/archive/${session.slug}`;
+  const ogImageUrl = `https://www.thelongcouncil.com/api/og/vs/${session.slug}`;
+
   return (
     <>
       <Head>
-        <title>{session.original_issue ? session.original_issue.substring(0, 60) : 'Archive'} — The Long Council</title>
-        <meta name="description" content={verdict ? verdict.substring(0, 155) : 'A past council debate.'} />
+        <title>{pageTitle} — The Long Council</title>
+        <meta name="description" content={pageDescription} />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+        <meta property="og:type" content="article" />
+        <meta property="og:title" content={session.original_issue || 'The Long Council'} />
+        <meta property="og:description" content={pageDescription} />
+        <meta property="og:url" content={shareUrl} />
+        <meta property="og:image" content={ogImageUrl} />
+        <meta property="og:image:width" content="1080" />
+        <meta property="og:image:height" content="1350" />
+        <meta property="og:site_name" content="The Long Council" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={session.original_issue || 'The Long Council'} />
+        <meta name="twitter:description" content={pageDescription} />
+        <meta name="twitter:image" content={ogImageUrl} />
       </Head>
 
       <Link href="/" className="mast mast-link">
