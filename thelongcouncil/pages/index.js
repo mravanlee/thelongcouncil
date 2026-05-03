@@ -26,20 +26,39 @@ async function releaseScreenLock(ref) {
   ref.current = null;
 }
 
-// ── Server-side: fetch 3 most recent sessions for homepage ─────────────
+// ── Format session counter (042, 494, 1,247) ────────────────────────────
+function formatSessionCount(n) {
+  if (n == null) return '000';
+  if (n < 1000) return n.toString().padStart(3, '0');
+  return n.toLocaleString('en-US');
+}
+
+// ── Server-side: fetch 3 most recent sessions + total count for hero ───
 export async function getServerSideProps() {
-  const { data: sessions, error } = await supabase
+  const recentPromise = supabase
     .from('sessions')
     .select('id, slug, original_issue, created_at, cards')
     .order('created_at', { ascending: false })
     .limit(3);
 
-  if (error) {
-    console.error('[homepage] Failed to load recent sessions:', error);
-    return { props: { recentSessions: [] } };
+  const countPromise = supabase
+    .from('sessions')
+    .select('*', { count: 'exact', head: true });
+
+  const [recentResult, countResult] = await Promise.all([recentPromise, countPromise]);
+
+  if (recentResult.error) {
+    console.error('[homepage] Failed to load recent sessions:', recentResult.error);
   }
 
-  const enriched = (sessions || [])
+  if (countResult.error) {
+    console.error('[homepage] Failed to load session count:', countResult.error);
+  }
+
+  const sessions = recentResult.data || [];
+  const sessionCount = countResult.count ?? 0;
+
+  const enriched = sessions
     .filter(s => s.cards && s.cards.brief)
     .map(s => ({
       id: s.id,
@@ -49,7 +68,7 @@ export async function getServerSideProps() {
       teaser: extractTeaser(s.cards),
     }));
 
-  return { props: { recentSessions: enriched } };
+  return { props: { recentSessions: enriched, sessionCount } };
 }
 
 function extractTeaser(cards) {
@@ -243,7 +262,7 @@ function parseVerdict(verdictText) {
   };
 }
 
-export default function Home({ recentSessions = [] }) {
+export default function Home({ recentSessions = [], sessionCount = 0 }) {
   const router = useRouter();
 
   const [screen, setScreen] = useState('landing');
@@ -553,14 +572,14 @@ export default function Home({ recentSessions = [] }) {
       {screen === 'landing' && (
         <>
           <div className="landing">
-            <div className="landing-eyebrow">Raise an issue</div>
+            <div className="landing-eyebrow">{formatSessionCount(sessionCount)} ISSUES DEBATED · ASK YOUR QUESTION</div>
             <h1 className="landing-heading">
-              What policy question would you like the council to consider?
+              What's on your mind? Ask the council.
             </h1>
             <p className="landing-sub">
-              Bring a hard question about governance, economics, society or geopolitics. History's greatest
-              leaders and thinkers — from Lee Kuan Yew to Hannah Arendt, from Keynes to
-              Machiavelli — will debate it and deliver their verdict.
+              A selection of leaders and thinkers from history, including Mandela,
+              Machiavelli, Sun Tzu, Margaret Thatcher, and others, debate your
+              question and deliver their verdict.
             </p>
 
             <div className="issue-form">
@@ -580,7 +599,7 @@ export default function Home({ recentSessions = [] }) {
               >
                 {sharpenerLoading ? 'Considering...' : 'Raise this issue →'}
               </button>
-              <p className="landing-hint">The council will check if your question is clear before it assembles.</p>
+              <p className="landing-hint">Vague questions get returned for sharpening. Specific ones get debated.</p>
             </div>
           </div>
 
