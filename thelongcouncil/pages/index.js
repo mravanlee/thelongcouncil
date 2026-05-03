@@ -572,7 +572,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
       {screen === 'landing' && (
         <>
           <div className="landing">
-            <div className="landing-eyebrow">{formatSessionCount(sessionCount)} ISSUES DEBATED · ASK YOUR QUESTION</div>
+            <div className="landing-eyebrow">{formatSessionCount(sessionCount)} ISSUES DEBATED</div>
             <h1 className="landing-heading">
               What's on your mind? Ask the council.
             </h1>
