@@ -75,7 +75,7 @@ function extractTeaser(cards) {
   if (!cards || !cards.verdict) return '';
   const match = cards.verdict.match(/##\s*Verdict\s*\n+([^\n#]+(?:\n[^\n#]+)*)/i);
   if (!match) return '';
-  const firstPara = match[1].trim().split(/\n\s*\n/)[0];
+  const firstPara = match[1].trim().split(/\n\s*\n/)[0].replace(/\s*\n\s*/g, ' ');
   if (firstPara.length > 240) {
     const trimmed = firstPara.substring(0, 240);
     const lastPeriod = trimmed.lastIndexOf('.');
