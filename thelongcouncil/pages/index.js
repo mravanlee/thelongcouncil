@@ -573,14 +573,16 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
         <>
           <div className="landing">
             <div className="landing-eyebrow">{formatSessionCount(sessionCount)} ISSUES DEBATED</div>
+
+            <p className="landing-lead">
+              This is The Long Council. For each question, the council assembles the most relevant leaders and thinkers from history, such as Mandela, Machiavelli, FDR, Sun Tzu and Thatcher. They debate <em>your question</em> and deliver a verdict.
+            </p>
+
+            <div className="landing-divider" />
+
             <h1 className="landing-heading">
               What's on your mind? Ask the council.
             </h1>
-            <p className="landing-sub">
-              A selection of leaders and thinkers from history, including Mandela,
-              Machiavelli, Sun Tzu, Margaret Thatcher, and others, debate your
-              question and deliver their verdict.
-            </p>
 
             <div className="issue-form">
               <textarea
@@ -865,6 +867,41 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
         .issue-input:focus {
           border-color: #6b1a1a;
           background: #faf6f3;
+        }
+
+        .landing-lead {
+          font-family: 'Inter', sans-serif;
+          font-size: 17px;
+          line-height: 1.4;
+          color: #2a2a2a;
+          font-weight: 400;
+          margin: 0 0 1.75rem;
+        }
+
+        .landing-lead em {
+          font-style: italic;
+        }
+
+        .landing-divider {
+          width: 60px;
+          height: 1px;
+          background: #d4cfc8;
+          margin: 0 0 1.75rem;
+        }
+
+        .landing-heading {
+          font-family: 'Playfair Display', Georgia, serif;
+          font-size: 24px;
+          font-weight: 600;
+          color: #0f0f0f;
+          line-height: 1.25;
+          margin: 0 0 1rem;
+        }
+
+        @media (min-width: 768px) {
+          .landing-heading {
+            font-size: 24px;
+          }
         }
 
         @media (max-width: 720px) {
