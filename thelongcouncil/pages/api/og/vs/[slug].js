@@ -62,19 +62,18 @@ export default async function handler(req) {
             
             {/* Left portrait — cropped to focus on head */}
             <div style={{ width: '380px', height: '420px', overflow: 'hidden', display: 'flex', justifyContent: 'center', alignItems: 'flex-start' }}>
-              <img src={portrait1} style={{ width: '500px', height: 'auto' }} />
+              <img src={portrait1} style={{ width: '500px', height: '500px' }} />
             </div>
 
-            {/* VS column — slash above + VS + slash below, lines overlap with VS edges */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '420px', width: '140px' }}>
-              <div style={{ width: '2px', height: '140px', background: '#6b1a1a', transform: 'rotate(20deg)', marginBottom: '-30px' }} />
-              <div style={{ display: 'flex', fontFamily: 'Playfair Display', fontWeight: 500, fontSize: '96px', color: '#6b1a1a', lineHeight: 1, background: '#f3eeea', padding: '0 12px', zIndex: 1 }}>VS</div>
-              <div style={{ width: '2px', height: '140px', background: '#6b1a1a', transform: 'rotate(20deg)', marginTop: '-30px' }} />
+            {/* VS with single integrated slash */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '420px', width: '140px', position: 'relative' }}>
+              <div style={{ width: '2px', height: '320px', background: '#6b1a1a', transform: 'rotate(20deg)', position: 'absolute', left: '50%', top: '50%', marginLeft: '-1px', marginTop: '-160px' }} />
+              <div style={{ display: 'flex', fontFamily: 'Playfair Display', fontWeight: 500, fontSize: '96px', color: '#6b1a1a', lineHeight: 1, position: 'relative', zIndex: 1 }}>VS</div>
             </div>
 
             {/* Right portrait */}
             <div style={{ width: '380px', height: '420px', overflow: 'hidden', display: 'flex', justifyContent: 'center', alignItems: 'flex-start' }}>
-              <img src={portrait2} style={{ width: '500px', height: 'auto' }} />
+              <img src={portrait2} style={{ width: '500px', height: '500px' }} />
             </div>
           </div>
 
