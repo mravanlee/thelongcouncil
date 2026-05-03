@@ -4,6 +4,17 @@ export const config = {
   runtime: 'edge',
 };
 
+async function loadGoogleFont(family, weight, italic = false) {
+  const italicParam = italic ? '1' : '0';
+  const url = `https://fonts.googleapis.com/css2?family=${family.replace(/ /g, '+')}:ital,wght@${italicParam},${weight}&display=swap`;
+  const css = await fetch(url, {
+    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+  }).then((res) => res.text());
+  const fontUrl = css.match(/src: url\((.+?)\) format/)?.[1];
+  if (!fontUrl) throw new Error(`Font URL not found for ${family} ${weight}${italic ? ' italic' : ''}`);
+  return fetch(fontUrl).then((res) => res.arrayBuffer());
+}
+
 export default async function handler(req) {
   try {
     const url = new URL(req.url);
@@ -30,63 +41,71 @@ export default async function handler(req) {
       return new Response('Need at least 2 members', { status: 400 });
     }
 
-    const question = session.sharpenedQuestion || session.question || '';
+    const question = (session.question || session.sharpenedQuestion || '').toUpperCase();
     const quoteText = member1.quote || '';
-    const quoteAuthor = member1.name || '';
 
-    const portrait1 = member1.portrait?.startsWith('http')
-      ? member1.portrait
-      : `${baseUrl}${member1.portrait}`;
-    const portrait2 = member2.portrait?.startsWith('http')
-      ? member2.portrait
-      : `${baseUrl}${member2.portrait}`;
+    const portrait1 = member1.portrait?.startsWith('http') ? member1.portrait : `${baseUrl}${member1.portrait}`;
+    const portrait2 = member2.portrait?.startsWith('http') ? member2.portrait : `${baseUrl}${member2.portrait}`;
+
+    const [playfairItalic, playfairRegular, inter] = await Promise.all([
+      loadGoogleFont('Playfair Display', 500, true),
+      loadGoogleFont('Playfair Display', 500, false),
+      loadGoogleFont('Inter', 400, false),
+    ]);
 
     return new ImageResponse(
       (
         <div style={{ width: '1080px', height: '1350px', background: '#f3eeea', display: 'flex', flexDirection: 'column' }}>
 
           {/* Question */}
-          <div style={{ height: '260px', padding: '80px 100px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', fontFamily: 'serif', fontSize: '34px', fontStyle: 'italic', lineHeight: 1.4, color: '#2a2a2a' }}>
-            "{question}"
+          <div style={{ padding: '80px 120px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div style={{ textAlign: 'center', fontFamily: 'Inter', fontSize: '22px', letterSpacing: '2px', lineHeight: 1.5, color: '#2a2a2a' }}>
+              {question}
+            </div>
           </div>
 
+          {/* Divider */}
+          <div style={{ width: '60px', height: '3px', background: '#6b1a1a', margin: '10px auto 20px' }} />
+
           {/* Faces */}
-          <div style={{ height: '420px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', padding: '0 80px', position: 'relative' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 100px', position: 'relative', height: '420px' }}>
+            <img src={portrait1} style={{ width: '360px', objectFit: 'contain' }} />
 
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <img src={portrait1} style={{ width: '360px', objectFit: 'contain' }} />
-              <div style={{ marginTop: '12px', display: 'flex', fontFamily: 'sans-serif', fontSize: '22px', color: '#1a1a1a' }}>
-                {member1.name}
-              </div>
+            <div style={{ position: 'absolute', left: '50%', top: '45%', transform: 'translate(-50%, -50%)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div style={{ width: '2px', height: '80px', background: '#6b1a1a', marginBottom: '10px', transform: 'rotate(20deg)' }} />
+              <div style={{ display: 'flex', fontFamily: 'Playfair Display', fontSize: '64px', color: '#6b1a1a' }}>VS</div>
             </div>
 
-            <div style={{ position: 'absolute', left: '50%', top: '40%', transform: 'translate(-50%, -50%)', display: 'flex', fontFamily: 'serif', fontSize: '64px', color: '#6b1a1a', fontWeight: 600, letterSpacing: '2px' }}>
-              VS
-            </div>
+            <img src={portrait2} style={{ width: '360px', objectFit: 'contain' }} />
+          </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <img src={portrait2} style={{ width: '360px', objectFit: 'contain' }} />
-              <div style={{ marginTop: '12px', display: 'flex', fontFamily: 'sans-serif', fontSize: '22px', color: '#1a1a1a' }}>
-                {member2.name}
-              </div>
+          {/* Names */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 100px 30px' }}>
+            <div style={{ width: '360px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div style={{ display: 'flex', fontFamily: 'Playfair Display', fontSize: '28px', color: '#6b1a1a', letterSpacing: '2px', textAlign: 'center' }}>{member1.name.toUpperCase()}</div>
+              <div style={{ width: '50px', height: '2px', background: '#6b1a1a', marginTop: '10px' }} />
             </div>
-
+            <div style={{ width: '360px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div style={{ display: 'flex', fontFamily: 'Playfair Display', fontSize: '28px', color: '#6b1a1a', letterSpacing: '2px', textAlign: 'center' }}>{member2.name.toUpperCase()}</div>
+              <div style={{ width: '50px', height: '2px', background: '#6b1a1a', marginTop: '10px' }} />
+            </div>
           </div>
 
           {/* Quote */}
-          <div style={{ height: '430px', background: '#6b1a1a', color: '#f3eeea', padding: '70px 100px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            <div style={{ display: 'flex', fontFamily: 'serif', fontSize: '44px', lineHeight: 1.2 }}>
-              "{quoteText}"
+          <div style={{ padding: '40px 140px', display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative', flex: 1 }}>
+            <div style={{ position: 'absolute', left: '100px', top: '0px', display: 'flex', fontSize: '80px', color: '#6b1a1a', fontFamily: 'Playfair Display', fontStyle: 'normal', lineHeight: 1 }}>“</div>
+            <div style={{ display: 'flex', textAlign: 'center', fontFamily: 'Playfair Display', fontStyle: 'italic', fontSize: '44px', lineHeight: 1.4, color: '#1a1a1a' }}>
+              {quoteText}
             </div>
-            <div style={{ marginTop: '24px', display: 'flex', fontFamily: 'sans-serif', fontSize: '22px', opacity: 0.85 }}>
-              — {quoteAuthor}
-            </div>
+            <div style={{ position: 'absolute', right: '100px', bottom: '0px', display: 'flex', fontSize: '80px', color: '#6b1a1a', fontFamily: 'Playfair Display', fontStyle: 'normal', lineHeight: 1 }}>”</div>
           </div>
 
           {/* Footer */}
-          <div style={{ height: '140px', background: '#1a0f0f', color: '#f3eeea', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 80px', fontFamily: 'sans-serif', fontSize: '20px' }}>
-            <div style={{ display: 'flex' }}>Two perspectives from the council</div>
-            <div style={{ display: 'flex' }}>The Long Council</div>
+          <div style={{ height: '180px', background: 'linear-gradient(180deg, #6b1a1a, #3b0e0e)', color: '#f3eeea', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+            <div style={{ display: 'flex', fontFamily: 'Inter', fontSize: '14px', letterSpacing: '2px', opacity: 0.8, marginBottom: '12px' }}>
+              — TWO PERSPECTIVES. ONE QUESTION. —
+            </div>
+            <div style={{ display: 'flex', fontFamily: 'Playfair Display', fontSize: '36px' }}>The Long Council</div>
           </div>
 
         </div>
@@ -94,6 +113,11 @@ export default async function handler(req) {
       {
         width: 1080,
         height: 1350,
+        fonts: [
+          { name: 'Playfair Display', data: playfairItalic, style: 'italic', weight: 500 },
+          { name: 'Playfair Display', data: playfairRegular, style: 'normal', weight: 500 },
+          { name: 'Inter', data: inter, style: 'normal', weight: 400 },
+        ],
       }
     );
   } catch (err) {
