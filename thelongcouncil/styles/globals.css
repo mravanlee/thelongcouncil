@@ -5,14 +5,11 @@ html { scroll-behavior: smooth; }
 body { background: #f8f6f2; font-family: 'Inter', sans-serif; color: #0f0f0f; min-height: 100vh; }
 
 /* ── GLOBAL LINK RESET ── */
-/* Neutralise default visited-link purple. Per-context colors below */
-/* must use class selectors which override these via specificity. */
 a:link, a:visited {
   color: inherit;
   text-decoration: none;
 }
 
-/* Restore link colors for specific contexts (visited must be explicit) */
 .nav-raise:link, .nav-raise:visited { color: #f8f0e8; }
 .nav-raise:hover { color: #f8f0e8; }
 .about a:link, .about a:visited { color: #6b1a1a; text-decoration: underline; }
@@ -67,7 +64,6 @@ a:link, a:visited {
 .landing { max-width: 720px; margin: 0 auto; padding: 64px 32px; }
 .landing-eyebrow { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: #6b1a1a; margin-bottom: 20px; }
 
-/* Heading — sized down for new lead-then-H1 hierarchy (May 2026) */
 .landing-heading {
   font-family: 'Playfair Display', serif;
   font-size: 24px;
@@ -79,7 +75,6 @@ a:link, a:visited {
 
 .landing-sub { font-size: 16px; color: #4a4a4a; line-height: 1.8; margin-bottom: 48px; max-width: 560px; }
 
-/* Lead paragraph — new hero opener (May 2026) */
 .landing-lead {
   font-family: 'Inter', sans-serif;
   font-size: 17px;
@@ -92,7 +87,6 @@ a:link, a:visited {
   font-style: italic;
 }
 
-/* Divider between lead and H1 (May 2026) */
 .landing-divider {
   width: 60px;
   height: 1px;
@@ -171,10 +165,11 @@ a:link, a:visited {
 .btn-original { padding: 10px 20px; background: transparent; color: #8a8a8a; border: 0.5px solid #e0dbd4; border-radius: 2px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 13px; transition: all 0.2s; }
 .btn-original:hover { color: #4a4a4a; }
 
-.sharpen-input-row { display: flex; gap: 10px; align-items: stretch; }
+.sharpen-input-row { display: flex; gap: 10px; }
 .sharpen-input {
   flex: 1;
-  padding: 14px 16px;
+  height: 56px;
+  padding: 0 16px;
   font-family: 'Inter', sans-serif;
   font-size: 16px;
   border: 1px solid #c0b8a8;
@@ -182,27 +177,27 @@ a:link, a:visited {
   background: #fff;
   outline: none;
   transition: border-color 0.2s;
-  min-height: 48px;
   -webkit-appearance: none;
   appearance: none;
 }
 .sharpen-input:focus { border-color: #6b1a1a; }
 .sharpen-send {
   width: 56px;
-  min-height: 48px;
+  height: 56px;
   background: #6b1a1a;
   color: #f8f0e8;
   border: none;
   border-radius: 2px;
   cursor: pointer;
   font-family: 'Inter', sans-serif;
-  font-size: 20px;
+  font-size: 22px;
   line-height: 1;
   transition: background 0.2s, opacity 0.2s;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 0;
 }
 .sharpen-send:hover:not(:disabled) { background: #8b2a2a; }
 .sharpen-send:disabled {
@@ -241,7 +236,6 @@ a:link, a:visited {
   font-style: italic;
 }
 
-/* Skip row — secondary action under the answer input */
 .skip-row {
   margin-top: 14px;
 }
@@ -259,6 +253,7 @@ a:link, a:visited {
   text-decoration-thickness: 0.5px;
 }
 .btn-skip:hover { color: #6b1a1a; }
+
 /* ══════════════════════════════════════════════════════════════════
    RECENT SESSIONS — homepage section below the issue form
    ══════════════════════════════════════════════════════════════════ */
@@ -453,8 +448,6 @@ a:link, a:visited {
 .conc-wrap { opacity: 0; transition: opacity 0.7s; margin: 10px 0 24px; }
 .conc-wrap.visible { opacity: 1; }
 
-/* Verdict block — cream surface with bordeauxrood left accent.
-   Matches archive-detail page styling (consistent across live + archive). */
 .conc-bar {
   background: #f3eeea;
   border: 0.5px solid #d4cdbf;
@@ -740,7 +733,6 @@ footer { text-align: center; padding: 24px 32px; border-top: 0.5px solid #e8e4de
   letter-spacing: -0.005em;
 }
 
-/* Lead paragraph — slightly larger, sets tone */
 .about-lead {
   font-size: 17px;
   line-height: 1.8;
@@ -755,7 +747,6 @@ footer { text-align: center; padding: 24px 32px; border-top: 0.5px solid #e8e4de
   margin-bottom: 22px;
 }
 
-/* Section headers — italic serif, quieter than the main title */
 .about h2 {
   font-family: 'Playfair Display', serif;
   font-size: 16px;
@@ -766,7 +757,6 @@ footer { text-align: center; padding: 24px 32px; border-top: 0.5px solid #e8e4de
   letter-spacing: 0.01em;
 }
 
-/* Links in body text */
 .about a {
   color: #6b1a1a;
   text-decoration: underline;
@@ -776,7 +766,6 @@ footer { text-align: center; padding: 24px 32px; border-top: 0.5px solid #e8e4de
 }
 .about a:hover { color: #8b2a2a; }
 
-/* Footer block — separated by hairline, smaller text */
 .about-footer {
   margin-top: 44px;
   padding-top: 24px;
@@ -792,7 +781,6 @@ footer { text-align: center; padding: 24px 32px; border-top: 0.5px solid #e8e4de
    DESIGN POLISH v2 — color reduction + challenge weight
    ══════════════════════════════════════════════════════════════════ */
 
-/* Reduce bordeauxrood presence — reserve it for verdict + CTA */
 .mast-tag {
   color: #6a6a6a;
   font-style: italic;
@@ -804,7 +792,6 @@ footer { text-align: center; padding: 24px 32px; border-top: 0.5px solid #e8e4de
   color: #7a7a7a;
 }
 
-/* Challenge regels — more visual weight as hinge moment between speakers */
 .rcard .md-challenge {
   font-size: 14px;
   line-height: 1.7;
