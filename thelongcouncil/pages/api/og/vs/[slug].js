@@ -72,7 +72,7 @@ export default async function handler(req) {
             </div>
 
             {/* Quote mark absolutely positioned, removed from flex flow */}
-            <div style={{ position: 'absolute', top: '120px', left: '72px', display: 'flex', fontFamily: 'Playfair Display', fontSize: '120px', lineHeight: 1, opacity: 0.3, fontWeight: 500 }}>
+            <div style={{ position: 'absolute', top: '160px', left: '72px', display: 'flex', fontFamily: 'Playfair Display', fontSize: '120px', lineHeight: 1, opacity: 0.3, fontWeight: 500 }}>
               &ldquo;
             </div>
 
