@@ -173,8 +173,9 @@ export default function ArchiveDetail({ session }) {
         <meta property="og:description" content={pageDescription} />
         <meta property="og:url" content={shareUrl} />
         <meta property="og:image" content={ogImageUrl} />
-        <meta property="og:image:width" content="1080" />
-        <meta property="og:image:height" content="1350" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:alt" content={`${session.original_issue} — The Long Council`} />
         <meta property="og:site_name" content="The Long Council" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={session.original_issue || 'The Long Council'} />
