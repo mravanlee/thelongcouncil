@@ -171,21 +171,45 @@ a:link, a:visited {
 .btn-original { padding: 10px 20px; background: transparent; color: #8a8a8a; border: 0.5px solid #e0dbd4; border-radius: 2px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 13px; transition: all 0.2s; }
 .btn-original:hover { color: #4a4a4a; }
 
-.sharpen-input-row { display: flex; gap: 10px; }
+.sharpen-input-row { display: flex; gap: 10px; align-items: stretch; }
 .sharpen-input {
   flex: 1;
-  padding: 12px 16px;
+  padding: 14px 16px;
   font-family: 'Inter', sans-serif;
-  font-size: 15px;
+  font-size: 16px;
   border: 1px solid #c0b8a8;
   border-radius: 2px;
   background: #fff;
   outline: none;
   transition: border-color 0.2s;
+  min-height: 48px;
+  -webkit-appearance: none;
+  appearance: none;
 }
 .sharpen-input:focus { border-color: #6b1a1a; }
-.sharpen-send { padding: 12px 20px; background: #6b1a1a; color: #f8f0e8; border: none; border-radius: 2px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 14px; }
-.sharpen-send:disabled { background: #c0b8a8; cursor: not-allowed; }
+.sharpen-send {
+  width: 56px;
+  min-height: 48px;
+  background: #6b1a1a;
+  color: #f8f0e8;
+  border: none;
+  border-radius: 2px;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  font-size: 20px;
+  line-height: 1;
+  transition: background 0.2s, opacity 0.2s;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sharpen-send:hover:not(:disabled) { background: #8b2a2a; }
+.sharpen-send:disabled {
+  background: #6b1a1a;
+  opacity: 0.35;
+  cursor: not-allowed;
+}
 
 /* Clarify path — when sharpener asks one follow-up question */
 .clarify-box {
@@ -816,8 +840,8 @@ footer { text-align: center; padding: 24px 32px; border-top: 0.5px solid #e8e4de
   .mc { padding: 18px 20px; }
   .about { padding: 40px 20px 32px; }
   .about-title { font-size: 24px; }
-  .about-lead { font-size: 16px; }
   .about p { font-size: 15px; }
+  .about-lead { font-size: 16px; }
 }
 /* ─── Error screen (Commit 3) ─────────────────────────────────────────── */
 .error-screen {
