@@ -72,12 +72,12 @@ export default async function handler(req) {
               THE LONG COUNCIL
             </div>
 
-            {/* MIDDLE: quote-mark + quote together, centered */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            {/* MIDDLE: quote-mark + quote */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', paddingTop: '40px' }}>
               <div style={{ display: 'flex', fontFamily: 'Playfair Display', fontSize: '90px', lineHeight: 1, opacity: 0.3, fontWeight: 500, marginBottom: '8px' }}>
                 &ldquo;
               </div>
-              <div style={{ display: 'flex', fontFamily: 'Playfair Display', fontStyle: 'italic', fontSize: '46px', lineHeight: 1.2, fontWeight: 500 }}>
+              <div style={{ display: 'flex', fontFamily: 'Playfair Display', fontStyle: 'italic', fontSize: '46px', lineHeight: 1.2, fontWeight: 500, marginTop: '-20px' }}>
                 {quoteText}
               </div>
             </div>
