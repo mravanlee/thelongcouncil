@@ -65,7 +65,7 @@ export default async function handler(req) {
           </div>
 
           {/* RIGHT — Bordeauxrood quote zone */}
-          <div style={{ width: '696px', height: '630px', background: '#6b1a1a', color: '#f3eeea', padding: '50px 72px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
+          <div style={{ width: '696px', height: '630px', background: '#6b1a1a', color: '#f3eeea', padding: '40px 72px 60px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
 
             {/* TOP: brand */}
             <div style={{ display: 'flex', fontFamily: 'Playfair Display', fontSize: '20px', letterSpacing: '5px', opacity: 0.7, fontWeight: 500 }}>
