@@ -71,6 +71,98 @@ function parseDeliberation(deliberationText) {
   return { cards, convergence };
 }
 
+// ── Share button component ─────────────────────────────────────────────
+function ShareButton({ url, question }) {
+  const [copied, setCopied] = useState(false);
+
+  const shareText = `"${question}" — debated by The Long Council\n\n${url}`;
+
+  async function handleClick() {
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: 'The Long Council',
+          text: `"${question}" — debated by The Long Council`,
+          url,
+        });
+        return;
+      } catch (e) {
+        if (e && e.name === 'AbortError') return;
+      }
+    }
+
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(shareText);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+        return;
+      } catch (e) {}
+    }
+
+    if (typeof window !== 'undefined') {
+      window.prompt('Copy this link:', shareText);
+    }
+  }
+
+  return (
+    <div className="share-row">
+      <button className="share-btn" onClick={handleClick} aria-label="Share this session">
+        {copied ? (
+          <span className="share-btn-content">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            Link copied
+          </span>
+        ) : (
+          <span className="share-btn-content">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+              <polyline points="16 6 12 2 8 6" />
+              <line x1="12" y1="2" x2="12" y2="15" />
+            </svg>
+            Share this session
+          </span>
+        )}
+      </button>
+
+      <style jsx>{`
+        .share-row {
+          display: flex;
+          justify-content: center;
+          margin: 2rem 0;
+        }
+        .share-btn {
+          display: inline-flex;
+          align-items: center;
+          padding: 12px 24px;
+          background: transparent;
+          border: 1px solid #6b1a1a;
+          color: #6b1a1a;
+          border-radius: 2px;
+          cursor: pointer;
+          font-family: 'Inter', sans-serif;
+          font-size: 14px;
+          letter-spacing: 0.02em;
+          transition: background 0.2s ease, color 0.2s ease;
+          min-width: 200px;
+          justify-content: center;
+        }
+        .share-btn:hover {
+          background: #6b1a1a;
+          color: #f8f0e8;
+        }
+        .share-btn-content {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+        }
+      `}</style>
+    </div>
+  );
+}
+
 // ── Collapsible section component ──────────────────────────────────────
 function CollapsibleSection({ title, subtitle, children, defaultOpen = false }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -220,6 +312,11 @@ export default function ArchiveDetail({ session }) {
             )}
           </div>
         )}
+
+        <ShareButton
+          url={shareUrl}
+          question={session.original_issue || 'The Long Council'}
+        />
 
         {deliberationText && (
           <CollapsibleSection
