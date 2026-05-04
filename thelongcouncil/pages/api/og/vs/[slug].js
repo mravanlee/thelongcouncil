@@ -64,7 +64,7 @@ export default async function handler(req) {
           </div>
 
           {/* RIGHT — Bordeauxrood quote zone */}
-          <div style={{ width: '696px', height: '630px', background: '#6b1a1a', color: '#f3eeea', padding: '64px 72px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
+          <div style={{ width: '696px', height: '630px', background: '#6b1a1a', color: '#f3eeea', padding: '40px 72px 64px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
 
             <div style={{ display: 'flex', fontFamily: 'Playfair Display', fontSize: '20px', letterSpacing: '5px', opacity: 0.7, fontWeight: 500 }}>
               THE LONG COUNCIL
@@ -80,7 +80,7 @@ export default async function handler(req) {
             </div>
 
             <div style={{ display: 'flex', borderTop: '1px solid rgba(243,238,234,0.3)', paddingTop: '20px' }}>
-              <div style={{ display: 'flex', fontFamily: 'Playfair Display', fontStyle: 'italic', fontSize: '20px', opacity: 0.75 }}>
+              <div style={{ display: 'flex', fontFamily: 'Playfair Display', fontSize: '22px', fontWeight: 500, color: '#f3eeea' }}>
                 on: {question}
               </div>
             </div>
