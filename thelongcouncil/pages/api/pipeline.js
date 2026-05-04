@@ -65,15 +65,19 @@ function extractSelectedMembers(assemblyOutput) {
   const section = selectedMatch[1];
   const names = [];
 
-  const dashChars = '[—–\\-―]';
-  const regex = new RegExp(
-    `^\\s*\\d+\\.\\s+(.+?)(?:\\s+${dashChars}\\s+(?:Practitioner|Framer))?\\s*$`,
-    'gm'
-  );
+  // Match the numbered line. We capture everything after the number and clean it up afterward.
+  const regex = /^\s*\d+\.\s+(.+?)\s*$/gm;
+
+  // Strips trailing "— Practitioner", "– Framer", "- Practitioner" etc. with any dash variant.
+  const stripTierSuffix = (s) => s.replace(/\s*[—–\-―]\s*(Practitioner|Framer)\s*$/i, '').trim();
 
   let match;
   while ((match = regex.exec(section)) !== null) {
-    const rawName = match[1].trim().replace(/\*\*/g, '').replace(/^\*|\*$/g, '').trim();
+    let rawName = match[1].trim()
+      .replace(/\*\*/g, '')
+      .replace(/^\*|\*$/g, '')
+      .trim();
+    rawName = stripTierSuffix(rawName);
     if (rawName.length < 3) continue;
     if (/^(Relevance|Coverage|Will argue):/i.test(rawName)) continue;
     names.push(rawName);
