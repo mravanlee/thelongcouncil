@@ -43,10 +43,11 @@ export default async function handler(req) {
       ? member.portrait
       : `${baseUrl}${member.portrait}`;
 
-    const [playfair500, playfair600, playfairItalic] = await Promise.all([
+    const [playfair500, playfair600, playfairItalic, inter500] = await Promise.all([
       loadGoogleFont('Playfair Display', 500, false),
       loadGoogleFont('Playfair Display', 600, false),
       loadGoogleFont('Playfair Display', 500, true),
+      loadGoogleFont('Inter', 500, false),
     ]);
 
     return new ImageResponse(
@@ -64,23 +65,26 @@ export default async function handler(req) {
           </div>
 
           {/* RIGHT — Bordeauxrood quote zone */}
-          <div style={{ width: '696px', height: '630px', background: '#6b1a1a', color: '#f3eeea', padding: '40px 72px 64px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
+          <div style={{ width: '696px', height: '630px', background: '#6b1a1a', color: '#f3eeea', padding: '40px 72px 64px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box', position: 'relative' }}>
 
             <div style={{ display: 'flex', fontFamily: 'Playfair Display', fontSize: '20px', letterSpacing: '5px', opacity: 0.7, fontWeight: 500 }}>
               THE LONG COUNCIL
             </div>
 
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <div style={{ display: 'flex', fontFamily: 'Playfair Display', fontSize: '140px', lineHeight: 0.6, opacity: 0.35, fontWeight: 500, marginBottom: '12px' }}>
-                &ldquo;
-              </div>
+            {/* Quote mark absolutely positioned, removed from flex flow */}
+            <div style={{ position: 'absolute', top: '90px', left: '72px', display: 'flex', fontFamily: 'Playfair Display', fontSize: '120px', lineHeight: 1, opacity: 0.3, fontWeight: 500 }}>
+              &ldquo;
+            </div>
+
+            {/* Only the quote text in the centered flex zone */}
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
               <div style={{ display: 'flex', fontFamily: 'Playfair Display', fontStyle: 'italic', fontSize: '46px', lineHeight: 1.2, fontWeight: 500 }}>
                 {quoteText}
               </div>
             </div>
 
             <div style={{ display: 'flex', borderTop: '1px solid rgba(243,238,234,0.3)', paddingTop: '20px' }}>
-              <div style={{ display: 'flex', fontFamily: 'Playfair Display', fontSize: '22px', fontWeight: 500, color: '#f3eeea' }}>
+              <div style={{ display: 'flex', fontFamily: 'Inter', fontSize: '20px', fontWeight: 500, color: '#f3eeea' }}>
                 on: {question}
               </div>
             </div>
@@ -95,6 +99,7 @@ export default async function handler(req) {
           { name: 'Playfair Display', data: playfair500, style: 'normal', weight: 500 },
           { name: 'Playfair Display', data: playfair600, style: 'normal', weight: 600 },
           { name: 'Playfair Display', data: playfairItalic, style: 'italic', weight: 500 },
+          { name: 'Inter', data: inter500, style: 'normal', weight: 500 },
         ],
       }
     );
