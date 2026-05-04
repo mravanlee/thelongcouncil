@@ -33,8 +33,8 @@ export default async function handler(req) {
     if (!member) return new Response('No speaker found', { status: 400 });
 
     const rawQuestion = session.question || session.sharpenedQuestion || '';
-    const question = rawQuestion.length > 90
-      ? rawQuestion.slice(0, 90).replace(/\s+\S*$/, '') + '…'
+    const question = rawQuestion.length > 55
+      ? rawQuestion.slice(0, 55).replace(/\s+\S*$/, '') + '…'
       : rawQuestion;
     const quoteText = member.quote || '';
     const speakerName = member.name || '';
@@ -64,13 +64,13 @@ export default async function handler(req) {
           </div>
 
           {/* RIGHT — Bordeauxrood quote zone */}
-          <div style={{ width: '696px', height: '630px', background: '#6b1a1a', color: '#f3eeea', padding: '64px 72px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxSizing: 'border-box' }}>
+          <div style={{ width: '696px', height: '630px', background: '#6b1a1a', color: '#f3eeea', padding: '64px 72px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
 
             <div style={{ display: 'flex', fontFamily: 'Playfair Display', fontSize: '20px', letterSpacing: '5px', opacity: 0.7, fontWeight: 500 }}>
               THE LONG COUNCIL
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
               <div style={{ display: 'flex', fontFamily: 'Playfair Display', fontSize: '140px', lineHeight: 0.6, opacity: 0.35, fontWeight: 500, marginBottom: '12px' }}>
                 &ldquo;
               </div>
@@ -81,7 +81,7 @@ export default async function handler(req) {
 
             <div style={{ display: 'flex', borderTop: '1px solid rgba(243,238,234,0.3)', paddingTop: '20px' }}>
               <div style={{ display: 'flex', fontFamily: 'Playfair Display', fontStyle: 'italic', fontSize: '20px', opacity: 0.75 }}>
-                {question}
+                on: {question}
               </div>
             </div>
 
