@@ -65,14 +65,14 @@ export default async function handler(req) {
           </div>
 
           {/* RIGHT — Bordeauxrood quote zone */}
-          <div style={{ width: '696px', height: '630px', background: '#6b1a1a', color: '#f3eeea', padding: '40px 72px 64px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box', position: 'relative' }}>
+          <div style={{ width: '696px', height: '630px', background: '#6b1a1a', color: '#f3eeea', padding: '90px 72px 64px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box', position: 'relative' }}>
 
             <div style={{ display: 'flex', fontFamily: 'Playfair Display', fontSize: '20px', letterSpacing: '5px', opacity: 0.7, fontWeight: 500 }}>
               THE LONG COUNCIL
             </div>
 
             {/* Quote mark absolutely positioned, removed from flex flow */}
-            <div style={{ position: 'absolute', top: '90px', left: '72px', display: 'flex', fontFamily: 'Playfair Display', fontSize: '120px', lineHeight: 1, opacity: 0.3, fontWeight: 500 }}>
+            <div style={{ position: 'absolute', top: '160px', left: '72px', display: 'flex', fontFamily: 'Playfair Display', fontSize: '120px', lineHeight: 1, opacity: 0.3, fontWeight: 500 }}>
               &ldquo;
             </div>
 
