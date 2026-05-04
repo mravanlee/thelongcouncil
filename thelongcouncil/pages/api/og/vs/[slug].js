@@ -65,25 +65,26 @@ export default async function handler(req) {
           </div>
 
           {/* RIGHT — Bordeauxrood quote zone */}
-          <div style={{ width: '696px', height: '630px', background: '#6b1a1a', color: '#f3eeea', padding: '90px 72px 64px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box', position: 'relative' }}>
+          <div style={{ width: '696px', height: '630px', background: '#6b1a1a', color: '#f3eeea', padding: '50px 72px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
 
+            {/* TOP: brand */}
             <div style={{ display: 'flex', fontFamily: 'Playfair Display', fontSize: '20px', letterSpacing: '5px', opacity: 0.7, fontWeight: 500 }}>
               THE LONG COUNCIL
             </div>
 
-            {/* Quote mark absolutely positioned, removed from flex flow */}
-            <div style={{ position: 'absolute', top: '160px', left: '72px', display: 'flex', fontFamily: 'Playfair Display', fontSize: '120px', lineHeight: 1, opacity: 0.3, fontWeight: 500 }}>
-              &ldquo;
-            </div>
-
-            {/* Only the quote text in the centered flex zone */}
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+            {/* MIDDLE: quote-mark + quote together, centered */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <div style={{ display: 'flex', fontFamily: 'Playfair Display', fontSize: '90px', lineHeight: 1, opacity: 0.3, fontWeight: 500, marginBottom: '8px' }}>
+                &ldquo;
+              </div>
               <div style={{ display: 'flex', fontFamily: 'Playfair Display', fontStyle: 'italic', fontSize: '46px', lineHeight: 1.2, fontWeight: 500 }}>
                 {quoteText}
               </div>
             </div>
 
-            <div style={{ display: 'flex', borderTop: '1px solid rgba(243,238,234,0.3)', paddingTop: '20px' }}>
+            {/* BOTTOM: question */}
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', height: '1px', background: 'rgba(243,238,234,0.3)', marginBottom: '20px' }} />
               <div style={{ display: 'flex', fontFamily: 'Inter', fontSize: '20px', fontWeight: 500, color: '#f3eeea' }}>
                 on: {question}
               </div>
