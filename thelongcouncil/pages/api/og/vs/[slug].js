@@ -32,7 +32,10 @@ export default async function handler(req) {
     const member = session.members?.[0];
     if (!member) return new Response('No speaker found', { status: 400 });
 
-    const question = session.sharpenedQuestion || session.question || '';
+    const rawQuestion = session.question || session.sharpenedQuestion || '';
+    const question = rawQuestion.length > 90
+      ? rawQuestion.slice(0, 90).replace(/\s+\S*$/, '') + '…'
+      : rawQuestion;
     const quoteText = member.quote || '';
     const speakerName = member.name || '';
 
@@ -53,7 +56,7 @@ export default async function handler(req) {
           {/* LEFT — Portrait with flush-bottom name band */}
           <div style={{ width: '504px', height: '630px', position: 'relative', display: 'flex', overflow: 'hidden' }}>
             <img src={portrait} style={{ position: 'absolute', top: '-44px', left: '-152px', width: '808px', height: '808px' }} />
-            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: '#f3eeea', padding: '24px 40px', display: 'flex' }}>
+            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: '#f3eeea', padding: '18px 40px', display: 'flex' }}>
               <div style={{ display: 'flex', fontFamily: 'Playfair Display', fontSize: '56px', color: '#1a1a1a', fontWeight: 600, lineHeight: 1 }}>
                 {speakerName}
               </div>
@@ -78,7 +81,7 @@ export default async function handler(req) {
 
             <div style={{ display: 'flex', borderTop: '1px solid rgba(243,238,234,0.3)', paddingTop: '20px' }}>
               <div style={{ display: 'flex', fontFamily: 'Playfair Display', fontStyle: 'italic', fontSize: '20px', opacity: 0.75 }}>
-                on: {question}
+                {question}
               </div>
             </div>
 
