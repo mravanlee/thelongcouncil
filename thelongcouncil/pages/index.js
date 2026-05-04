@@ -555,6 +555,19 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content="The Long Council" />
+        <meta property="og:description" content="Ask a hard question. Watch history's greatest minds debate it. See what they decide." />
+        <meta property="og:url" content="https://www.thelongcouncil.com/" />
+        <meta property="og:image" content="https://www.thelongcouncil.com/og-default.png" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:alt" content="The Long Council — History's counsel on today's questions" />
+        <meta property="og:site_name" content="The Long Council" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="The Long Council" />
+        <meta name="twitter:description" content="Ask a hard question. Watch history's greatest minds debate it. See what they decide." />
+        <meta name="twitter:image" content="https://www.thelongcouncil.com/og-default.png" />
       </Head>
 
       <div className="mast mast-link" onClick={reset}>
