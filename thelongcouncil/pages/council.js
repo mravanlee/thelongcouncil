@@ -104,10 +104,23 @@ export default function Council() {
     <>
       <Head>
         <title>The Council — The Long Council</title>
-        <meta name="description" content="37 historic leaders and thinkers who form The Long Council." />
+        <meta name="description" content="37 historic leaders and thinkers who form The Long Council — from Machiavelli to Mandela, Keynes to Sun Tzu." />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content="The Council — The Long Council" />
+        <meta property="og:description" content="37 historic leaders and thinkers who form The Long Council — from Machiavelli to Mandela, Keynes to Sun Tzu." />
+        <meta property="og:url" content="https://www.thelongcouncil.com/council" />
+        <meta property="og:image" content="https://www.thelongcouncil.com/og-default.png" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:alt" content="The Long Council — History's counsel on today's questions" />
+        <meta property="og:site_name" content="The Long Council" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="The Council — The Long Council" />
+        <meta name="twitter:description" content="37 historic leaders and thinkers who form The Long Council — from Machiavelli to Mandela, Keynes to Sun Tzu." />
+        <meta name="twitter:image" content="https://www.thelongcouncil.com/og-default.png" />
       </Head>
 
       <Link href="/" className="mast mast-link">
@@ -186,7 +199,7 @@ export default function Council() {
       )}
 
       <footer>
-        © The Long Council · Counsel from history's greatest minds, bought to life by AI ·
+        © The Long Council · Counsel from history's greatest minds, brought to life by AI ·
       </footer>
     </>
   );
