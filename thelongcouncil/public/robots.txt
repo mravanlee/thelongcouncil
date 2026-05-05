@@ -1,5 +1,5 @@
 # The Long Council — robots.txt
-# Last updated: April 28, 2026
+# Last updated: May 5, 2026
 
 # ─── Standard search engines ─────────────────────────────────
 User-agent: Googlebot
@@ -8,10 +8,47 @@ Allow: /
 User-agent: Bingbot
 Allow: /
 
+# ─── Social & messaging link-preview crawlers ────────────────
+# Required for OG link previews in WhatsApp, iMessage,
+# Facebook, X, LinkedIn, Slack, Discord, Telegram.
+# Without explicit rules these crawlers may interpret the
+# default "*" group conservatively and return 403.
+
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: Facebot
+Allow: /
+
+User-agent: WhatsApp
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: LinkedInBot
+Allow: /
+
+User-agent: Slackbot
+Allow: /
+
+User-agent: Slackbot-LinkExpanding
+Allow: /
+
+User-agent: TelegramBot
+Allow: /
+
+User-agent: Discordbot
+Allow: /
+
+User-agent: SkypeUriPreview
+Allow: /
+
 # ─── AI search & citation crawlers ───────────────────────────
 # These fetch content to cite in AI search answers, with links
 # back to us. This is the channel that drives discovery via
 # ChatGPT Search, Claude, and Perplexity.
+
 User-agent: OAI-SearchBot
 Allow: /
 
@@ -24,6 +61,7 @@ Allow: /
 # ─── AI user-triggered fetchers ──────────────────────────────
 # Real-time fetches when a specific user asks an AI assistant
 # a question that requires live retrieval.
+
 User-agent: ChatGPT-User
 Allow: /
 
@@ -39,6 +77,7 @@ Allow: /
 # models that have read the project, the more often it gets
 # referenced when someone asks "what would Lee Kuan Yew say
 # about X".
+
 User-agent: GPTBot
 Allow: /
 
