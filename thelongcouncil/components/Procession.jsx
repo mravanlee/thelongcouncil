@@ -1,7 +1,7 @@
 import { useMemo, useEffect, useState, Fragment } from 'react'
 import { getTier, getInitials, slugify, parseCard, renderInline } from '../lib/cardParser'
 
-export default function Procession({ cards = [], onComplete, instant = false }) {
+export default function Procession({ cards = [], onComplete, instant = false, sessionSlug = null }) {
   const parsed = useMemo(() => cards.map(parseCard).filter(Boolean), [cards])
 
   const [seatedCount, setSeatedCount] = useState(0)
@@ -103,7 +103,7 @@ export default function Procession({ cards = [], onComplete, instant = false }) 
               {renderArchMarkerHere(i) && (
                 <SectionMarker label="The intellectual architecture" visible={archVisible} />
               )}
-              <Seat card={card} tier={tier} state={state} />
+              <Seat card={card} tier={tier} state={state} sessionSlug={sessionSlug} />
             </Fragment>
           )
         })}
@@ -176,7 +176,85 @@ function SectionMarker({ label, visible }) {
   )
 }
 
-function Seat({ card, tier, state }) {
+function ShareIcon({ name, sessionSlug }) {
+  const [copied, setCopied] = useState(false)
+
+  async function handleClick(e) {
+    e.preventDefault()
+    e.stopPropagation()
+    const cleanName = name.replace(/\s*[—–-]\s*(Practitioner|Framer|Wildcard)\s*$/i, '').trim()
+    const shareUrl = `https://www.thelongcouncil.com/archive/${sessionSlug}?member=${encodeURIComponent(cleanName)}`
+
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: `${cleanName} — The Long Council`,
+          url: shareUrl,
+        })
+        return
+      } catch (err) {
+        if (err && err.name === 'AbortError') return
+      }
+    }
+
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(shareUrl)
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+        return
+      } catch (err) {}
+    }
+
+    if (typeof window !== 'undefined') window.prompt('Copy this link:', shareUrl)
+  }
+
+  return (
+    <button
+      className="share-icon"
+      onClick={handleClick}
+      aria-label={`Share ${name}'s view`}
+      title={copied ? 'Link copied' : `Share ${name}'s view`}
+    >
+      {copied ? (
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      ) : (
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+          <polyline points="16 6 12 2 8 6" />
+          <line x1="12" y1="2" x2="12" y2="15" />
+        </svg>
+      )}
+      <style jsx>{`
+        .share-icon {
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          border: 1px solid #6b1a1a;
+          background: transparent;
+          color: #6b1a1a;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          padding: 0;
+          margin-left: auto;
+          flex-shrink: 0;
+          align-self: center;
+          transition: background 0.2s ease, color 0.2s ease;
+        }
+        .share-icon:hover {
+          background: #6b1a1a;
+          color: #f3eeea;
+        }
+      `}</style>
+    </button>
+  )
+}
+
+function Seat({ card, tier, state, sessionSlug }) {
   const { name, role, framing, body, challenge } = card
   const isFramer = tier === 'F'
   const [imgFailed, setImgFailed] = useState(false)
@@ -201,6 +279,7 @@ function Seat({ card, tier, state }) {
         <div className="head">
           <span className="name">{name}</span>
           {role && <span className="role">{role}</span>}
+          {sessionSlug && <ShareIcon name={name} sessionSlug={sessionSlug} />}
         </div>
 
         {framing && <div className="framing">{framing}</div>}
