@@ -7,13 +7,14 @@ import Procession from '../../components/Procession';
 
 export async function getServerSideProps(context) {
   const { slug } = context.params;
+  const memberQuery = (context.query && context.query.member) ? String(context.query.member) : null;
   const { data: session, error } = await supabase
     .from('sessions')
     .select('*')
     .eq('slug', slug)
     .single();
   if (error || !session) return { notFound: true };
-  return { props: { session } };
+  return { props: { session, memberQuery } };
 }
 
 function formatDate(iso) {
@@ -177,7 +178,7 @@ function CollapsibleSection({ title, subtitle, children, defaultOpen = false }) 
   );
 }
 
-export default function ArchiveDetail({ session }) {
+export default function ArchiveDetail({ session, memberQuery }) {
   const cards = session.cards || {};
   const { verdict, reasoning } = parseVerdict(cards.verdict);
   const deliberationText = cleanDeliberation(cards.deliberation);
@@ -192,8 +193,12 @@ export default function ArchiveDetail({ session }) {
 
   const pageTitle = session.original_issue ? session.original_issue.substring(0, 60) : 'Archive';
   const pageDescription = verdict ? verdict.substring(0, 155) : 'A past council debate.';
-  const shareUrl = `https://www.thelongcouncil.com/archive/${session.slug}`;
-  const ogImageUrl = `https://www.thelongcouncil.com/api/og/vs/${session.slug}`;
+
+  const baseShareUrl = `https://www.thelongcouncil.com/archive/${session.slug}`;
+  const canonicalUrl = memberQuery ? `${baseShareUrl}?member=${encodeURIComponent(memberQuery)}` : baseShareUrl;
+  const ogImageUrl = memberQuery
+    ? `https://www.thelongcouncil.com/api/og/vs/${session.slug}?member=${encodeURIComponent(memberQuery)}`
+    : `https://www.thelongcouncil.com/api/og/vs/${session.slug}`;
 
   return (
     <>
@@ -206,7 +211,7 @@ export default function ArchiveDetail({ session }) {
         <meta property="og:type" content="article" />
         <meta property="og:title" content={session.original_issue || 'The Long Council'} />
         <meta property="og:description" content={pageDescription} />
-        <meta property="og:url" content={shareUrl} />
+        <meta property="og:url" content={canonicalUrl} />
         <meta property="og:image" content={ogImageUrl} />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
@@ -249,13 +254,13 @@ export default function ArchiveDetail({ session }) {
           </div>
         )}
 
-        <ShareButton url={shareUrl} question={session.original_issue || 'The Long Council'} />
+        <ShareButton url={baseShareUrl} question={session.original_issue || 'The Long Council'} />
 
         {deliberationText && (
           <CollapsibleSection title="The debate" subtitle={memberSummary ? `Hear from each member in turn — ${memberSummary}` : 'Hear from each member in turn'}>
             {deliberationCards.length > 0 ? (
               <div className="deliberation-procession">
-                <Procession cards={deliberationCards} instant={true} />
+                <Procession cards={deliberationCards} instant={true} sessionSlug={session.slug} />
               </div>
             ) : (
               <div className="md-body"><ReactMarkdown>{deliberationText}</ReactMarkdown></div>
