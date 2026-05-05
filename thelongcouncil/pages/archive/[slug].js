@@ -49,18 +49,23 @@ function parseDeliberation(deliberationText) {
   return { cards, convergence };
 }
 
+function stripTierSuffix(name) {
+  return name.replace(/\s*[—–-]\s*(Practitioner|Framer|Wildcard)\s*$/i, '').trim();
+}
+
 function nameToAvatarSlug(name) {
-  return name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\s.\-]+/g, '_').replace(/[^a-z0-9_]/g, '').replace(/_+/g, '_').replace(/^_|_$/g, '');
+  return stripTierSuffix(name).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\s.\-]+/g, '_').replace(/[^a-z0-9_]/g, '').replace(/_+/g, '_').replace(/^_|_$/g, '');
 }
 
 function splitNameForCast(name) {
-  const parts = name.split(' ');
-  if (parts.length === 1) return [name, ''];
+  const clean = stripTierSuffix(name);
+  const parts = clean.split(' ');
+  if (parts.length === 1) return [clean, ''];
   return [parts.slice(0, -1).join(' '), parts[parts.length - 1]];
 }
 
 function getInitials(name) {
-  return name.split(' ').filter(Boolean).map(p => p[0]).join('').toUpperCase().slice(0, 3);
+  return stripTierSuffix(name).split(' ').filter(Boolean).map(p => p[0]).join('').toUpperCase().slice(0, 3);
 }
 
 function VerdictCast({ names }) {
@@ -74,7 +79,7 @@ function VerdictCast({ names }) {
           <div key={name} className="cast-col">
             <div className="cast-avatar">
               <span className="cast-initials">{getInitials(name)}</span>
-              <img src={`/avatars/avatar_${slug}.webp`} alt={name} className="cast-img" onError={(e) => { e.target.style.display = 'none'; }}/>
+              <img src={`/avatars/avatar_${slug}.webp`} alt="" className="cast-img" onError={(e) => { e.target.style.display = 'none'; }}/>
             </div>
             <div className="cast-name">{line1}{line2 ? <><br />{line2}</> : null}</div>
           </div>
@@ -182,7 +187,7 @@ export default function ArchiveDetail({ session }) {
 
   const memberCount = session.member_names ? session.member_names.length : 0;
   const memberSummary = session.member_names && session.member_names.length > 0
-    ? session.member_names.slice(0, 4).join(', ') + (session.member_names.length > 4 ? `, +${session.member_names.length - 4} more` : '')
+    ? session.member_names.slice(0, 4).map(stripTierSuffix).join(', ') + (session.member_names.length > 4 ? `, +${session.member_names.length - 4} more` : '')
     : '';
 
   const pageTitle = session.original_issue ? session.original_issue.substring(0, 60) : 'Archive';
