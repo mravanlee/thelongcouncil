@@ -71,6 +71,127 @@ function parseDeliberation(deliberationText) {
   return { cards, convergence };
 }
 
+// Slugify name to match avatar filename convention.
+// "Niccolò Machiavelli" → "niccolo_machiavelli"
+// "Franklin D. Roosevelt" → "franklin_d_roosevelt"
+// "Mustafa Kemal Atatürk" → "mustafa_kemal_ataturk"
+function nameToAvatarSlug(name) {
+  return name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[\s.\-]+/g, '_')
+    .replace(/[^a-z0-9_]/g, '')
+    .replace(/_+/g, '_')
+    .replace(/^_|_$/g, '');
+}
+
+// Split name for two-line display: first name(s) on top, surname on bottom.
+function splitNameForCast(name) {
+  const parts = name.split(' ');
+  if (parts.length === 1) return [name, ''];
+  return [parts.slice(0, -1).join(' '), parts[parts.length - 1]];
+}
+
+function getInitials(name) {
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .map(p => p[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 3);
+}
+
+// ── Verdict cast row component ─────────────────────────────────────────
+function VerdictCast({ names }) {
+  if (!names || names.length === 0) return null;
+
+  return (
+    <div className="cast-row">
+      {names.map((name) => {
+        const [line1, line2] = splitNameForCast(name);
+        const slug = nameToAvatarSlug(name);
+        return (
+          <div key={name} className="cast-col">
+            <div className="cast-avatar">
+              <span className="cast-initials">{getInitials(name)}</span>
+              <img
+                src={`/avatars/avatar_${slug}.webp`}
+                alt={name}
+                className="cast-img"
+                onError={(e) => { e.target.style.display = 'none'; }}
+              />
+            </div>
+            <div className="cast-name">
+              {line1}{line2 ? <><br />{line2}</> : null}
+            </div>
+          </div>
+        );
+      })}
+
+      <style jsx>{`
+        .cast-row {
+          display: flex;
+          gap: 22px;
+          padding: 4px 0 6px;
+          margin: 0 0 1.75rem;
+          flex-wrap: wrap;
+        }
+        .cast-col {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          min-width: 72px;
+        }
+        .cast-avatar {
+          width: 64px;
+          height: 64px;
+          border-radius: 50%;
+          background: #f3eeea;
+          border: 0.5px solid #c8bdb3;
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          overflow: hidden;
+          flex-shrink: 0;
+        }
+        .cast-initials {
+          font-family: 'Playfair Display', Georgia, serif;
+          font-size: 16px;
+          font-weight: 600;
+          color: #6b1a1a;
+          letter-spacing: 0.02em;
+        }
+        .cast-img {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+        .cast-name {
+          font-family: 'Inter', sans-serif;
+          font-size: 11px;
+          color: #4a4a4a;
+          text-align: center;
+          margin-top: 8px;
+          line-height: 1.35;
+          letter-spacing: 0.01em;
+        }
+        @media (max-width: 480px) {
+          .cast-row { gap: 14px; }
+          .cast-col { min-width: 64px; }
+          .cast-avatar { width: 56px; height: 56px; }
+          .cast-initials { font-size: 14px; }
+          .cast-name { font-size: 10.5px; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
 // ── Share button component ─────────────────────────────────────────────
 function ShareButton({ url, question }) {
   const [copied, setCopied] = useState(false);
@@ -297,6 +418,8 @@ export default function ArchiveDetail({ session }) {
 
         <h1 className="detail-title">{session.original_issue}</h1>
 
+        <VerdictCast names={session.member_names} />
+
         {verdict && (
           <div className="verdict-block">
             <div className="verdict-label">Verdict</div>
@@ -413,7 +536,7 @@ export default function ArchiveDetail({ session }) {
           color: #0f0f0f;
           font-weight: 600;
           line-height: 1.3;
-          margin: 0 0 2rem;
+          margin: 0 0 1.5rem;
           max-width: 62ch;
         }
 
