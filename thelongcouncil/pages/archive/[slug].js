@@ -75,14 +75,15 @@ function parseDeliberation(deliberationText) {
 function ShareButton({ url, question }) {
   const [copied, setCopied] = useState(false);
 
-  const shareText = `"${question}" — debated by The Long Council\n\n${url}`;
+  const cleanQuestion = (question || '').trim().replace(/\s+/g, ' ');
+  const shareText = `"${cleanQuestion}" — debated by The Long Council\n\n${url}`;
 
   async function handleClick() {
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {
         await navigator.share({
           title: 'The Long Council',
-          text: `"${question}" — debated by The Long Council`,
+          text: `"${cleanQuestion}" — debated by The Long Council`,
           url,
         });
         return;
