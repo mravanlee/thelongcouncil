@@ -240,9 +240,7 @@ function ShareIcon({ name, sessionSlug }) {
           justify-content: center;
           cursor: pointer;
           padding: 0;
-          margin-left: auto;
           flex-shrink: 0;
-          align-self: center;
           transition: background 0.2s ease, color 0.2s ease;
         }
         .share-icon:hover {
@@ -277,8 +275,10 @@ function Seat({ card, tier, state, sessionSlug }) {
 
       <div className="content">
         <div className="head">
-          <span className="name">{name}</span>
-          {role && <span className="role">{role}</span>}
+          <div className="head-meta">
+            <span className="name">{name}</span>
+            {role && <span className="role">{role}</span>}
+          </div>
           {sessionSlug && <ShareIcon name={name} sessionSlug={sessionSlug} />}
         </div>
 
@@ -360,10 +360,17 @@ function Seat({ card, tier, state, sessionSlug }) {
 
         .head {
           display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 3px;
+        }
+        .head-meta {
+          flex: 1;
+          min-width: 0;
+          display: flex;
           align-items: baseline;
           gap: 10px;
           flex-wrap: wrap;
-          margin-bottom: 3px;
         }
         .name {
           font-family: 'Playfair Display', serif;
