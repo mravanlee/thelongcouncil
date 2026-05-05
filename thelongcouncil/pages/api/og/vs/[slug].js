@@ -35,7 +35,15 @@ export default async function handler(req) {
     const protocol = host && host.includes('localhost') ? 'http' : 'https';
     const baseUrl = `${protocol}://${host}`;
 
-    const sessionRes = await fetch(`${baseUrl}/api/session/${slug}`);
+    // Parallel fetch: session + 3 fonts in one round-trip.
+    // Inter removed — Playfair 500 covers the question line, saves ~100KB.
+    const [sessionRes, playfair500, playfair600, playfairItalic] = await Promise.all([
+      fetch(`${baseUrl}/api/session/${slug}`),
+      loadGoogleFont('Playfair Display', 500, false),
+      loadGoogleFont('Playfair Display', 600, false),
+      loadGoogleFont('Playfair Display', 500, true),
+    ]);
+
     if (!sessionRes.ok) return new Response('Session not found', { status: 404 });
     const session = await sessionRes.json();
 
@@ -53,13 +61,6 @@ export default async function handler(req) {
     const portrait = member.portrait?.startsWith('http')
       ? member.portrait
       : `${baseUrl}${member.portrait}`;
-
-    const [playfair500, playfair600, playfairItalic, inter500] = await Promise.all([
-      loadGoogleFont('Playfair Display', 500, false),
-      loadGoogleFont('Playfair Display', 600, false),
-      loadGoogleFont('Playfair Display', 500, true),
-      loadGoogleFont('Inter', 500, false),
-    ]);
 
     return new ImageResponse(
       (
@@ -96,7 +97,7 @@ export default async function handler(req) {
             {/* BOTTOM: question */}
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <div style={{ display: 'flex', height: '1px', background: 'rgba(243,238,234,0.3)', marginBottom: '20px' }} />
-              <div style={{ display: 'flex', fontFamily: 'Inter', fontSize: '20px', fontWeight: 500, color: '#f3eeea' }}>
+              <div style={{ display: 'flex', fontFamily: 'Playfair Display', fontSize: '20px', fontWeight: 500, color: '#f3eeea' }}>
                 on: {question}
               </div>
             </div>
@@ -111,8 +112,10 @@ export default async function handler(req) {
           { name: 'Playfair Display', data: playfair500, style: 'normal', weight: 500 },
           { name: 'Playfair Display', data: playfair600, style: 'normal', weight: 600 },
           { name: 'Playfair Display', data: playfairItalic, style: 'italic', weight: 500 },
-          { name: 'Inter', data: inter500, style: 'normal', weight: 500 },
         ],
+        headers: {
+          'Cache-Control': 'public, max-age=31536000, s-maxage=31536000, immutable',
+        },
       }
     );
   } catch (err) {
