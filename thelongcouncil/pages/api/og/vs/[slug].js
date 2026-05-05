@@ -15,7 +15,6 @@ async function loadGoogleFont(family, weight, italic = false) {
   return fetch(fontUrl).then((res) => res.arrayBuffer());
 }
 
-// Naam font-size schaalt met lengte; balk-hoogte blijft constant 92px.
 function getNameFontSize(name) {
   const len = name.length;
   if (len <= 10) return 56;
@@ -25,18 +24,29 @@ function getNameFontSize(name) {
   return 32;
 }
 
+// Normalise both stored member names and query-param input for comparison.
+// Strips tier suffix, lowercases, removes diacritics and punctuation.
+function normaliseName(name) {
+  return (name || '')
+    .replace(/\s*[—–-]\s*(Practitioner|Framer|Wildcard)\s*$/i, '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]/g, '');
+}
+
 export default async function handler(req) {
   try {
     const url = new URL(req.url);
     const slug = url.pathname.split('/').pop();
     if (!slug) return new Response('Missing slug', { status: 400 });
 
+    const memberQuery = url.searchParams.get('member');
+
     const host = req.headers.get('host');
     const protocol = host && host.includes('localhost') ? 'http' : 'https';
     const baseUrl = `${protocol}://${host}`;
 
-    // Parallel fetch: session + 3 fonts in one round-trip.
-    // Inter removed — Playfair 500 covers the question line, saves ~100KB.
     const [sessionRes, playfair500, playfair600, playfairItalic] = await Promise.all([
       fetch(`${baseUrl}/api/session/${slug}`),
       loadGoogleFont('Playfair Display', 500, false),
@@ -47,8 +57,16 @@ export default async function handler(req) {
     if (!sessionRes.ok) return new Response('Session not found', { status: 404 });
     const session = await sessionRes.json();
 
-    const member = session.members?.[0];
-    if (!member) return new Response('No speaker found', { status: 400 });
+    if (!session.members || session.members.length === 0) {
+      return new Response('No speakers found', { status: 400 });
+    }
+
+    let member = session.members[0];
+    if (memberQuery) {
+      const target = normaliseName(memberQuery);
+      const found = session.members.find((m) => normaliseName(m.name) === target);
+      if (found) member = found;
+    }
 
     const rawQuestion = session.question || session.sharpenedQuestion || '';
     const question = rawQuestion.length > 55
@@ -66,7 +84,6 @@ export default async function handler(req) {
       (
         <div style={{ width: '1200px', height: '630px', background: '#f3eeea', display: 'flex' }}>
 
-          {/* LEFT — Portrait with flush-bottom name band */}
           <div style={{ width: '504px', height: '630px', position: 'relative', display: 'flex', overflow: 'hidden' }}>
             <img src={portrait} style={{ position: 'absolute', top: '-40px', left: '-108px', width: '720px', height: '720px' }} />
             <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '92px', background: '#f3eeea', padding: '0 40px', display: 'flex', alignItems: 'center' }}>
@@ -76,15 +93,12 @@ export default async function handler(req) {
             </div>
           </div>
 
-          {/* RIGHT — Bordeauxrood quote zone */}
           <div style={{ width: '696px', height: '630px', background: '#6b1a1a', color: '#f3eeea', padding: '40px 72px 60px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
 
-            {/* TOP: brand */}
             <div style={{ display: 'flex', fontFamily: 'Playfair Display', fontSize: '20px', letterSpacing: '5px', opacity: 0.7, fontWeight: 500 }}>
               THE LONG COUNCIL
             </div>
 
-            {/* MIDDLE: quote-mark + quote */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', paddingTop: '40px' }}>
               <div style={{ display: 'flex', fontFamily: 'Playfair Display', fontSize: '90px', lineHeight: 1, opacity: 0.3, fontWeight: 500, marginBottom: '8px' }}>
                 &ldquo;
@@ -94,7 +108,6 @@ export default async function handler(req) {
               </div>
             </div>
 
-            {/* BOTTOM: question */}
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <div style={{ display: 'flex', height: '1px', background: 'rgba(243,238,234,0.3)', marginBottom: '20px' }} />
               <div style={{ display: 'flex', fontFamily: 'Playfair Display', fontSize: '20px', fontWeight: 500, color: '#f3eeea' }}>
