@@ -15,6 +15,16 @@ async function loadGoogleFont(family, weight, italic = false) {
   return fetch(fontUrl).then((res) => res.arrayBuffer());
 }
 
+// Naam font-size schaalt met lengte; balk-hoogte blijft constant 92px.
+function getNameFontSize(name) {
+  const len = name.length;
+  if (len <= 10) return 56;
+  if (len <= 13) return 50;
+  if (len <= 16) return 44;
+  if (len <= 19) return 38;
+  return 32;
+}
+
 export default async function handler(req) {
   try {
     const url = new URL(req.url);
@@ -38,6 +48,7 @@ export default async function handler(req) {
       : rawQuestion;
     const quoteText = member.quote || '';
     const speakerName = member.name || '';
+    const nameFontSize = getNameFontSize(speakerName);
 
     const portrait = member.portrait?.startsWith('http')
       ? member.portrait
@@ -57,8 +68,8 @@ export default async function handler(req) {
           {/* LEFT — Portrait with flush-bottom name band */}
           <div style={{ width: '504px', height: '630px', position: 'relative', display: 'flex', overflow: 'hidden' }}>
             <img src={portrait} style={{ position: 'absolute', top: '-44px', left: '-152px', width: '808px', height: '808px' }} />
-            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: '#f3eeea', padding: '18px 40px', display: 'flex' }}>
-              <div style={{ display: 'flex', fontFamily: 'Playfair Display', fontSize: '56px', color: '#1a1a1a', fontWeight: 600, lineHeight: 1 }}>
+            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '92px', background: '#f3eeea', padding: '0 40px', display: 'flex', alignItems: 'center' }}>
+              <div style={{ display: 'flex', fontFamily: 'Playfair Display', fontSize: `${nameFontSize}px`, color: '#1a1a1a', fontWeight: 600, lineHeight: 1, whiteSpace: 'nowrap' }}>
                 {speakerName}
               </div>
             </div>
