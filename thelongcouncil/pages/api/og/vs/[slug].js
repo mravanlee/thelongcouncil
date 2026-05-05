@@ -67,7 +67,7 @@ export default async function handler(req) {
 
           {/* LEFT — Portrait with flush-bottom name band */}
           <div style={{ width: '504px', height: '630px', position: 'relative', display: 'flex', overflow: 'hidden' }}>
-            <img src={portrait} style={{ position: 'absolute', top: '-44px', left: '-152px', width: '808px', height: '808px' }} />
+            <img src={portrait} style={{ position: 'absolute', top: '-40px', left: '-108px', width: '720px', height: '720px' }} />
             <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '92px', background: '#f3eeea', padding: '0 40px', display: 'flex', alignItems: 'center' }}>
               <div style={{ display: 'flex', fontFamily: 'Playfair Display', fontSize: `${nameFontSize}px`, color: '#1a1a1a', fontWeight: 600, lineHeight: 1, whiteSpace: 'nowrap' }}>
                 {speakerName}
