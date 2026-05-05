@@ -26,10 +26,10 @@ function getNameFontSize(name) {
 
 function getQuoteFontSize(text) {
   const len = text.length;
-  if (len <= 90) return 46;
-  if (len <= 130) return 38;
-  if (len <= 170) return 32;
-  if (len <= 220) return 26;
+  if (len <= 105) return 46;
+  if (len <= 145) return 38;
+  if (len <= 185) return 32;
+  if (len <= 235) return 26;
   return 22;
 }
 
