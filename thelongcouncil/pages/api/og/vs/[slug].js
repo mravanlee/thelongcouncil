@@ -24,8 +24,15 @@ function getNameFontSize(name) {
   return 32;
 }
 
-// Normalise both stored member names and query-param input for comparison.
-// Strips tier suffix, lowercases, removes diacritics and punctuation.
+function getQuoteFontSize(text) {
+  const len = text.length;
+  if (len <= 90) return 46;
+  if (len <= 130) return 38;
+  if (len <= 170) return 32;
+  if (len <= 220) return 26;
+  return 22;
+}
+
 function normaliseName(name) {
   return (name || '')
     .replace(/\s*[—–-]\s*(Practitioner|Framer|Wildcard)\s*$/i, '')
@@ -75,6 +82,7 @@ export default async function handler(req) {
     const quoteText = member.quote || '';
     const speakerName = member.name || '';
     const nameFontSize = getNameFontSize(speakerName);
+    const quoteFontSize = getQuoteFontSize(quoteText);
 
     const portrait = member.portrait?.startsWith('http')
       ? member.portrait
@@ -99,11 +107,11 @@ export default async function handler(req) {
               THE LONG COUNCIL
             </div>
 
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', paddingTop: '40px' }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', paddingTop: '40px', overflow: 'hidden' }}>
               <div style={{ display: 'flex', fontFamily: 'Playfair Display', fontSize: '90px', lineHeight: 1, opacity: 0.3, fontWeight: 500, marginBottom: '8px' }}>
                 &ldquo;
               </div>
-              <div style={{ display: 'flex', fontFamily: 'Playfair Display', fontStyle: 'italic', fontSize: '46px', lineHeight: 1.2, fontWeight: 500, marginTop: '-20px' }}>
+              <div style={{ display: 'flex', fontFamily: 'Playfair Display', fontStyle: 'italic', fontSize: `${quoteFontSize}px`, lineHeight: 1.25, fontWeight: 500, marginTop: '-20px' }}>
                 {quoteText}
               </div>
             </div>
