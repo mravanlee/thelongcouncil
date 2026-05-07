@@ -87,17 +87,17 @@ function VerdictCast({ names }) {
         );
       })}
       <style jsx>{`
-        .cast-row { display: flex; gap: 22px; padding: 4px 0 6px; margin: 0 0 1.75rem; flex-wrap: wrap; }
-        .cast-col { display: flex; flex-direction: column; align-items: center; min-width: 72px; }
-        .cast-avatar { width: 64px; height: 64px; border-radius: 50%; background: #f3eeea; border: 0.5px solid #c8bdb3; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; }
-        .cast-initials { font-family: 'Playfair Display', Georgia, serif; font-size: 16px; font-weight: 600; color: #6b1a1a; letter-spacing: 0.02em; }
+        .cast-row { display: flex; gap: 18px; padding: 4px 0 6px; margin: 0 0 2.5rem; flex-wrap: wrap; }
+        .cast-col { display: flex; flex-direction: column; align-items: center; min-width: 64px; }
+        .cast-avatar { width: 56px; height: 56px; border-radius: 50%; background: #f3eeea; border: 0.5px solid #c8bdb3; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; }
+        .cast-initials { font-family: 'Playfair Display', Georgia, serif; font-size: 14px; font-weight: 600; color: #6b1a1a; letter-spacing: 0.02em; }
         .cast-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
         .cast-name { font-family: 'Inter', sans-serif; font-size: 11px; color: #4a4a4a; text-align: center; margin-top: 8px; line-height: 1.35; letter-spacing: 0.01em; }
         @media (max-width: 480px) {
-          .cast-row { gap: 14px; }
-          .cast-col { min-width: 64px; }
-          .cast-avatar { width: 56px; height: 56px; }
-          .cast-initials { font-size: 14px; }
+          .cast-row { gap: 12px; }
+          .cast-col { min-width: 56px; }
+          .cast-avatar { width: 48px; height: 48px; }
+          .cast-initials { font-size: 12px; }
           .cast-name { font-size: 10.5px; }
         }
       `}</style>
@@ -295,7 +295,7 @@ export default function ArchiveDetail({ session, memberQuery }) {
         .back-link { display: inline-block; font-family: 'Inter', sans-serif; font-size: 13px; margin-top: 2.5rem; margin-bottom: 3rem; transition: color 0.2s ease; }
         .back-link:hover, .back-link:hover :global(*) { color: #6b1a1a !important; }
         .detail-meta { font-family: 'Inter', sans-serif; font-size: 11px; color: #7a7a7a; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px; }
-        .detail-title { font-family: 'Playfair Display', Georgia, serif; font-size: 26px; color: #0f0f0f; font-weight: 600; line-height: 1.3; margin: 0 0 1.5rem; max-width: 62ch; }
+        .detail-title { font-family: 'Playfair Display', Georgia, serif; font-size: 26px; color: #0f0f0f; font-weight: 600; line-height: 1.3; margin: 0 0 2.25rem; max-width: 62ch; }
         .verdict-block { background: #f0ede3; border-left: 3px solid #6b1a1a; padding: 1.5rem 1.75rem; border-radius: 0 2px 2px 0; margin-bottom: 2rem; }
         .verdict-label { font-family: 'Inter', sans-serif; font-size: 11px; color: #6b1a1a; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 10px; }
         .verdict-label-second { margin-top: 1.25rem; margin-bottom: 10px; }
