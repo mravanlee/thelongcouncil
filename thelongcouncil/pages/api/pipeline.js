@@ -804,11 +804,13 @@ Before emitting each card, check:
    More than one em-dash in the card body? Rewrite the extras as separate sentences.
    Em-dash in the framing line? Remove it.
    Em-dash in the challenge line? Remove it.
+   Does the challenge line contain "framework", "structural", "ethical", "system", or any abstract noun chain? Rewrite it as a concrete question naming a specific person, place, decision, or trade-off.
+   Is the challenge line longer than 20 words? Shorten it. It must be readable in one breath.
 
 7. STRUCTURE & LENGTH CHECK:
    Is the framing line ≤ 15 words?
    Does the reasoning consist of EXACTLY TWO paragraphs?
-   If there are three or more paragraphs: identify which paragraph is weakest and rewrite paragraph 2 until it earns the close. Do not add a third paragraph. Do not merge paragraphs. Rewrite paragraph 2.
+   If there are three or more paragraphs: identify which paragraph is weakest and rewrite paragraph 2 until it earns the close. Do not add a third paragraph. Do not merge paragraphs. Rewrite paragraph 2. This risk increases for members at positions 3, 4, and 5 — later speakers are most prone to adding a third paragraph because they have more to respond to. The rule is the same: two paragraphs, no exceptions.
    Is paragraph 1 within 60–90 words?
    Is paragraph 2 within 40–70 words?
    Is total reasoning within 100–160 words?
