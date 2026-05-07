@@ -1048,7 +1048,7 @@ Emit clean markdown. Use \`##\` for section headings. Do not use ASCII box-drawi
 
 **[Issue title — short, specific, no more than 10 words]**
 
-[Taxonomy tags] · [Number of members] · [Today's date]
+[Taxonomy tags] · [Number of members] · [Use the date from TODAY'S DATE in the input]
 
 **Confidence summary:** [One sentence on aggregate confidence level.]
 
@@ -1174,12 +1174,12 @@ export default async function handler(req, res) {
       0.7
     );
     send('verdict', { data: verdictOutput });
-
+const todayForBrief = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
     // Prompt 4 — temperature 1.0 (default) — brief benefits from narrative variation
     send('progress', { step: 4, message: 'Writing the policy brief...' });
     const briefOutput = await callClaude(
       PROMPT4_SYSTEM,
-      `ISSUE:\n${question}\n\nPROMPT 2 OUTPUT — REASONING CARDS AND CONVERGENCE NOTE:\n${deliberationOutput}\n\nPROMPT 3 OUTPUT — VERDICT:\n${verdictOutput}`,
+     `ISSUE:\n${question}\n\nTODAY'S DATE: ${todayForBrief}\n\nPROMPT 2 OUTPUT — REASONING CARDS AND CONVERGENCE NOTE:\n${deliberationOutput}\n\nPROMPT 3 OUTPUT — VERDICT:\n${verdictOutput}`,
       3000
     );
     send('brief', { data: briefOutput });
