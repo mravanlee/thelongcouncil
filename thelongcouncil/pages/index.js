@@ -13,27 +13,23 @@ const RECENT_SESSION_WINDOW_MINUTES = 10;
 // ── Wake Lock helpers ───────────────────────────────────────────────────
 async function acquireScreenLock(ref) {
   if (typeof navigator === 'undefined' || !('wakeLock' in navigator)) return;
-  try {
-    ref.current = await navigator.wakeLock.request('screen');
-  } catch (e) {}
+  try { ref.current = await navigator.wakeLock.request('screen'); } catch (e) {}
 }
 
 async function releaseScreenLock(ref) {
   if (!ref || !ref.current) return;
-  try {
-    await ref.current.release();
-  } catch (e) {}
+  try { await ref.current.release(); } catch (e) {}
   ref.current = null;
 }
 
-// ── Format session counter (042, 494, 1,247) ────────────────────────────
+// ── Format session counter ──────────────────────────────────────────────
 function formatSessionCount(n) {
   if (n == null) return '000';
   if (n < 1000) return n.toString().padStart(3, '0');
   return n.toLocaleString('en-US');
 }
 
-// ── Server-side: fetch 3 most recent sessions + total count for hero ───
+// ── Server-side props ───────────────────────────────────────────────────
 export async function getServerSideProps() {
   const recentPromise = supabase
     .from('sessions')
@@ -47,13 +43,8 @@ export async function getServerSideProps() {
 
   const [recentResult, countResult] = await Promise.all([recentPromise, countPromise]);
 
-  if (recentResult.error) {
-    console.error('[homepage] Failed to load recent sessions:', recentResult.error);
-  }
-
-  if (countResult.error) {
-    console.error('[homepage] Failed to load session count:', countResult.error);
-  }
+  if (recentResult.error) console.error('[homepage] Failed to load recent sessions:', recentResult.error);
+  if (countResult.error) console.error('[homepage] Failed to load session count:', countResult.error);
 
   const sessions = recentResult.data || [];
   const sessionCount = countResult.count ?? 0;
@@ -75,7 +66,7 @@ function extractTeaser(cards) {
   if (!cards || !cards.verdict) return '';
   const match = cards.verdict.match(/##\s*Verdict\s*\n+([^\n#]+(?:\n[^\n#]+)*)/i);
   if (!match) return '';
-  const firstPara = match[1].trim().split(/\n\s*\n/)[0].replace(/\s*\n\s*/g, ' ');
+  const firstPara = match[1].trim().split(/\n\s*\n/)[0].replace(/\s+/g, ' ');
   if (firstPara.length > 240) {
     const trimmed = firstPara.substring(0, 240);
     const lastPeriod = trimmed.lastIndexOf('.');
@@ -86,11 +77,7 @@ function extractTeaser(cards) {
 
 function formatDate(iso) {
   const d = new Date(iso);
-  return d.toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
 async function findRecentSessionByQuestion(question) {
@@ -108,14 +95,132 @@ async function findRecentSessionByQuestion(question) {
     const session = data[0];
     if (!session.cards || !session.cards.brief) return null;
     return session;
-  } catch (e) {
-    return null;
-  }
+  } catch (e) { return null; }
 }
 
+// ── VerdictCast helpers ─────────────────────────────────────────────────
+function stripTierSuffix(name) {
+  return name.replace(/\s*[—–-]\s*(Practitioner|Framer|Wildcard)\s*$/i, '').trim();
+}
+
+function nameToAvatarSlug(name) {
+  return stripTierSuffix(name)
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[\s.\-]+/g, '_')
+    .replace(/[^a-z0-9_]/g, '')
+    .replace(/_+/g, '_')
+    .replace(/^_|_$/g, '');
+}
+
+function splitNameForCast(name) {
+  const clean = stripTierSuffix(name);
+  const parts = clean.split(' ');
+  if (parts.length === 1) return [clean, ''];
+  return [parts.slice(0, -1).join(' '), parts[parts.length - 1]];
+}
+
+function getInitials(name) {
+  return stripTierSuffix(name).split(' ').filter(Boolean).map(p => p[0]).join('').toUpperCase().slice(0, 3);
+}
+
+function extractMemberNamesFromCards(cards) {
+  return cards.map(card => {
+    const match = card.match(/^##\s+(.+)$/m);
+    return match ? match[1].trim() : null;
+  }).filter(Boolean);
+}
+
+// ── VerdictCast component ───────────────────────────────────────────────
+function VerdictCast({ names }) {
+  if (!names || names.length === 0) return null;
+  return (
+    <div className="cast-row">
+      {names.map((name) => {
+        const [line1, line2] = splitNameForCast(name);
+        const slug = nameToAvatarSlug(name);
+        return (
+          <div key={name} className="cast-col">
+            <div className="cast-avatar">
+              <span className="cast-initials">{getInitials(name)}</span>
+              <img src={`/avatars/avatar_${slug}.webp`} alt="" className="cast-img" onError={(e) => { e.target.style.display = 'none'; }} />
+            </div>
+            <div className="cast-name">{line1}{line2 ? <><br />{line2}</> : null}</div>
+          </div>
+        );
+      })}
+      <style jsx>{`
+        .cast-row { display: flex; gap: 18px; padding: 4px 0 6px; margin: 0 0 2rem; flex-wrap: wrap; }
+        .cast-col { display: flex; flex-direction: column; align-items: center; min-width: 64px; }
+        .cast-avatar { width: 56px; height: 56px; border-radius: 50%; background: #f3eeea; border: 0.5px solid #c8bdb3; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; }
+        .cast-initials { font-family: 'Playfair Display', Georgia, serif; font-size: 14px; font-weight: 600; color: #6b1a1a; letter-spacing: 0.02em; }
+        .cast-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+        .cast-name { font-family: 'Inter', sans-serif; font-size: 11px; color: #4a4a4a; text-align: center; margin-top: 8px; line-height: 1.35; letter-spacing: 0.01em; }
+        @media (max-width: 480px) {
+          .cast-row { gap: 12px; }
+          .cast-col { min-width: 56px; }
+          .cast-avatar { width: 48px; height: 48px; }
+          .cast-initials { font-size: 12px; }
+          .cast-name { font-size: 10.5px; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+// ── ShareButton component ───────────────────────────────────────────────
+function ShareButton({ url, question }) {
+  const [copied, setCopied] = useState(false);
+  const cleanQuestion = (question || '').trim().replace(/\s+/g, ' ');
+  const shareText = `"${cleanQuestion}" — debated by The Long Council\n\n${url}`;
+
+  async function handleClick() {
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({ title: 'The Long Council', text: `"${cleanQuestion}" — debated by The Long Council`, url });
+        return;
+      } catch (e) { if (e && e.name === 'AbortError') return; }
+    }
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(shareText);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+        return;
+      } catch (e) {}
+    }
+    if (typeof window !== 'undefined') window.prompt('Copy this link:', shareText);
+  }
+
+  return (
+    <div className="share-row">
+      <button className="share-btn" onClick={handleClick} aria-label="Share this session">
+        {copied ? (
+          <span className="share-btn-content">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+            Link copied
+          </span>
+        ) : (
+          <span className="share-btn-content">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" /><polyline points="16 6 12 2 8 6" /><line x1="12" y1="2" x2="12" y2="15" /></svg>
+            Share this session
+          </span>
+        )}
+      </button>
+      <style jsx>{`
+        .share-row { display: flex; justify-content: center; margin: 2rem 0; }
+        .share-btn { display: inline-flex; align-items: center; padding: 12px 24px; background: transparent; border: 1px solid #6b1a1a; color: #6b1a1a; border-radius: 2px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 14px; letter-spacing: 0.02em; transition: background 0.2s ease, color 0.2s ease; min-width: 200px; justify-content: center; }
+        .share-btn:hover { background: #6b1a1a; color: #f8f0e8; }
+        .share-btn-content { display: inline-flex; align-items: center; gap: 8px; }
+      `}</style>
+    </div>
+  );
+}
+
+// ── Markdown renderer ───────────────────────────────────────────────────
 function Markdown({ text }) {
   if (!text) return null;
-
   const lines = text.split('\n');
   const blocks = [];
   let currentPara = [];
@@ -129,24 +234,12 @@ function Markdown({ text }) {
 
   for (const rawLine of lines) {
     const line = rawLine.trim();
-    if (!line) {
-      flushPara();
-      continue;
-    }
-    if (line.startsWith('### ')) {
-      flushPara();
-      blocks.push({ type: 'h3', content: line.slice(4) });
-    } else if (line.startsWith('## ')) {
-      flushPara();
-      blocks.push({ type: 'h2', content: line.slice(3) });
-    } else if (line.startsWith('# ')) {
-      flushPara();
-      blocks.push({ type: 'h1', content: line.slice(2) });
-    } else if (line === '---' || line === '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━') {
-      flushPara();
-    } else {
-      currentPara.push(line);
-    }
+    if (!line) { flushPara(); continue; }
+    if (line.startsWith('### ')) { flushPara(); blocks.push({ type: 'h3', content: line.slice(4) }); }
+    else if (line.startsWith('## ')) { flushPara(); blocks.push({ type: 'h2', content: line.slice(3) }); }
+    else if (line.startsWith('# ')) { flushPara(); blocks.push({ type: 'h1', content: line.slice(2) }); }
+    else if (line === '---' || line === '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━') { flushPara(); }
+    else { currentPara.push(line); }
   }
   flushPara();
 
@@ -158,22 +251,11 @@ function Markdown({ text }) {
         if (block.type === 'h3') return <h3 key={i} className="md-h3">{renderInline(block.content)}</h3>;
 
         const raw = block.content;
-
-        const isFraming = raw.length >= 3
-          && raw[0] === '*'
-          && raw[1] !== '*'
-          && raw[raw.length - 1] === '*'
-          && raw[raw.length - 2] !== '*';
-
+        const isFraming = raw.length >= 3 && raw[0] === '*' && raw[1] !== '*' && raw[raw.length - 1] === '*' && raw[raw.length - 2] !== '*';
         const isChallenge = /^\*\*Challenge\b/i.test(raw);
 
-        if (isFraming) {
-          const stripped = raw.slice(1, -1);
-          return <p key={i} className="md-framing">{renderInline(stripped)}</p>;
-        }
-        if (isChallenge) {
-          return <p key={i} className="md-challenge">{renderInline(raw)}</p>;
-        }
+        if (isFraming) return <p key={i} className="md-framing">{renderInline(raw.slice(1, -1))}</p>;
+        if (isChallenge) return <p key={i} className="md-challenge">{renderInline(raw)}</p>;
         return <p key={i} className="md-p">{renderInline(raw)}</p>;
       })}
     </>
@@ -186,49 +268,35 @@ function renderInline(text) {
   let lastIndex = 0;
   let key = 0;
   let match;
-
   while ((match = pattern.exec(text)) !== null) {
-    if (match.index > lastIndex) {
-      parts.push(text.slice(lastIndex, match.index));
-    }
+    if (match.index > lastIndex) parts.push(text.slice(lastIndex, match.index));
     const m = match[0];
-    if (m.startsWith('**')) {
-      parts.push(<strong key={key++}>{m.slice(2, -2)}</strong>);
-    } else {
-      parts.push(<em key={key++}>{m.slice(1, -1)}</em>);
-    }
+    if (m.startsWith('**')) parts.push(<strong key={key++}>{m.slice(2, -2)}</strong>);
+    else parts.push(<em key={key++}>{m.slice(1, -1)}</em>);
     lastIndex = match.index + m.length;
   }
-  if (lastIndex < text.length) {
-    parts.push(text.slice(lastIndex));
-  }
+  if (lastIndex < text.length) parts.push(text.slice(lastIndex));
   return parts.length === 0 ? text : parts;
 }
 
 function parseCards(deliberationText) {
   if (!deliberationText) return [];
-
   let cleaned = deliberationText.replace(/^SPEAKING ORDER:.*$/im, '').trim();
   const blocks = cleaned.split(/(?:^|\n)\s*---\s*\n/).map(b => b.trim()).filter(Boolean);
-
   const PREAMBLE_KEYWORDS = /\b(engine|output|analysis|preamble|overview|assembly|session context|introduction|deliberation engine|verdict engine|conclusion type)\b/i;
-
   return blocks.filter(b => {
     if (b.length < 50) return false;
     if (/^SPEAKING ORDER:/i.test(b)) return false;
     if (/^CONVERGENCE/i.test(b)) return false;
     if (/^##\s*The convergence note/i.test(b)) return false;
-
     const firstHeadingMatch = b.match(/^##\s+(.+)$/m);
     if (firstHeadingMatch) {
       const headingText = firstHeadingMatch[1].trim();
       const looksLikeName = /^[A-ZÀ-Ý][\wÀ-ÿ'-]*(\s+(?:[a-zA-ZÀ-ÿ][\wÀ-ÿ'-]*))*$/.test(headingText);
       if (PREAMBLE_KEYWORDS.test(headingText) && !looksLikeName) return false;
     }
-
     if (/\*\*Central Tension:\*\*/i.test(b)) return false;
     if (/\*\*Issue Analysis\*\*/i.test(b)) return false;
-
     return true;
   });
 }
@@ -244,7 +312,6 @@ function parseConvergence(deliberationText) {
 
 function parseVerdict(verdictText) {
   if (!verdictText) return { verdict: '', summary: '' };
-
   const newVerdictMatch = verdictText.match(/##\s*Verdict\s*\n([\s\S]*?)(?=\n##\s*Reasoning|$)/i);
   const newReasoningMatch = verdictText.match(/##\s*Reasoning\s*\n([\s\S]*?)(?=\n---|$)/i);
   if (newVerdictMatch) {
@@ -253,7 +320,6 @@ function parseVerdict(verdictText) {
       summary: newReasoningMatch ? newReasoningMatch[1].trim() : '',
     };
   }
-
   const oldVerdictMatch = verdictText.match(/VERDICT:\s*([\s\S]*?)(?=REASONING SUMMARY:|$)/i);
   const oldSummaryMatch = verdictText.match(/REASONING SUMMARY:\s*([\s\S]*?)(?=---|$)/i);
   return {
@@ -262,6 +328,7 @@ function parseVerdict(verdictText) {
   };
 }
 
+// ── Main component ──────────────────────────────────────────────────────
 export default function Home({ recentSessions = [], sessionCount = 0 }) {
   const router = useRouter();
 
@@ -281,6 +348,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
   const [loadingMessage, setLoadingMessage] = useState('');
 
   const [sessionData, setSessionData] = useState(null);
+  const [sessionSlug, setSessionSlug] = useState(null);
   const [showConclusion, setShowConclusion] = useState(false);
   const [showBriefToggle, setShowBriefToggle] = useState(false);
   const [briefOpen, setBriefOpen] = useState(false);
@@ -309,7 +377,6 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
   function applySharpenerResponse(data) {
     setSharpenerMode(data.mode);
     setSharpenerExplanation(data.explanation || '');
-
     if (data.mode === 'ready') {
       setReadyQuestion(data.question);
       setClarifyingQuestion(null);
@@ -324,7 +391,6 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
     if (!q) return;
     setError(null);
     setSharpenerLoading(true);
-
     try {
       const msgs = [{ role: 'user', content: q }];
       const res = await fetch('/api/sharpen', {
@@ -333,22 +399,13 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
         body: JSON.stringify({ messages: msgs }),
       });
       const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'The sharpener could not process your question.');
-      }
-
+      if (!res.ok) throw new Error(data.error || 'The sharpener could not process your question.');
       const assistantMsg = { role: 'assistant', content: data.raw || '' };
       setChatHistory([...msgs, assistantMsg]);
-
       applySharpenerResponse(data);
       setScreen('sharpening');
     } catch (e) {
-      setError({
-        title: 'Something went wrong',
-        message: e.message || 'The council could not be reached. Please try again.',
-        action: 'submit',
-      });
+      setError({ title: 'Something went wrong', message: e.message || 'The council could not be reached. Please try again.', action: 'submit' });
       setScreen('error');
     } finally {
       setSharpenerLoading(false);
@@ -358,14 +415,11 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
   async function handleSharpenerReply() {
     const reply = sharpenerInput.trim();
     if (!reply || sharpenerLoading) return;
-
     const newUserMsg = { role: 'user', content: reply };
     const updatedHistory = [...chatHistory, newUserMsg];
-
     setSharpenerInput('');
     setError(null);
     setSharpenerLoading(true);
-
     try {
       const res = await fetch('/api/sharpen', {
         method: 'POST',
@@ -373,20 +427,12 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
         body: JSON.stringify({ messages: updatedHistory }),
       });
       const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'The sharpener could not process your reply.');
-      }
-
+      if (!res.ok) throw new Error(data.error || 'The sharpener could not process your reply.');
       const assistantMsg = { role: 'assistant', content: data.raw || '' };
       setChatHistory([...updatedHistory, assistantMsg]);
       applySharpenerResponse(data);
     } catch (e) {
-      setError({
-        title: 'Something went wrong',
-        message: e.message || 'The council could not be reached. Please try again.',
-        action: 'reply',
-      });
+      setError({ title: 'Something went wrong', message: e.message || 'The council could not be reached. Please try again.', action: 'reply' });
       setScreen('error');
     } finally {
       setSharpenerLoading(false);
@@ -396,9 +442,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
   async function pollForCompletedSession(originalQuestion) {
     for (let attempt = 0; attempt < FINALIZE_MAX_ATTEMPTS; attempt++) {
       const session = await findRecentSessionByQuestion(originalQuestion);
-      if (session && session.slug) {
-        return session.slug;
-      }
+      if (session && session.slug) return session.slug;
       await new Promise(resolve => setTimeout(resolve, FINALIZE_POLL_INTERVAL_MS));
     }
     return null;
@@ -407,6 +451,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
   async function runPipeline(finalQuestion) {
     setConfirmedQuestion(finalQuestion);
     setError(null);
+    setSessionSlug(null);
     setScreen('loading');
     setLoadingStep(1);
     setLoadingMessage('Assembling the council...');
@@ -429,7 +474,6 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split('\n');
         buffer = lines.pop();
@@ -440,7 +484,9 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
           } else if (line.startsWith('data: ')) {
             try {
               const data = JSON.parse(line.slice(6));
-              if (currentEvent === 'progress') {
+              if (currentEvent === 'session-started') {
+                if (data.slug) setSessionSlug(data.slug);
+              } else if (currentEvent === 'progress') {
                 setLoadingMessage(data.message);
                 if (data.step) setLoadingStep(data.step);
               } else if (currentEvent === 'assembly') {
@@ -453,6 +499,8 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
                 setLoadingStep(4);
               } else if (currentEvent === 'brief') {
                 result.brief = data.data;
+              } else if (currentEvent === 'complete') {
+                if (data.slug) setSessionSlug(data.slug);
               } else if (currentEvent === 'error') {
                 throw new Error(data.message);
               }
@@ -466,6 +514,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
       const cards = parseCards(result.deliberation || '');
       const convergence = parseConvergence(result.deliberation || '');
       const { verdict, summary } = parseVerdict(result.verdict || '');
+      const memberNames = extractMemberNamesFromCards(cards);
 
       setSessionData({
         question: finalQuestion,
@@ -476,24 +525,18 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
         brief: result.brief || '',
         assembly: result.assembly || '',
         deliberation: result.deliberation || '',
+        memberNames,
       });
 
       setScreen('session');
     } catch (err) {
       setScreen('finalizing');
-
       const slug = await pollForCompletedSession(finalQuestion);
-
       if (slug) {
         router.push(`/archive/${slug}`);
         return;
       }
-
-      setError({
-        title: 'The council could not convene',
-        message: err.message || 'Something went wrong while preparing the debate.',
-        action: 'pipeline',
-      });
+      setError({ title: 'The council could not convene', message: err.message || 'Something went wrong while preparing the debate.', action: 'pipeline' });
       setScreen('error');
     } finally {
       await releaseScreenLock(wakeLockRef);
@@ -511,6 +554,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
     setSharpenerInput('');
     setConfirmedQuestion('');
     setSessionData(null);
+    setSessionSlug(null);
     setShowConclusion(false);
     setShowBriefToggle(false);
     setBriefOpen(false);
@@ -522,17 +566,10 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
     if (!error) return;
     const retryAction = error.action;
     setError(null);
-
-    if (retryAction === 'submit') {
-      setScreen('landing');
-      handleSubmit();
-    } else if (retryAction === 'reply') {
-      setScreen('sharpening');
-    } else if (retryAction === 'pipeline') {
-      runPipeline(confirmedQuestion);
-    } else {
-      setScreen('landing');
-    }
+    if (retryAction === 'submit') { setScreen('landing'); handleSubmit(); }
+    else if (retryAction === 'reply') { setScreen('sharpening'); }
+    else if (retryAction === 'pipeline') { runPipeline(confirmedQuestion); }
+    else { setScreen('landing'); }
   }
 
   function handleProcessionComplete() {
@@ -586,17 +623,11 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
         <>
           <div className="landing">
             <div className="landing-eyebrow">{formatSessionCount(sessionCount)} ISSUES DEBATED</div>
-
             <p className="landing-lead">
               This is The Long Council. For each question, the council assembles the most relevant leaders and thinkers from history, such as Mandela, Machiavelli, FDR, Sun Tzu and Thatcher. They debate <em>your question</em> and deliver a verdict.
             </p>
-
             <div className="landing-divider" />
-
-            <h1 className="landing-heading">
-              What's on your mind? Ask the council.
-            </h1>
-
+            <h1 className="landing-heading">What's on your mind? Ask the council.</h1>
             <div className="issue-form">
               <textarea
                 ref={textareaRef}
@@ -607,11 +638,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
                 onChange={e => setQuestion(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(); } }}
               />
-              <button
-                className="submit-btn"
-                onClick={handleSubmit}
-                disabled={!question.trim() || sharpenerLoading}
-              >
+              <button className="submit-btn" onClick={handleSubmit} disabled={!question.trim() || sharpenerLoading}>
                 {sharpenerLoading ? 'Considering...' : 'Raise this issue →'}
               </button>
               <p className="landing-hint">Vague questions get returned for sharpening. Specific ones get debated.</p>
@@ -625,7 +652,6 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
                 <div className="recent-lbl">Recent sessions</div>
                 <div className="recent-rule" />
               </div>
-
               <div className="recent-list">
                 {recentSessions.map((s) => (
                   <Link key={s.id} href={`/archive/${s.slug}`} className="recent-item">
@@ -635,7 +661,6 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
                   </Link>
                 ))}
               </div>
-
               <div className="recent-footer">
                 <Link href="/archive" className="recent-see-all">See all in The Archive →</Link>
               </div>
@@ -651,9 +676,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
           {sharpenerLoading && (
             <div className="chat-thread">
               <div className="chat-msg council">
-                <div className="chat-bubble" style={{ color: '#9a9a9a', fontStyle: 'italic' }}>
-                  Considering...
-                </div>
+                <div className="chat-bubble" style={{ color: '#9a9a9a', fontStyle: 'italic' }}>Considering...</div>
               </div>
             </div>
           )}
@@ -661,25 +684,14 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
           {!sharpenerLoading && sharpenerMode === 'ready' && readyQuestion && (() => {
             const normalise = (s) => (s || '').trim().toLowerCase().replace(/[?!.\s]+$/, '');
             const wasSharpened = normalise(readyQuestion) !== normalise(question);
-
             return (
               <div className="proposed-box">
-                <div className="proposed-label">
-                  {wasSharpened ? 'The council will start the debate' : 'Your question is clear'}
-                </div>
+                <div className="proposed-label">{wasSharpened ? 'The council will start the debate' : 'Your question is clear'}</div>
                 <div className="proposed-text">{readyQuestion}</div>
-                {wasSharpened && (
-                  <div className="proposed-original">
-                    You asked: <span>{question}</span>
-                  </div>
-                )}
-                {sharpenerExplanation && (
-                  <div className="proposed-explanation">{sharpenerExplanation}</div>
-                )}
+                {wasSharpened && <div className="proposed-original">You asked: <span>{question}</span></div>}
+                {sharpenerExplanation && <div className="proposed-explanation">{sharpenerExplanation}</div>}
                 <div className="proposed-actions">
-                  <button className="btn-accept" onClick={() => runPipeline(readyQuestion)}>
-                    Convene the council →
-                  </button>
+                  <button className="btn-accept" onClick={() => runPipeline(readyQuestion)}>Convene the council →</button>
                 </div>
               </div>
             );
@@ -688,15 +700,11 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
           {!sharpenerLoading && sharpenerMode === 'clarify' && clarifyingQuestion && (
             <>
               <div className="sharpener-original">Your question: {question}</div>
-
               <div className="clarify-box">
                 <div className="clarify-label">One quick question</div>
                 <div className="clarify-question">{clarifyingQuestion}</div>
-                {sharpenerExplanation && (
-                  <div className="clarify-explanation">{sharpenerExplanation}</div>
-                )}
+                {sharpenerExplanation && <div className="clarify-explanation">{sharpenerExplanation}</div>}
               </div>
-
               <div className="sharpen-input-row">
                 <input
                   className="sharpen-input"
@@ -707,19 +715,10 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
                   onKeyDown={e => { if (e.key === 'Enter') handleSharpenerReply(); }}
                   autoFocus
                 />
-                <button
-                  className="sharpen-send"
-                  onClick={handleSharpenerReply}
-                  disabled={!sharpenerInput.trim() || sharpenerLoading}
-                >
-                  →
-                </button>
+                <button className="sharpen-send" onClick={handleSharpenerReply} disabled={!sharpenerInput.trim() || sharpenerLoading}>→</button>
               </div>
-
               <div className="skip-row">
-                <button className="btn-skip" onClick={() => runPipeline(question)}>
-                  Skip — use my original question
-                </button>
+                <button className="btn-skip" onClick={() => runPipeline(question)}>Skip — use my original question</button>
               </div>
             </>
           )}
@@ -731,10 +730,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
           <div className="loading-question">"{confirmedQuestion}"</div>
           <div className="loading-steps">
             {STEPS.map(({ label, step }) => (
-              <div
-                key={step}
-                className={`loading-step ${loadingStep === step ? 'active' : loadingStep > step ? 'done' : ''}`}
-              >
+              <div key={step} className={`loading-step ${loadingStep === step ? 'active' : loadingStep > step ? 'done' : ''}`}>
                 <div className="step-dot" />
                 <span>{label}</span>
               </div>
@@ -753,9 +749,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
               <span>Wrapping up the council's verdict</span>
             </div>
           </div>
-          <p className="loading-note">
-            Just a moment — the council is finishing its work.
-          </p>
+          <p className="loading-note">Just a moment — the council is finishing its work.</p>
         </div>
       )}
 
@@ -765,12 +759,8 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
             <div className="error-title">{error.title}</div>
             <div className="error-message">{error.message}</div>
             <div className="error-actions">
-              <button className="error-retry" onClick={handleErrorRetry}>
-                Try again
-              </button>
-              <button className="error-reset" onClick={reset}>
-                Start over
-              </button>
+              <button className="error-retry" onClick={handleErrorRetry}>Try again</button>
+              <button className="error-reset" onClick={reset}>Start over</button>
             </div>
           </div>
         </div>
@@ -788,6 +778,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
             <Procession
               cards={sessionData.cards}
               onComplete={handleProcessionComplete}
+              sessionSlug={sessionSlug}
             />
           ) : (
             <div className="rcard visible">
@@ -803,6 +794,9 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
               <div className="sec-lbl">The council's conclusion</div>
               <div className="sec-rule" />
             </div>
+
+            <VerdictCast names={sessionData.memberNames} />
+
             <div className="conc-bar">
               <div className="conc-lbl">The Long Council · Verdict</div>
               <div className="conc-verdict">
@@ -814,13 +808,17 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
                 </div>
               )}
             </div>
+
+            {sessionSlug && (
+              <ShareButton
+                url={`https://www.thelongcouncil.com/archive/${sessionSlug}`}
+                question={sessionData.question}
+              />
+            )}
           </div>
 
           <div className={`brief-toggle-row ${showBriefToggle ? 'visible' : ''}`}>
-            <button
-              className="brief-toggle-btn"
-              onClick={() => setBriefOpen(!briefOpen)}
-            >
+            <button className="brief-toggle-btn" onClick={() => setBriefOpen(!briefOpen)}>
               <span>{briefOpen ? 'Close policy brief' : 'Read the full policy brief'}</span>
               <span style={{ fontSize: 11, transition: 'transform 0.3s', transform: briefOpen ? 'rotate(180deg)' : 'none' }}>▾</span>
             </button>
@@ -830,16 +828,12 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
           </div>
 
           <div className="new-session-row">
-            <button className="new-session-btn" onClick={reset}>
-              Raise a new issue
-            </button>
+            <button className="new-session-btn" onClick={reset}>Raise a new issue</button>
           </div>
         </div>
       )}
 
-      <footer>
-        The Long Council · Counsel from history's greatest minds, brought to life by AI
-      </footer>
+      <footer>The Long Council · Counsel from history's greatest minds, brought to life by AI</footer>
 
       <style jsx global>{`
         .issue-input {
@@ -859,69 +853,16 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
           -webkit-appearance: none;
           appearance: none;
         }
-
-        .issue-input::placeholder {
-          color: #a09a92;
-          font-style: italic;
-          line-height: 1.7;
-          opacity: 1;
-        }
-
-        .issue-input::-webkit-input-placeholder {
-          color: #a09a92;
-          font-style: italic;
-          line-height: 1.7;
-        }
-
-        .issue-input:hover {
-          border-color: #c4b8ad;
-        }
-
-        .issue-input:focus {
-          border-color: #6b1a1a;
-          background: #faf6f3;
-        }
-
-        .landing-lead {
-          font-family: 'Inter', sans-serif;
-          font-size: 17px;
-          line-height: 1.4;
-          color: #2a2a2a;
-          font-weight: 400;
-          margin: 0 0 1.75rem;
-        }
-
-        .landing-lead em {
-          font-style: italic;
-        }
-
-        .landing-divider {
-          width: 60px;
-          height: 1px;
-          background: #d4cfc8;
-          margin: 0 0 1.75rem;
-        }
-
-        .landing-heading {
-          font-family: 'Playfair Display', Georgia, serif;
-          font-size: 24px;
-          font-weight: 600;
-          color: #0f0f0f;
-          line-height: 1.25;
-          margin: 0 0 1rem;
-        }
-
-        @media (min-width: 768px) {
-          .landing-heading {
-            font-size: 24px;
-          }
-        }
-
-        @media (max-width: 720px) {
-          .nav-raise-hide-mobile {
-            display: none;
-          }
-        }
+        .issue-input::placeholder { color: #a09a92; font-style: italic; line-height: 1.7; opacity: 1; }
+        .issue-input::-webkit-input-placeholder { color: #a09a92; font-style: italic; line-height: 1.7; }
+        .issue-input:hover { border-color: #c4b8ad; }
+        .issue-input:focus { border-color: #6b1a1a; background: #faf6f3; }
+        .landing-lead { font-family: 'Inter', sans-serif; font-size: 17px; line-height: 1.4; color: #2a2a2a; font-weight: 400; margin: 0 0 1.75rem; }
+        .landing-lead em { font-style: italic; }
+        .landing-divider { width: 60px; height: 1px; background: #d4cfc8; margin: 0 0 1.75rem; }
+        .landing-heading { font-family: 'Playfair Display', Georgia, serif; font-size: 24px; font-weight: 600; color: #0f0f0f; line-height: 1.25; margin: 0 0 1rem; }
+        @media (min-width: 768px) { .landing-heading { font-size: 24px; } }
+        @media (max-width: 720px) { .nav-raise-hide-mobile { display: none; } }
       `}</style>
     </>
   );
