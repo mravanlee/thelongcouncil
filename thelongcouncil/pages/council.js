@@ -84,7 +84,7 @@ function MemberCard({ member: m, debates }) {
       <div className="mc-positions">
         {m.positions.map((p, i) => (
           <div key={i} className="mc-pos">
-            <div className="mc-pos-dot" />
+            <div className="mc-pos-dash" />
             <PositionText text={p} type={m.type} />
           </div>
         ))}
@@ -111,8 +111,8 @@ function MemberCard({ member: m, debates }) {
         .mc-divider { border: none; border-top: 0.5px solid #e8e3d8; margin-bottom: 12px; }
         .mc-positions { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
         .mc-pos { display: flex; gap: 10px; align-items: flex-start; font-family: 'Inter', sans-serif; font-size: 12.5px; color: #2a2a2a; line-height: 1.55; }
-        .mc-pos-dot { width: 14px; height: 1px; background: #6b1a1a; margin-top: 9px; flex-shrink: 0; }
-        .mc-core { background: #f0ede3; border-radius: 2px; padding: 10px 13px; margin-bottom: 12px; }
+       .mc-pos-dash { color: #6b1a1a; flex-shrink: 0; font-size: 12.5px; line-height: 1.55; }
+        .mc-core { background: #f0ede3; border-radius: 2px; padding: 10px 13px; margin-bottom: 12px; min-height: 90px; }
         .mc-core-label { font-family: 'Inter', sans-serif; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #6b1a1a; margin-bottom: 4px; }
         .mc-core-text { font-family: 'Inter', sans-serif; font-size: 12.5px; color: #2a2a2a; line-height: 1.6; font-style: italic; }
         .mc-debates { font-family: 'Inter', sans-serif; font-size: 11px; color: #9a9a9a; display: flex; align-items: center; gap: 5px; margin-top: auto; padding-top: 4px; }
