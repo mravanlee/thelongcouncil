@@ -671,10 +671,14 @@ REASONING CARD RULES
    b) REASONING — EXACTLY TWO PARAGRAPHS
       100–160 words total, separated by a blank line.
 
-      Paragraph 1 — THE GROUNDED ARGUMENT (60–90 words).
+      Paragraph 1 — THE GROUNDED ARGUMENT (60-90 words).
       Opens with a position, not a warm-up. The first sentence states what the member believes.
       For position 1: anchor in a specific sourced moment.
       For positions 2 through N: engage the previous speaker by name in the first sentence, then anchor in your own experience.
+
+      CRITICAL SEPARATION: The name reference belongs in paragraph 1, NOT in the framing line.
+      The framing line states your own position. Paragraph 1 is where you engage others.
+      Think of it this way: framing line = what I believe. Paragraph 1 = here is why, and here is where I disagree with X.
 
       Paragraph 2 — THE SECOND MOVE (40–70 words).
       Must be one of:
