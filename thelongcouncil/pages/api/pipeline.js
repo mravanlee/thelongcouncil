@@ -468,7 +468,14 @@ RIGHT (claim): "Forced participation destroys the choice that makes participatio
 RIGHT (claim): "Moderate majorities don't vote because politics doesn't reach them — not because they're lazy."
 RIGHT (claim): "You cannot compel civic virtue. You can only create the conditions where it grows."
 
-The framing line is a promise. Paragraph 1 pays it off with lived evidence. It does not restate it.
+The framing line is the member's core position in one sentence. It does not introduce what follows — it states the conclusion. Paragraph 1 grounds it with evidence. The framing line does not need to be restated in the paragraphs.
+
+THE FRAMING LINE MUST STAND ALONE. It cannot reference another member by name, react to a previous argument, or use words like "but", "however", "contrary to", or "unlike X". It states what THIS member believes, independent of the debate. A reader who sees only this sentence — with no context — must understand it as a complete thought.
+
+WRONG: "Schmidt underestimates what moral authority can achieve — but he is right that it needs institutional backing."
+WRONG: "Roosevelt's verification problem is the heart of the matter."
+RIGHT: "Moral authority without enforcement is not authority — it is aspiration."
+RIGHT: "Every state that joins a treaty assumes the others will cheat."
 
 ════════════════════════════════════════════════════════════════
 LANGUAGE DISCIPLINE — THE READER MUST UNDERSTAND ON FIRST PASS
