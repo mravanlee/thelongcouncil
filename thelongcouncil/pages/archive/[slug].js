@@ -50,8 +50,9 @@ function parseDeliberation(deliberationText) {
   return { cards, convergence };
 }
 
+// NOTE: keeps Practitioner|Framer for old sessions, adds Leader|Thinker for new ones
 function stripTierSuffix(name) {
-  return name.replace(/\s*[—–-]\s*(Practitioner|Framer|Wildcard)\s*$/i, '').trim();
+  return name.replace(/\s*[—–-]\s*(Practitioner|Framer|Leader|Thinker|Wildcard)\s*$/i, '').trim();
 }
 
 function nameToAvatarSlug(name) {
@@ -287,7 +288,7 @@ export default function ArchiveDetail({ session, memberQuery }) {
         </div>
       </div>
 
-      <footer>The Long Council · Counsel from history's greatest minds, brought to life by AI</footer>
+      <footer>The Long Council · Counsel from history&apos;s greatest minds, brought to life by AI</footer>
 
       <style jsx>{`
         .detail-wrap { max-width: 680px; margin: 0 auto; padding: 0 1.25rem; }
