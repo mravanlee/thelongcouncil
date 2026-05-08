@@ -7,8 +7,8 @@ export default function Procession({ cards = [], onComplete, instant = false, se
   const [seatedCount, setSeatedCount] = useState(0)
   const [speakingIndex, setSpeakingIndex] = useState(-1)
   const [sessionComplete, setSessionComplete] = useState(false)
-  const [showGovSection, setShowGovSection] = useState(false)
-  const [showArchSection, setShowArchSection] = useState(false)
+  const [showLeaderSection, setShowLeaderSection] = useState(false)
+  const [showThinkerSection, setShowThinkerSection] = useState(false)
 
   const splitIndex = useMemo(() => {
     const idx = parsed.findIndex(c => getTier(c.name) === 'F')
@@ -17,16 +17,16 @@ export default function Procession({ cards = [], onComplete, instant = false, se
     return hasPBefore ? idx : -1
   }, [parsed])
 
-  const allFramers = parsed.length > 0 && parsed.every(c => getTier(c.name) === 'F')
+  const allThinkers = parsed.length > 0 && parsed.every(c => getTier(c.name) === 'F')
 
   useEffect(() => {
-    if (instant) return  // Static render — skip animation entirely
+    if (instant) return
     if (parsed.length === 0) return
     const timers = []
 
     timers.push(setTimeout(() => {
-      if (allFramers) setShowArchSection(true)
-      else setShowGovSection(true)
+      if (allThinkers) setShowThinkerSection(true)
+      else setShowLeaderSection(true)
     }, 200))
 
     const assemblyDelay = 450
@@ -35,7 +35,7 @@ export default function Procession({ cards = [], onComplete, instant = false, se
       timers.push(setTimeout(() => {
         setSeatedCount(c => Math.max(c, i + 1))
         if (splitIndex > 0 && i === splitIndex) {
-          setShowArchSection(true)
+          setShowThinkerSection(true)
         }
       }, assemblyStart + i * assemblyDelay))
     })
@@ -58,7 +58,7 @@ export default function Procession({ cards = [], onComplete, instant = false, se
   }, [parsed.length, instant])
 
   const getSeatState = (i) => {
-    if (instant) return 'past'  // Static render — all seats fully visible
+    if (instant) return 'past'
     if (i >= seatedCount) return 'empty'
     if (sessionComplete) return 'past'
     if (speakingIndex === i) return 'speaking'
@@ -66,30 +66,29 @@ export default function Procession({ cards = [], onComplete, instant = false, se
     return 'seated'
   }
 
-  const renderArchMarkerHere = (i) => splitIndex > 0 && i === splitIndex
+  const renderThinkerMarkerHere = (i) => splitIndex > 0 && i === splitIndex
 
-  // In instant mode, section markers are immediately visible
-  const govVisible = instant || showGovSection
-  const archVisible = instant || showArchSection
+  const leaderVisible = instant || showLeaderSection
+  const thinkerVisible = instant || showThinkerSection
 
   return (
     <div className="procession">
       <div className="rail">
-        {!allFramers && (
-          <SectionMarker label="Those who governed" visible={govVisible} />
+        {!allThinkers && (
+          <SectionMarker label="Leaders" visible={leaderVisible} />
         )}
-        {allFramers && (
-          <SectionMarker label="The intellectual architecture" visible={archVisible} />
+        {allThinkers && (
+          <SectionMarker label="Thinkers" visible={thinkerVisible} />
         )}
 
         {parsed.map((card, i) => {
           const state = getSeatState(i)
           if (state === 'empty') {
-            if (renderArchMarkerHere(i) && archVisible) {
+            if (renderThinkerMarkerHere(i) && thinkerVisible) {
               return (
                 <SectionMarker
                   key={`marker-${i}`}
-                  label="The intellectual architecture"
+                  label="Thinkers"
                   visible={true}
                 />
               )
@@ -100,8 +99,8 @@ export default function Procession({ cards = [], onComplete, instant = false, se
           const tier = getTier(card.name)
           return (
             <Fragment key={i}>
-              {renderArchMarkerHere(i) && (
-                <SectionMarker label="The intellectual architecture" visible={archVisible} />
+              {renderThinkerMarkerHere(i) && (
+                <SectionMarker label="Thinkers" visible={thinkerVisible} />
               )}
               <Seat card={card} tier={tier} state={state} sessionSlug={sessionSlug} />
             </Fragment>
@@ -182,7 +181,8 @@ function ShareIcon({ name, sessionSlug }) {
   async function handleClick(e) {
     e.preventDefault()
     e.stopPropagation()
-    const cleanName = name.replace(/\s*[—–-]\s*(Practitioner|Framer|Wildcard)\s*$/i, '').trim()
+    // Handles both old (Practitioner|Framer) and new (Leader|Thinker) suffixes
+    const cleanName = name.replace(/\s*[—–-]\s*(Practitioner|Framer|Leader|Thinker|Wildcard)\s*$/i, '').trim()
     const shareUrl = `https://www.thelongcouncil.com/archive/${sessionSlug}?member=${encodeURIComponent(cleanName)}`
 
     if (typeof navigator !== 'undefined' && navigator.share) {
@@ -254,14 +254,14 @@ function ShareIcon({ name, sessionSlug }) {
 
 function Seat({ card, tier, state, sessionSlug }) {
   const { name, role, framing, body, challenge } = card
-  const isFramer = tier === 'F'
+  const isThinker = tier === 'F'
   const [imgFailed, setImgFailed] = useState(false)
   const slug = slugify(name)
   const showImage = !imgFailed && slug
 
   return (
-    <div className={`seat ${isFramer ? 'framer' : 'practitioner'} state-${state}`}>
-      <div className={`avatar ${isFramer ? 'f' : 'p'}`}>
+    <div className={`seat ${isThinker ? 'thinker' : 'leader'} state-${state}`}>
+      <div className="avatar">
         {showImage ? (
           <img
             src={`/avatars/avatar_${slug}.webp`}
@@ -323,6 +323,9 @@ function Seat({ card, tier, state, sessionSlug }) {
           font-size: 9.5px;
           font-weight: 600;
           z-index: 2;
+          background: #fdf5ec;
+          color: #6b1a1a;
+          border: 1px solid #c4897a;
           transition: box-shadow 0.4s ease;
           box-shadow: 0 0 0 2px #f8f6f2;
         }
@@ -337,21 +340,8 @@ function Seat({ card, tier, state, sessionSlug }) {
           align-items: center;
           justify-content: center;
         }
-        .avatar.p {
-          background: #fdf5ec;
-          color: #6b1a1a;
-          border: 1px solid #c4897a;
-        }
-        .avatar.f {
-          background: #edf4ed;
-          color: #2a3a2a;
-          border: 1px solid #7a9a7a;
-        }
-        .seat.state-speaking.practitioner .avatar {
+        .seat.state-speaking .avatar {
           box-shadow: 0 0 0 2px #f8f6f2, 0 0 0 5px rgba(107, 26, 26, 0.18);
-        }
-        .seat.state-speaking.framer .avatar {
-          box-shadow: 0 0 0 2px #f8f6f2, 0 0 0 5px rgba(42, 90, 42, 0.18);
         }
 
         .content {
@@ -379,7 +369,6 @@ function Seat({ card, tier, state, sessionSlug }) {
           color: #0f0f0f;
           line-height: 1.3;
         }
-        .seat.framer .name { color: #1a2a1a; }
         .role {
           font-family: 'Inter', sans-serif;
           font-size: 11px;
@@ -471,12 +460,6 @@ function Seat({ card, tier, state, sessionSlug }) {
           padding: 12px 14px;
           border-left-color: #c4897a;
           background: rgba(107, 26, 26, 0.03);
-        }
-        .seat.framer .challenge { color: #2a5a2a; }
-        .seat.framer.state-speaking .challenge,
-        .seat.framer.state-past .challenge {
-          border-left-color: #7a9a7a;
-          background: rgba(42, 74, 42, 0.03);
         }
         .challenge :global(strong) {
           font-weight: 600;
