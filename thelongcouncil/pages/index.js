@@ -99,8 +99,10 @@ async function findRecentSessionByQuestion(question) {
 }
 
 // ── VerdictCast helpers ─────────────────────────────────────────────────
+// NOTE: stripTierSuffix handles both old (Practitioner|Framer) and new (Leader|Thinker) suffixes.
+// Do not remove Practitioner|Framer — old sessions in Supabase use those values.
 function stripTierSuffix(name) {
-  return name.replace(/\s*[—–-]\s*(Practitioner|Framer|Wildcard)\s*$/i, '').trim();
+  return name.replace(/\s*[—–-]\s*(Practitioner|Framer|Leader|Thinker|Wildcard)\s*$/i, '').trim();
 }
 
 function nameToAvatarSlug(name) {
@@ -609,7 +611,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
 
       <div className="mast mast-link" onClick={reset}>
         <div className="mast-name">The Long Council</div>
-        <div className="mast-tag">History's counsel on today's questions</div>
+        <div className="mast-tag">History&apos;s counsel on today&apos;s questions</div>
       </div>
 
       <nav className="nav">
@@ -627,7 +629,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
               This is The Long Council. For each question, the council assembles the most relevant leaders and thinkers from history, such as Mandela, Machiavelli, FDR, Sun Tzu and Thatcher. They debate <em>your question</em> and deliver a verdict.
             </p>
             <div className="landing-divider" />
-            <h1 className="landing-heading">What's on your mind? Ask the council.</h1>
+            <h1 className="landing-heading">What&apos;s on your mind? Ask the council.</h1>
             <div className="issue-form">
               <textarea
                 ref={textareaRef}
@@ -727,7 +729,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
 
       {screen === 'loading' && (
         <div className="loading">
-          <div className="loading-question">"{confirmedQuestion}"</div>
+          <div className="loading-question">&quot;{confirmedQuestion}&quot;</div>
           <div className="loading-steps">
             {STEPS.map(({ label, step }) => (
               <div key={step} className={`loading-step ${loadingStep === step ? 'active' : loadingStep > step ? 'done' : ''}`}>
@@ -742,11 +744,11 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
 
       {screen === 'finalizing' && (
         <div className="loading">
-          <div className="loading-question">"{confirmedQuestion}"</div>
+          <div className="loading-question">&quot;{confirmedQuestion}&quot;</div>
           <div className="loading-steps">
             <div className="loading-step active">
               <div className="step-dot" />
-              <span>Wrapping up the council's verdict</span>
+              <span>Wrapping up the council&apos;s verdict</span>
             </div>
           </div>
           <p className="loading-note">Just a moment — the council is finishing its work.</p>
@@ -771,7 +773,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
           <div className="session-issue">{sessionData.question}</div>
           <div className="session-meta">
             {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
-            {' · '}Counsel from history's greatest minds
+            {' · '}Counsel from history&apos;s greatest minds
           </div>
 
           {sessionData.cards.length > 0 ? (
@@ -791,7 +793,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
           <div className={`conc-wrap ${showConclusion ? 'visible' : ''}`}>
             <div className="sec-head">
               <div className="sec-rule" />
-              <div className="sec-lbl">The council's conclusion</div>
+              <div className="sec-lbl">The council&apos;s conclusion</div>
               <div className="sec-rule" />
             </div>
 
@@ -833,7 +835,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
         </div>
       )}
 
-      <footer>The Long Council · Counsel from history's greatest minds, brought to life by AI</footer>
+      <footer>The Long Council · Counsel from history&apos;s greatest minds, brought to life by AI</footer>
 
       <style jsx global>{`
         .issue-input {
