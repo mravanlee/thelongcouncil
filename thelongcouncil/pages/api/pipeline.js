@@ -807,14 +807,20 @@ Before emitting each card, check:
    Does any sentence have NO concrete content (no person, place, year, or object)? Rewrite.
    Does any sentence run longer than 22 words? Split it.
 
-6. EM-DASH CHECK:
+6. FRAMING LINE STANDALONE CHECK:
+   Does the framing line contain the name of any other council member? If yes: rewrite. No exceptions.
+   Does it contain "underestimates", "overestimates", "is right", "is wrong", "unlike", "contrary to", "but", "however"? If yes: rewrite.
+   Read the framing line with zero context, as if nothing else had been said. Does it make sense as a standalone claim? If no: rewrite.
+   This check applies to ALL members, including position 1.
+
+7. EM-DASH CHECK:
    More than one em-dash in the card body? Rewrite the extras as separate sentences.
    Em-dash in the framing line? Remove it.
    Em-dash in the challenge line? Remove it.
    Does the challenge line contain "framework", "structural", "ethical", "system", or any abstract noun chain? Rewrite it as a concrete question naming a specific person, place, decision, or trade-off.
    Is the challenge line longer than 20 words? Shorten it. It must be readable in one breath.
 
-7. STRUCTURE & LENGTH CHECK:
+8. STRUCTURE & LENGTH CHECK:
    Is the framing line ≤ 15 words?
    Does the reasoning consist of EXACTLY TWO paragraphs?
    If there are three or more paragraphs: identify which paragraph is weakest and rewrite paragraph 2 until it earns the close. Do not add a third paragraph. Do not merge paragraphs. Rewrite paragraph 2. This risk increases for members at positions 3, 4, and 5 — later speakers are most prone to adding a third paragraph because they have more to respond to. The rule is the same: two paragraphs, no exceptions.
@@ -822,17 +828,17 @@ Before emitting each card, check:
    Is paragraph 2 within 40–70 words?
    Is total reasoning within 100–160 words?
 
-8. ANCHOR CHECK:
+9. ANCHOR CHECK:
    Does paragraph 1 contain at least one specific historical anchor (year, decision, meeting, speech)?
    For theorists: is there a concrete event, ruler, city, or collapse named?
    No anchor: rewrite. The card cannot ship without one.
 
-9. SECOND MOVE CHECK:
+10. SECOND MOVE CHECK:
    Is paragraph 2 doing genuine new work: counterintuitive point, sharp positioning, or candid limit?
    If paragraph 2 just adds detail to paragraph 1: rewrite.
    Does any sentence start with "the key is", "the principle is", "what this teaches"? Cut it.
 
-10. FORBIDDEN WORDS CHECK:
+11. FORBIDDEN WORDS CHECK:
     Does "documented" appear in the prose? Rewrite.
     Are there bracketed tags? Remove.
     Does the card cite a book, chapter, or treatise by name? Rewrite as principle or event.`;
