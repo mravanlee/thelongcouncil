@@ -68,7 +68,7 @@ function extractSelectedMembers(assemblyOutput) {
   // Match the numbered line. We capture everything after the number and clean it up afterward.
   const regex = /^\s*\d+\.\s+(.+?)\s*$/gm;
 
-  // Strips trailing "— Practitioner", "– Framer", "- Practitioner" etc. with any dash variant.
+  // Strips trailing "— Leader", "– Thinker", "- Leader" etc. with any dash variant.
   const stripTierSuffix = (s) => s.replace(/\s*[—–\-―]\s*(Practitioner|Framer)\s*$/i, '').trim();
 
   let match;
@@ -373,7 +373,7 @@ CONFIDENCE SIGNALS — used throughout all outputs:
 [no documented position] — the member has no recorded position on this topic. Silence noted honestly. Do not fill the gap.
 
 SELECTION RULES:
-1. SELECT 3–6 MEMBERS covering every distinct analytical tradition genuinely relevant to this issue. Err toward 4–5 rather than the minimum. A council of 2 is almost never enough — someone is always missing. Include both Practitioners (decision-makers) and Framers (theorists) unless the issue is purely one or the other.
+1. SELECT 3–6 MEMBERS covering every distinct analytical tradition genuinely relevant to this issue. Err toward 4–5 rather than the minimum. A council of 2 is almost never enough — someone is always missing. Include both Leaders (decision-makers) and Thinkers (theorists) unless the issue is purely one or the other.
 2. RELEVANCE IS THE ONLY CRITERION. Do not select members to achieve geographic or gender balance if they are not genuinely relevant.
 3. ASSESS CONFIDENCE LEVEL BEFORE SELECTING. Prefer [documented] coverage.
 4. ENSURE DIVERSITY OF ANALYTICAL TRADITION. Avoid selecting members who all reason from the same framework.
@@ -391,7 +391,7 @@ CENTRAL TENSION: [One sentence identifying the core analytical conflict]
 
 SELECTED MEMBERS:
 
-1. [Name] — [Practitioner/Framer]
+1. [Name] — [Leader/Thinker]
    Relevance: [One sentence on why this member is selected]
    Coverage: [documented / inferred / extrapolated] — [Which specific T1/T2/T3 entries are most relevant]
    Will argue: [One sentence on the direction of their expected position]
@@ -557,10 +557,10 @@ SPEAKING ORDER: [Member A] → [Member B] → [Member C] → [Member D]
 Where Member A is the most grounded, decision-based voice and the final member is the most theoretical voice. This line is required. It is stripped from the user-facing output but forces you to commit to sequence before writing any cards.
 
 HOW TO DETERMINE ORDER:
-- GROUNDED / FIRST: modern practitioners who made decisions directly relevant to this issue. Examples: Schmidt on European policy, Roosevelt on wartime strategy, Lee Kuan Yew on governance, Keynes on economic crisis response.
+- GROUNDED / FIRST: modern leaders who made decisions directly relevant to this issue. Examples: Schmidt on European policy, Roosevelt on wartime strategy, Lee Kuan Yew on governance, Keynes on economic crisis response.
 - THEORETICAL / LAST: ancient thinkers and pure theorists who offer theoretical lenses, not modern decisions. Examples: Sun Tzu, Confucius, Kautilya, Machiavelli, Ibn Khaldun, Ali ibn Abi Talib, Rawls, Arendt, Rousseau, Locke.
 
-Ancient thinkers ALWAYS speak after modern practitioners. Sun Tzu never speaks before a 20th-century policymaker. This is absolute.
+Ancient thinkers ALWAYS speak after modern leaders. Sun Tzu never speaks before a 20th-century policymaker. This is absolute.
 
 STEP 2 — BEGIN CARDS AFTER SPEAKING ORDER.
 
@@ -582,7 +582,7 @@ Chancellor, West Germany 1974–82
 
 WRONG:
 ## Helmut Schmidt — position 1
-## Helmut Schmidt (Practitioner)
+## Helmut Schmidt (Leader)
 
 ════════════════════════════════════════════════════════════════
 FORBIDDEN WORDS AND PHRASINGS
