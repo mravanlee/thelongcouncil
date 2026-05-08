@@ -726,7 +726,7 @@ SPEAKING ORDER: [Member A name] → [Member B name] → [Member C name] → [Mem
 ## [Member A name only — nothing else on this line]
 [Role, Country, Years]
 
-*[Framing line — a claim, ≤ 15 words, no em-dash, no forbidden words.]*
+*[Framing line — 15 words max. BEFORE writing this: forget the debate. Forget who spoke before. Write what THIS member believes about the core issue, as if they are the first to speak. No names. No reactions. Their position, standalone.]*
 
 [Paragraph 1 — 60–90 words. First sentence takes a position. Grounded in a sourced moment.]
 
