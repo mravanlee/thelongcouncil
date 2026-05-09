@@ -55,8 +55,26 @@ function stripTierSuffix(name) {
   return name.replace(/\s*[—–-]\s*(Practitioner|Framer|Leader|Thinker|Wildcard)\s*$/i, '').trim();
 }
 
+const AVATAR_NAME_EXPANSIONS = {
+  'machiavelli': 'niccolo_machiavelli',
+  'keynes': 'john_maynard_keynes',
+  'hayek': 'friedrich_hayek',
+  'friedman': 'milton_friedman',
+  'locke': 'john_locke',
+  'rousseau': 'jean_jacques_rousseau',
+  'rawls': 'john_rawls',
+  'arendt': 'hannah_arendt',
+  'sen': 'amartya_sen',
+  'hirschman': 'albert_hirschman',
+  'fanon': 'frantz_fanon',
+  'prebisch': 'raul_prebisch',
+  'ostrom': 'elinor_ostrom',
+  'bolivar': 'simon_bolivar',
+};
+
 function nameToAvatarSlug(name) {
-  return stripTierSuffix(name).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\s.\-]+/g, '_').replace(/[^a-z0-9_]/g, '').replace(/_+/g, '_').replace(/^_|_$/g, '');
+  const slug = stripTierSuffix(name).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\s.\-]+/g, '_').replace(/[^a-z0-9_]/g, '').replace(/_+/g, '_').replace(/^_|_$/g, '');
+  return AVATAR_NAME_EXPANSIONS[slug] || slug;
 }
 
 function splitNameForCast(name) {
