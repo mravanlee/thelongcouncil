@@ -52,7 +52,7 @@ function parseDeliberation(deliberationText) {
 
 // NOTE: keeps Practitioner|Framer for old sessions, adds Leader|Thinker for new ones
 function stripTierSuffix(name) {
-  return name.replace(/\s*[—–-]\s*(Practitioner|Framer|Leader|Thinker|Wildcard)\s*$/i, '').trim();
+  return name.replace(/\s*[—–-]\s*(Practitioner|Framer|Leader|Thinker|Wildcard)(\/\w+)?\s*$/i, '').trim();
 }
 
 const AVATAR_NAME_EXPANSIONS = {
