@@ -10,7 +10,7 @@ export const FRAMER_NAMES = new Set([
   'Albert Hirschman', 'Niccolò Machiavelli', 'Niccolo Machiavelli', 'Confucius',
   'Kautilya', 'Ibn Khaldun', 'Frantz Fanon', 'Raúl Prebisch', 'Raul Prebisch',
   'Ali ibn Abi Talib', 'Elinor Ostrom', 'Sun Tzu', 'Simón Bolívar',
-  'Simon Bolivar', 'Julius Nyerere', 'Rosa Luxemburg'
+  'Simon Bolivar', 'Julius Nyerere', 'Rosa Luxemburg',
   // Short names — Prompt 1 soms gebruikt korte namen in card headings
   'Machiavelli', 'Keynes', 'Hayek', 'Friedman', 'Locke', 'Rousseau',
   'Rawls', 'Arendt', 'Sen', 'Hirschman', 'Fanon', 'Prebisch', 'Ostrom',
