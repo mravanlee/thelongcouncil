@@ -4,12 +4,16 @@
 // Pure data utilities + one inline-markdown renderer. No animation logic here.
 
 export const FRAMER_NAMES = new Set([
+  // Full names
   'John Maynard Keynes', 'Friedrich Hayek', 'Milton Friedman', 'John Locke',
   'Jean-Jacques Rousseau', 'John Rawls', 'Hannah Arendt', 'Amartya Sen',
   'Albert Hirschman', 'Niccolò Machiavelli', 'Niccolo Machiavelli', 'Confucius',
   'Kautilya', 'Ibn Khaldun', 'Frantz Fanon', 'Raúl Prebisch', 'Raul Prebisch',
   'Ali ibn Abi Talib', 'Elinor Ostrom', 'Sun Tzu', 'Simón Bolívar',
-  'Simon Bolivar', 'Julius Nyerere',
+  'Simon Bolivar', 'Julius Nyerere', 'Rosa Luxemburg'
+  // Short names — Prompt 1 soms gebruikt korte namen in card headings
+  'Machiavelli', 'Keynes', 'Hayek', 'Friedman', 'Locke', 'Rousseau',
+  'Rawls', 'Arendt', 'Sen', 'Hirschman', 'Fanon', 'Prebisch', 'Ostrom',
 ]);
 
 export function getTier(name) {
