@@ -11,7 +11,7 @@ export async function getServerSideProps() {
       for (const session of sessions) {
         if (session.member_names) {
           for (const name of session.member_names) {
-            const clean = name.replace(/\s*[—–-]\s*(Practitioner|Framer|Wildcard)\s*$/i, '').trim();
+            const clean = name.replace(/\s*[—–-]\s*(Practitioner|Framer|Leader|Thinker|Wildcard)(\/\w+)?\s*$/i, '').trim();
             counts[clean] = (counts[clean] || 0) + 1;
           }
         }
@@ -23,15 +23,33 @@ export async function getServerSideProps() {
   }
 }
 
+const AVATAR_NAME_EXPANSIONS = {
+  'machiavelli': 'niccolo_machiavelli',
+  'keynes': 'john_maynard_keynes',
+  'hayek': 'friedrich_hayek',
+  'friedman': 'milton_friedman',
+  'locke': 'john_locke',
+  'rousseau': 'jean_jacques_rousseau',
+  'rawls': 'john_rawls',
+  'arendt': 'hannah_arendt',
+  'sen': 'amartya_sen',
+  'hirschman': 'albert_hirschman',
+  'fanon': 'frantz_fanon',
+  'prebisch': 'raul_prebisch',
+  'ostrom': 'elinor_ostrom',
+  'bolivar': 'simon_bolivar',
+};
+
 function slugify(name) {
   if (!name) return '';
-  return name
+  const base = name
     .replace(/\s*\([^)]*\)/g, '')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '_')
     .replace(/^_+|_+$/g, '');
+  return AVATAR_NAME_EXPANSIONS[base] || base;
 }
 
 function MemberAvatar({ member }) {
@@ -94,18 +112,19 @@ function MemberCard({ member: m, debates }) {
       </div>
 
       {debates > 0 && (
-        <div className="card-debates">{debates} debates</div>
+        <div className="card-debates">{debates} debate{debates !== 1 ? 's' : ''}</div>
       )}
 
       <style jsx>{`
-        .card { background: #fdfbf6; border: 0.5px solid #d4cfc8; border-top: 2px solid #6b1a1a; border-radius: 2px; padding: 22px; display: flex; flex-direction: column; gap: 14px; }
+        .card { background: #fdfbf6; border: 0.5px solid #d4cfc8; border-top: 2px solid #6b1a1a; border-radius: 2px; padding: 22px; display: flex; flex-direction: column; gap: 14px; transition: background 0.2s ease, border-color 0.2s ease; }
+        .card:hover { background: #f5f1e8; border-color: #b8ad9c; border-top-color: #6b1a1a; }
         .card-top { display: flex; gap: 16px; align-items: flex-start; }
         .card-meta { flex: 1; display: flex; flex-direction: column; gap: 4px; padding-top: 2px; }
         .badge { display: inline-block; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #7a7a7a; background: #ede9e2; padding: 2px 8px; border-radius: 2px; width: fit-content; }
         .card-name { font-family: 'Playfair Display', Georgia, serif; font-size: 18px; font-weight: 600; color: #0f0f0f; line-height: 1.2; }
         .card-role { font-size: 12px; color: #4a4a4a; font-style: italic; line-height: 1.4; }
         .card-dates { font-size: 11px; color: #9a9a9a; }
-        .card-bio { font-size: 13px; color: #2a2a2a; line-height: 1.65; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+        .card-bio { font-size: 13px; color: #2a2a2a; line-height: 1.65; }
         .card-rule { border: none; border-top: 0.5px solid #e8e3d8; margin: 0; }
         .card-positions { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; flex: 1; }
         .card-pos { font-size: 12.5px; color: #2a2a2a; line-height: 1.55; padding-left: 16px; position: relative; }
