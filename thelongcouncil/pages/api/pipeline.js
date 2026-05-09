@@ -65,11 +65,11 @@ function extractSelectedMembers(assemblyOutput) {
   const section = selectedMatch[1];
   const names = [];
 
-  // Match the numbered line. We capture everything after the number and clean it up afterward.
   const regex = /^\s*\d+\.\s+(.+?)\s*$/gm;
 
-  // Strips trailing "— Leader", "– Thinker", "- Leader" etc. with any dash variant.
-  const stripTierSuffix = (s) => s.replace(/\s*[—–\-―]\s*(Practitioner|Framer)\s*$/i, '').trim();
+  // Strip "— Leader", "— Thinker", "— Practitioner", "— Framer" with any dash variant
+  const stripTierSuffix = (s) =>
+    s.replace(/\s*[—–\-―]\s*(Practitioner|Framer|Leader|Thinker)\s*$/i, '').trim();
 
   let match;
   while ((match = regex.exec(section)) !== null) {
@@ -92,7 +92,6 @@ function extractSelectedMembers(assemblyOutput) {
 }
 
 // ── Member metadata extraction (name + type) from Prompt 1 output ──────
-// Used for archive filtering/browsing
 function extractMemberMetadata(assemblyOutput) {
   const selectedMatch = assemblyOutput.match(
     /SELECTED MEMBERS:\s*\n([\s\S]*?)(?=\n\s*(?:MEMBERS CONSIDERED|CONFIDENCE NOTE|$))/i
@@ -102,7 +101,7 @@ function extractMemberMetadata(assemblyOutput) {
   const section = selectedMatch[1];
   const dashChars = '[—–\\-―]';
   const regex = new RegExp(
-    `^\\s*\\d+\\.\\s+(.+?)(?:\\s+${dashChars}\\s+(Practitioner|Framer))?\\s*$`,
+    `^\\s*\\d+\\.\\s+(.+?)(?:\\s+${dashChars}\\s+(Practitioner|Framer|Leader|Thinker))?\\s*$`,
     'gm'
   );
 
@@ -114,7 +113,12 @@ function extractMemberMetadata(assemblyOutput) {
     if (rawName.length < 3) continue;
     if (/^(Relevance|Coverage|Will argue):/i.test(rawName)) continue;
     names.push(rawName);
-    types.push(match[2] ? match[2].toLowerCase() : 'unknown');
+    // Normalise to new labels
+    const raw = match[2] ? match[2].toLowerCase() : 'unknown';
+    const type = (raw === 'practitioner') ? 'leader'
+               : (raw === 'framer')       ? 'thinker'
+               : raw;
+    types.push(type);
   }
   return { names, types };
 }
@@ -125,8 +129,11 @@ const ALL_COUNCIL_MEMBERS = [
   'Franklin D. Roosevelt', 'Konrad Adenauer', 'Nelson Mandela', 'Deng Xiaoping',
   'Mustafa Kemal Ataturk', 'Mustafa Kemal Atatürk', 'David Ben-Gurion',
   'David Ben Gurion', 'Jawaharlal Nehru', 'Indira Gandhi', 'Julius Nyerere',
-  'Mahathir Mohamad', 'Lula', 'Luiz Inácio Lula da Silva', 'Lula da Silva',
-  'Ellen Johnson Sirleaf', 'Olof Palme', 'Simón Bolívar', 'Simon Bolivar',
+  'Mahathir Mohamad', 'Ellen Johnson Sirleaf', 'Olof Palme',
+  'Simón Bolívar', 'Simon Bolivar',
+  'Eleanor Roosevelt',
+  'Rosa Luxemburg',
+  'Wangari Maathai',
   'John Maynard Keynes', 'Keynes', 'Friedrich Hayek', 'Hayek',
   'Milton Friedman', 'Friedman', 'John Locke', 'Locke',
   'Jean-Jacques Rousseau', 'Rousseau', 'John Rawls', 'Rawls',
@@ -334,8 +341,6 @@ async function deleteOrphanSession(slug) {
 }
 
 // ── Claude API call ─────────────────────────────────────────────────────
-// Now accepts a temperature parameter (default 1.0 for backwards compatibility).
-// Lower values (0.7) make the model more rule-following at the cost of variation.
 async function callClaude(system, user, maxTokens = 4000, temperature = 1.0) {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -379,7 +384,7 @@ SELECTION RULES:
 4. ENSURE DIVERSITY OF ANALYTICAL TRADITION. Avoid selecting members who all reason from the same framework.
 5. IDENTIFY THE CENTRAL TENSION FIRST. Select members who will sit on different sides of that tension.
 6. APPLY THE TAXONOMY. Tag the issue: Economic / Social / Political / Crisis / Geopolitical / Technological.
-7. SPECIAL FLAGS: Do not select Lula as primary voice on anti-corruption design. Do not select Sun Tzu for cooperative governance problems. Flag Rousseau's general will when live.
+7. SPECIAL FLAGS: Do not select Sun Tzu for cooperative governance problems. Flag Rousseau's general will when live.
 
 OUTPUT FORMAT — return exactly this structure:
 
@@ -470,12 +475,21 @@ RIGHT (claim): "You cannot compel civic virtue. You can only create the conditio
 
 The framing line is the member's core position in one sentence. It does not introduce what follows — it states the conclusion. Paragraph 1 grounds it with evidence. The framing line does not need to be restated in the paragraphs.
 
-THE FRAMING LINE MUST STAND ALONE. It cannot reference another member by name, react to a previous argument, or use words like "but", "however", "contrary to", or "unlike X". It states what THIS member believes, independent of the debate. A reader who sees only this sentence — with no context — must understand it as a complete thought.
+THE FRAMING LINE MUST STAND ALONE — FOR EVERY MEMBER, INCLUDING POSITIONS 2, 3, 4, 5.
+It cannot reference another council member by name. It cannot react to a previous argument. It cannot use "but", "however", "contrary to", "unlike X", "underestimates", "overestimates", "is right", or "is wrong".
+It states what THIS member believes, independent of the debate.
+A reader who sees only this sentence — with no context — must understand it as a complete thought.
 
-WRONG: "Schmidt underestimates what moral authority can achieve — but he is right that it needs institutional backing."
-WRONG: "Roosevelt's verification problem is the heart of the matter."
-RIGHT: "Moral authority without enforcement is not authority — it is aspiration."
-RIGHT: "Every state that joins a treaty assumes the others will cheat."
+THIS IS THE MOST COMMON FAILURE IN THIS PROMPT. The model writes paragraph 1 (which engages the previous speaker), then writes the framing line as a preview of paragraph 1. This is wrong. The framing line is not a preview of the engagement. It is this member's position on the ISSUE itself.
+
+WRONG (references another council member): "Confucius mistakes the means for the end."
+WRONG (references another council member): "Roosevelt's verification problem is the heart of the matter."
+WRONG (reactive): "Schmidt underestimates what moral authority can achieve."
+WRONG (reactive): "Keynes is right but ignores the supply side."
+RIGHT (standalone position on the issue): "Political survival demands methods suited to the contest, not to an ideal order."
+RIGHT (standalone position on the issue): "Moral authority without enforcement is not authority — it is aspiration."
+RIGHT (standalone position on the issue): "Every state that joins a treaty assumes the others will cheat."
+RIGHT (standalone position on the issue): "A ruler who cannot be trusted destroys governance faster than any bad policy."
 
 ════════════════════════════════════════════════════════════════
 LANGUAGE DISCIPLINE — THE READER MUST UNDERSTAND ON FIRST PASS
@@ -663,22 +677,27 @@ REASONING CARD RULES
 
    a) FRAMING LINE
       One sentence in italics, maximum 15 words.
-      It is a CLAIM, not a topic. It states what the member believes.
+      It is a CLAIM, not a topic. It states what the member believes about the ISSUE.
       No em-dashes. No abstract escape-hatch words. No "framework". No "fundamental". No "genuine". No "authentic".
+      No other council member's name. No reaction to the debate. Standalone.
 
       The framing line is a promise. Paragraph 1 pays it off with lived evidence. It does not restate it in different words.
+
+      WRITE THE FRAMING LINE LAST, after you have written both paragraphs — but place it first in the output.
+      Then ask: does this framing line contain any council member's name? Does it react to something said earlier?
+      If yes to either: rewrite it as if you are the first and only speaker.
 
    b) REASONING — EXACTLY TWO PARAGRAPHS
       100–160 words total, separated by a blank line.
 
-      Paragraph 1 — THE GROUNDED ARGUMENT (60-90 words).
+      Paragraph 1 — THE GROUNDED ARGUMENT (60–90 words).
       Opens with a position, not a warm-up. The first sentence states what the member believes.
       For position 1: anchor in a specific sourced moment.
       For positions 2 through N: engage the previous speaker by name in the first sentence, then anchor in your own experience.
 
       CRITICAL SEPARATION: The name reference belongs in paragraph 1, NOT in the framing line.
-      The framing line states your own position. Paragraph 1 is where you engage others.
-      Think of it this way: framing line = what I believe. Paragraph 1 = here is why, and here is where I disagree with X.
+      The framing line states your own position on the issue. Paragraph 1 is where you engage others.
+      Think of it this way: framing line = what I believe about this issue. Paragraph 1 = here is why, and here is where I disagree with X.
 
       Paragraph 2 — THE SECOND MOVE (40–70 words).
       Must be one of:
@@ -692,7 +711,7 @@ REASONING CARD RULES
 
       DO NOT write a single block. DO NOT write three or more paragraphs. Exactly two, separated by a blank line.
 
-      GOOD EXAMPLE — direct opening, two paragraphs, concrete, no forbidden words:
+      GOOD EXAMPLE — direct opening, two paragraphs, concrete, no forbidden words, framing line standalone:
       ---
       *You cannot compel civic virtue. You can only build the conditions where it grows.*
 
@@ -726,7 +745,7 @@ SPEAKING ORDER: [Member A name] → [Member B name] → [Member C name] → [Mem
 ## [Member A name only — nothing else on this line]
 [Role, Country, Years]
 
-*[Framing line — 15 words max. BEFORE writing this: forget the debate. Forget who spoke before. Write what THIS member believes about the core issue, as if they are the first to speak. No names. No reactions. Their position, standalone.]*
+*[Framing line — THIS member's position on THE ISSUE. No other council member's name. 15 words max. No em-dash.]*
 
 [Paragraph 1 — 60–90 words. First sentence takes a position. Grounded in a sourced moment.]
 
@@ -737,7 +756,7 @@ SPEAKING ORDER: [Member A name] → [Member B name] → [Member C name] → [Mem
 ## [Member B name only]
 [Role, Country, Years]
 
-*[Framing line.]*
+*[Framing line — THIS member's position on THE ISSUE. No other council member's name. 15 words max. No em-dash. Write this after paragraphs 1 and 2, then check: does it contain any council member's name? If yes, rewrite.]*
 
 [Paragraph 1 — 60–90 words. First sentence engages Member A by name and takes a position.]
 
@@ -746,13 +765,13 @@ SPEAKING ORDER: [Member A name] → [Member B name] → [Member C name] → [Mem
 **Challenge to [Member C name]:** [One sentence.]
 ---
 
-[... continue for each middle member ...]
+[... continue for each middle member, using the same framing line instruction as Member B ...]
 
 ---
 ## [Final member name only]
 [Role, Country, Years]
 
-*[Framing line.]*
+*[Framing line — THIS member's position on THE ISSUE. No other council member's name. 15 words max. No em-dash. Write this after paragraphs 1 and 2, then check: does it contain any council member's name? If yes, rewrite.]*
 
 [Paragraph 1 — 60–90 words. First sentence engages previous speaker by name and takes a position.]
 
@@ -811,10 +830,14 @@ Before emitting each card, check:
    Does any sentence have NO concrete content (no person, place, year, or object)? Rewrite.
    Does any sentence run longer than 22 words? Split it.
 
-6. FRAMING LINE STANDALONE CHECK:
-   Does the framing line contain the name of any other council member? If yes: rewrite. No exceptions.
+6. FRAMING LINE STANDALONE CHECK — THIS IS THE MOST COMMONLY VIOLATED RULE:
+   Does the framing line contain the name of any other council member? If yes: STOP. Rewrite. No exceptions.
    Does it contain "underestimates", "overestimates", "is right", "is wrong", "unlike", "contrary to", "but", "however"? If yes: rewrite.
-   Read the framing line with zero context, as if nothing else had been said. Does it make sense as a standalone claim? If no: rewrite.
+   Read the framing line with zero context, as if this is the only sentence you have ever seen. Does it state a complete position on the issue? If no: rewrite.
+   BAD: "Confucius mistakes the means for the end." — contains another council member's name.
+   BAD: "Roosevelt's verification problem is the heart of the matter." — contains another council member's name.
+   GOOD: "Political survival demands methods suited to the contest, not to an ideal order."
+   GOOD: "A ruler who cannot be trusted destroys governance faster than any bad policy."
    This check applies to ALL members, including position 1.
 
 7. EM-DASH CHECK:
@@ -838,9 +861,9 @@ Before emitting each card, check:
    No anchor: rewrite. The card cannot ship without one.
 
 10. SECOND MOVE CHECK:
-   Is paragraph 2 doing genuine new work: counterintuitive point, sharp positioning, or candid limit?
-   If paragraph 2 just adds detail to paragraph 1: rewrite.
-   Does any sentence start with "the key is", "the principle is", "what this teaches"? Cut it.
+    Is paragraph 2 doing genuine new work: counterintuitive point, sharp positioning, or candid limit?
+    If paragraph 2 just adds detail to paragraph 1: rewrite.
+    Does any sentence start with "the key is", "the principle is", "what this teaches"? Cut it.
 
 11. FORBIDDEN WORDS CHECK:
     Does "documented" appear in the prose? Rewrite.
@@ -1133,7 +1156,7 @@ export default async function handler(req, res) {
 
     const allProfiles = loadAllProfiles();
 
-    // Prompt 1 — temperature 1.0 (default) — selection benefits from variation
+    // Prompt 1 — temperature 1.0 — selection benefits from variation
     send('progress', { step: 1, message: 'Assembling the council...' });
     const assemblyOutput = await callClaude(
       PROMPT1_SYSTEM,
@@ -1193,12 +1216,14 @@ export default async function handler(req, res) {
       0.7
     );
     send('verdict', { data: verdictOutput });
-const todayForBrief = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-    // Prompt 4 — temperature 1.0 (default) — brief benefits from narrative variation
+
+    const todayForBrief = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+
+    // Prompt 4 — temperature 1.0 — brief benefits from narrative variation
     send('progress', { step: 4, message: 'Writing the policy brief...' });
     const briefOutput = await callClaude(
       PROMPT4_SYSTEM,
-     `ISSUE:\n${question}\n\nTODAY'S DATE: ${todayForBrief}\n\nPROMPT 2 OUTPUT — REASONING CARDS AND CONVERGENCE NOTE:\n${deliberationOutput}\n\nPROMPT 3 OUTPUT — VERDICT:\n${verdictOutput}`,
+      `ISSUE:\n${question}\n\nTODAY'S DATE: ${todayForBrief}\n\nPROMPT 2 OUTPUT — REASONING CARDS AND CONVERGENCE NOTE:\n${deliberationOutput}\n\nPROMPT 3 OUTPUT — VERDICT:\n${verdictOutput}`,
       3000
     );
     send('brief', { data: briefOutput });
@@ -1245,7 +1270,9 @@ const todayForBrief = new Date().toLocaleDateString('en-GB', { day: 'numeric', m
     }
 
     const isOverloaded = err.message && err.message.includes('529');
-    const userMessage = isOverloaded ? 'The AI service is under high demand right now. Please try again in a few minutes.' : (err.message || 'Something went wrong. Please try again.');
+    const userMessage = isOverloaded
+      ? 'The AI service is under high demand right now. Please try again in a few minutes.'
+      : (err.message || 'Something went wrong. Please try again.');
     send('error', { message: userMessage });
   }
 
