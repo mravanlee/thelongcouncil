@@ -100,29 +100,38 @@ function extractMemberMetadata(assemblyOutput) {
     /SELECTED MEMBERS:\s*\n([\s\S]*?)(?=\n\s*(?:MEMBERS CONSIDERED|CONFIDENCE NOTE|$))/i
   );
   if (!selectedMatch) return { names: [], types: [] };
+
   const section = selectedMatch[1];
   const dashChars = '[—–\\-―]';
+  const tierPattern = '(Practitioner|Framer|Leader|Thinker|Wildcard)';
   const regex = new RegExp(
-    `^\\s*\\d+\\.\\s+(.+?)(?:\\s+${dashChars}\\s+(Practitioner|Framer|Leader|Thinker))?\\s*$`,
+    `^\\s*\\d+\\.\\s+(.+?)(?:\\s+${dashChars}\\s+${tierPattern}(?:[/]${tierPattern})?)?\\s*$`,
     'gm'
   );
+
+  const stripTierSuffix = (s) =>
+    s.replace(/\s*[—–\-―]\s*(Practitioner|Framer|Leader|Thinker|Wildcard)(\/\w+)?\s*$/i, '').trim();
+
   const names = [];
   const types = [];
   let match;
   while ((match = regex.exec(section)) !== null) {
     const rawName = match[1].trim().replace(/\*\*/g, '').replace(/^\*|\*$/g, '').trim();
-    if (rawName.length < 3) continue;
-    if (/^(Relevance|Coverage|Will argue):/i.test(rawName)) continue;
-    names.push(rawName);
+    const cleanName = stripTierSuffix(rawName);
+    if (cleanName.length < 3) continue;
+    if (/^(Relevance|Coverage|Will argue):/i.test(cleanName)) continue;
+    names.push(cleanName);
     const raw = match[2] ? match[2].toLowerCase() : 'unknown';
     const type = (raw === 'practitioner') ? 'leader'
                : (raw === 'framer')       ? 'thinker'
-               : raw;
+               : (raw === 'leader')       ? 'leader'
+               : (raw === 'thinker')      ? 'thinker'
+               : (raw === 'wildcard')     ? 'wildcard'
+               : 'unknown';
     types.push(type);
   }
   return { names, types };
 }
-
 // ── Roster validator ────────────────────────────────────────────────────
 const ALL_COUNCIL_MEMBERS = [
   'Lee Kuan Yew', 'Helmut Schmidt', 'Margaret Thatcher', 'Franklin Roosevelt',
