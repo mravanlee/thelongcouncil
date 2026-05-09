@@ -1104,11 +1104,11 @@ export default async function handler(req, res) {
 
     send('progress', { step: 2, message: 'The council is deliberating...' });
     const deliberationOutput = await callClaude(
-      PROMPT2_SYSTEM,
-      `ISSUE:\n${question}\n\n${rosterLine}PROMPT 1 OUTPUT:\n${assemblyOutput}\n\nMEMBER PROFILES:\n${profilesForDeliberation}`,
-      5000,
-      0.7
-    );
+  PROMPT2_SYSTEM,
+  `ISSUE:\n${question}\n\n${rosterLine}PROMPT 1 OUTPUT:\n${assemblyOutput}\n\nMEMBER PROFILES:\n${profilesForDeliberation}\n\nFINAL REMINDER: Each card is exactly two paragraphs, 100-160 words total. No exceptions.`,
+  2500,
+  0.7
+);
     send('deliberation', { data: deliberationOutput });
 
     const violations = validateRoster(deliberationOutput, selectedNames);
