@@ -1,6 +1,29 @@
 import { useMemo, useEffect, useState, Fragment } from 'react'
 import { getTier, getInitials, slugify, parseCard, renderInline } from '../lib/cardParser'
 
+// Same expansion map as archive/[slug].js — keeps short names working
+const AVATAR_NAME_EXPANSIONS = {
+  'machiavelli': 'niccolo_machiavelli',
+  'keynes': 'john_maynard_keynes',
+  'hayek': 'friedrich_hayek',
+  'friedman': 'milton_friedman',
+  'locke': 'john_locke',
+  'rousseau': 'jean_jacques_rousseau',
+  'rawls': 'john_rawls',
+  'arendt': 'hannah_arendt',
+  'sen': 'amartya_sen',
+  'hirschman': 'albert_hirschman',
+  'fanon': 'frantz_fanon',
+  'prebisch': 'raul_prebisch',
+  'ostrom': 'elinor_ostrom',
+  'bolivar': 'simon_bolivar',
+}
+
+function nameToAvatarSlug(name) {
+  const slug = slugify(name)
+  return AVATAR_NAME_EXPANSIONS[slug] || slug
+}
+
 export default function Procession({ cards = [], onComplete, instant = false, sessionSlug = null }) {
   const parsed = useMemo(() => cards.map(parseCard).filter(Boolean), [cards])
 
@@ -18,6 +41,7 @@ export default function Procession({ cards = [], onComplete, instant = false, se
   }, [parsed])
 
   const allThinkers = parsed.length > 0 && parsed.every(c => getTier(c.name) === 'F')
+  const allLeaders = parsed.length > 0 && parsed.every(c => getTier(c.name) === 'P')
 
   useEffect(() => {
     if (instant) return
@@ -74,11 +98,11 @@ export default function Procession({ cards = [], onComplete, instant = false, se
   return (
     <div className="procession">
       <div className="rail">
-        {!allThinkers && (
-          <SectionMarker label="Leaders" visible={leaderVisible} />
-        )}
         {allThinkers && (
           <SectionMarker label="Thinkers" visible={thinkerVisible} />
+        )}
+        {!allThinkers && (
+          <SectionMarker label="Leaders" visible={leaderVisible} />
         )}
 
         {parsed.map((card, i) => {
@@ -181,7 +205,6 @@ function ShareIcon({ name, sessionSlug }) {
   async function handleClick(e) {
     e.preventDefault()
     e.stopPropagation()
-    // Handles both old (Practitioner|Framer) and new (Leader|Thinker) suffixes
     const cleanName = name.replace(/\s*[—–-]\s*(Practitioner|Framer|Leader|Thinker|Wildcard)\s*$/i, '').trim()
     const shareUrl = `https://www.thelongcouncil.com/archive/${sessionSlug}?member=${encodeURIComponent(cleanName)}`
 
@@ -256,7 +279,7 @@ function Seat({ card, tier, state, sessionSlug }) {
   const { name, role, framing, body, challenge } = card
   const isThinker = tier === 'F'
   const [imgFailed, setImgFailed] = useState(false)
-  const slug = slugify(name)
+  const slug = nameToAvatarSlug(name)
   const showImage = !imgFailed && slug
 
   return (
