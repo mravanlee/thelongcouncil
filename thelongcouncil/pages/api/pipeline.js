@@ -656,13 +656,22 @@ REASONING CARD RULES
 
       DO NOT write a single block. DO NOT write three or more paragraphs. Exactly two, separated by a blank line.
 
-      GOOD EXAMPLE — direct opening, two paragraphs, rhythm, no forbidden words, framing line standalone, no external council member named:
+     GOOD EXAMPLE — direct opening, two paragraphs, rhythm, no forbidden words, framing line standalone, no external council member named:
       ---
       *You cannot compel civic virtue. You can only build the conditions where it grows.*
 
-      In 1965 I separated Singapore from Malaysia not because I wanted independence but because the alternative was racial collapse. Survival came first. Schools taught English not because we loved it but because neutrality between Chinese, Malay and Tamil prevented civil war. Bilingualism was strategy, not sentiment. Every institution I built served a function — and the function came before the principle.
+      In 1965 I separated Singapore from Malaysia not because I wanted independence but because the alternative was racial collapse. Survival came first. Schools taught English not because we loved it but because neutrality between Chinese, Malay and Tamil prevented civil war. Bilingualism was strategy, not sentiment. Every institution I built served a function. The function came before the principle.
 
-      Today's leaders ask about AI literacy. That is the wrong question. Ask instead: what does this country need that no one else can provide, and how do institutions deliver it by 2035? Models from elsewhere help — but only if you choose the anchor before the crisis, not during it.
+      Governments today ask about AI literacy. That is the wrong question. Ask instead: what does this country need that no one else can provide, and how do institutions deliver it by 2035? Choose the anchor before the crisis. Not during it.
+      ---
+
+      BAD EXAMPLE — same content, no rhythm, reads like an essay:
+      ---
+      *You cannot compel civic virtue. You can only build the conditions where it grows.*
+
+      In 1965 I separated Singapore from Malaysia not because I wanted independence but because the alternative was racial collapse, and survival had to come before any other consideration. Schools taught English not because we loved it but because neutrality between Chinese, Malay and Tamil communities was necessary to prevent civil war, and bilingualism served as a strategic instrument rather than a sentimental preference. Every institution I built served a specific function, and the function always came before the principle it was meant to embody.
+
+      Governments today are asking about AI literacy, but this is the wrong question to be asking. The right question is: what does this country need that no one else can provide, and how do institutions deliver those capabilities by 2035?
       ---
 
    c) CHALLENGE LINE (only for positions 1 through N-1)
