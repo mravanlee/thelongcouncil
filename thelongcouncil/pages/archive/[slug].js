@@ -50,7 +50,6 @@ function parseDeliberation(deliberationText) {
   return { cards, convergence };
 }
 
-// NOTE: keeps Practitioner|Framer for old sessions, adds Leader|Thinker for new ones
 function stripTierSuffix(name) {
   return name.replace(/\s*[—–-]\s*(Practitioner|Framer|Leader|Thinker|Wildcard)(\/\w+)?\s*$/i, '').trim();
 }
@@ -276,16 +275,15 @@ export default function ArchiveDetail({ session, memberQuery }) {
         <ShareButton url={baseShareUrl} question={session.original_issue || 'The Long Council'} />
 
         {deliberationText && (
-          <CollapsibleSection title="The debate" subtitle={memberSummary ? `Hear from each member in turn — ${memberSummary}` : 'Hear from each member in turn'}>
+          <div className="debate-section">
+            <div className="debate-label">The debate</div>
             {deliberationCards.length > 0 ? (
-              <div className="deliberation-procession">
-                <Procession cards={deliberationCards} instant={true} sessionSlug={session.slug} />
-              </div>
+              <Procession cards={deliberationCards} instant={true} scrollReveal={true} sessionSlug={session.slug} />
             ) : (
               <div className="md-body"><ReactMarkdown>{deliberationText}</ReactMarkdown></div>
             )}
             {convergence && <div className="md-body convergence-block"><ReactMarkdown>{convergence}</ReactMarkdown></div>}
-          </CollapsibleSection>
+          </div>
         )}
 
         {briefText && (
@@ -322,7 +320,8 @@ export default function ArchiveDetail({ session, memberQuery }) {
         .verdict-text :global(p:last-child) { margin-bottom: 0; }
         .verdict-reasoning :global(p) { font-family: 'Inter', sans-serif; font-size: 15px; color: #2a2a2a; line-height: 1.7; margin: 0 0 12px; }
         .verdict-reasoning :global(p:last-child) { margin-bottom: 0; }
-        .deliberation-procession { padding-top: 1.25rem; }
+        .debate-section { margin: 0 0 2.5rem; }
+        .debate-label { font-family: 'Inter', sans-serif; font-size: 11px; color: #7a7a7a; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 0.5px solid #d4cfc8; }
         .convergence-block { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 0.5px solid #d4cfc8; }
         .md-body { padding-top: 1rem; font-family: 'Inter', sans-serif; color: #1a1a1a; line-height: 1.7; }
         .md-body :global(h2) { font-family: 'Playfair Display', Georgia, serif; font-size: 20px; color: #0f0f0f; font-weight: 600; margin: 1.75rem 0 0.5rem; line-height: 1.3; }
