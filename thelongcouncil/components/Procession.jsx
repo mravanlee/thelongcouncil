@@ -1,7 +1,59 @@
-import { useMemo, useEffect, useState, Fragment } from 'react'
-import { getTier, getInitials, slugify, parseCard, renderInline } from '../lib/cardParser'
+import Head from 'next/head';
+import Link from 'next/link';
+import { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import { supabase } from '../../lib/supabase';
+import Procession from '../../components/Procession';
 
-// Same expansion map as archive/[slug].js — keeps short names working
+export async function getServerSideProps(context) {
+  const { slug } = context.params;
+  const memberQuery = (context.query && context.query.member) ? String(context.query.member) : null;
+  const { data: session, error } = await supabase
+    .from('sessions')
+    .select('*')
+    .eq('slug', slug)
+    .single();
+  if (error || !session) return { notFound: true };
+  return { props: { session, memberQuery } };
+}
+
+function formatDate(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+function parseVerdict(verdictMd) {
+  if (!verdictMd) return { verdict: '', reasoning: '' };
+  const cleaned = verdictMd.replace(/^CONCLUSION TYPE:.*$/m, '').trim();
+  const verdictMatch = cleaned.match(/##\s*Verdict\s*\n+([\s\S]*?)(?=\n##\s*Reasoning|$)/i);
+  const reasoningMatch = cleaned.match(/##\s*Reasoning\s*\n+([\s\S]*?)(?=\n---|$)/i);
+  return {
+    verdict: verdictMatch ? verdictMatch[1].trim().replace(/^---\s*/m, '').replace(/\s*---\s*$/, '').trim() : '',
+    reasoning: reasoningMatch ? reasoningMatch[1].trim().replace(/\s*---\s*$/, '').trim() : '',
+  };
+}
+
+function cleanDeliberation(md) {
+  if (!md) return '';
+  return md.replace(/^SPEAKING ORDER:.*$/m, '').trim();
+}
+
+function parseDeliberation(deliberationText) {
+  if (!deliberationText) return { cards: [], convergence: null };
+  const blocks = deliberationText.split(/(?:^|\n)\s*---\s*\n/).map(b => b.trim()).filter(Boolean);
+  const cards = [];
+  let convergence = null;
+  for (const block of blocks) {
+    if (/^##\s+The convergence note/i.test(block)) convergence = block;
+    else if (block.startsWith('## ') || block.includes('·')) cards.push(block);
+  }
+  return { cards, convergence };
+}
+
+function stripTierSuffix(name) {
+  return name.replace(/\s*[—–-]\s*(Practitioner|Framer|Leader|Thinker|Wildcard)(\/\w+)?\s*$/i, '').trim();
+}
+
 const AVATAR_NAME_EXPANSIONS = {
   'machiavelli': 'niccolo_machiavelli',
   'keynes': 'john_maynard_keynes',
@@ -17,485 +69,279 @@ const AVATAR_NAME_EXPANSIONS = {
   'prebisch': 'raul_prebisch',
   'ostrom': 'elinor_ostrom',
   'bolivar': 'simon_bolivar',
-}
+};
 
 function nameToAvatarSlug(name) {
-  const slug = slugify(name)
-  return AVATAR_NAME_EXPANSIONS[slug] || slug
+  const slug = stripTierSuffix(name).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\s.\-]+/g, '_').replace(/[^a-z0-9_]/g, '').replace(/_+/g, '_').replace(/^_|_$/g, '');
+  return AVATAR_NAME_EXPANSIONS[slug] || slug;
 }
 
-export default function Procession({ cards = [], onComplete, instant = false, sessionSlug = null }) {
-  const parsed = useMemo(() => cards.map(parseCard).filter(Boolean), [cards])
+function splitNameForCast(name) {
+  const clean = stripTierSuffix(name);
+  const parts = clean.split(' ');
+  if (parts.length === 1) return [clean, ''];
+  return [parts.slice(0, -1).join(' '), parts[parts.length - 1]];
+}
 
-  const [seatedCount, setSeatedCount] = useState(0)
-  const [speakingIndex, setSpeakingIndex] = useState(-1)
-  const [sessionComplete, setSessionComplete] = useState(false)
-  const [showLeaderSection, setShowLeaderSection] = useState(false)
-  const [showThinkerSection, setShowThinkerSection] = useState(false)
+function getInitials(name) {
+  return stripTierSuffix(name).split(' ').filter(Boolean).map(p => p[0]).join('').toUpperCase().slice(0, 3);
+}
 
-  const splitIndex = useMemo(() => {
-    const idx = parsed.findIndex(c => getTier(c.name) === 'F')
-    if (idx <= 0) return -1
-    const hasPBefore = parsed.slice(0, idx).some(c => getTier(c.name) === 'P')
-    return hasPBefore ? idx : -1
-  }, [parsed])
-
-  const allThinkers = parsed.length > 0 && parsed.every(c => getTier(c.name) === 'F')
-  const allLeaders = parsed.length > 0 && parsed.every(c => getTier(c.name) === 'P')
-
-  useEffect(() => {
-    if (instant) return
-    if (parsed.length === 0) return
-    const timers = []
-
-    timers.push(setTimeout(() => {
-      if (allThinkers) setShowThinkerSection(true)
-      else setShowLeaderSection(true)
-    }, 200))
-
-    const assemblyDelay = 450
-    const assemblyStart = 600
-    parsed.forEach((_, i) => {
-      timers.push(setTimeout(() => {
-        setSeatedCount(c => Math.max(c, i + 1))
-        if (splitIndex > 0 && i === splitIndex) {
-          setShowThinkerSection(true)
-        }
-      }, assemblyStart + i * assemblyDelay))
-    })
-
-    const speakingStart = assemblyStart + parsed.length * assemblyDelay + 700
-    const speakingDelay = 2200
-    parsed.forEach((_, i) => {
-      timers.push(setTimeout(() => {
-        setSpeakingIndex(i)
-      }, speakingStart + i * speakingDelay))
-    })
-
-    timers.push(setTimeout(() => {
-      setSessionComplete(true)
-      if (onComplete) onComplete()
-    }, speakingStart + parsed.length * speakingDelay + 400))
-
-    return () => timers.forEach(clearTimeout)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [parsed.length, instant])
-
-  const getSeatState = (i) => {
-    if (instant) return 'past'
-    if (i >= seatedCount) return 'empty'
-    if (sessionComplete) return 'past'
-    if (speakingIndex === i) return 'speaking'
-    if (speakingIndex > i) return 'past'
-    return 'seated'
-  }
-
-  const renderThinkerMarkerHere = (i) => splitIndex > 0 && i === splitIndex
-
-  const leaderVisible = instant || showLeaderSection
-  const thinkerVisible = instant || showThinkerSection
-
+function VerdictCast({ names }) {
+  if (!names || names.length === 0) return null;
   return (
-    <div className="procession">
-      <div className="rail">
-        {allThinkers && (
-          <SectionMarker label="Thinkers" visible={thinkerVisible} />
-        )}
-        {!allThinkers && (
-          <SectionMarker label="Leaders" visible={leaderVisible} />
-        )}
-
-        {parsed.map((card, i) => {
-          const state = getSeatState(i)
-          if (state === 'empty') {
-            if (renderThinkerMarkerHere(i) && thinkerVisible) {
-              return (
-                <SectionMarker
-                  key={`marker-${i}`}
-                  label="Thinkers"
-                  visible={true}
-                />
-              )
-            }
-            return null
-          }
-
-          const tier = getTier(card.name)
-          return (
-            <Fragment key={i}>
-              {renderThinkerMarkerHere(i) && (
-                <SectionMarker label="Thinkers" visible={thinkerVisible} />
-              )}
-              <Seat card={card} tier={tier} state={state} sessionSlug={sessionSlug} />
-            </Fragment>
-          )
-        })}
-      </div>
-
+    <div className="cast-row">
+      {names.map((name) => {
+        const [line1, line2] = splitNameForCast(name);
+        const slug = nameToAvatarSlug(name);
+        return (
+          <div key={name} className="cast-col">
+            <div className="cast-avatar">
+              <span className="cast-initials">{getInitials(name)}</span>
+              <img src={`/avatars/avatar_${slug}.webp`} alt="" className="cast-img" onError={(e) => { e.target.style.display = 'none'; }}/>
+            </div>
+            <div className="cast-name">{line1}{line2 ? <><br />{line2}</> : null}</div>
+          </div>
+        );
+      })}
       <style jsx>{`
-        .procession {
-          margin: 8px 0 0;
-        }
-        .rail {
-          position: relative;
-          padding-left: 44px;
-        }
-        .rail::before {
-          content: "";
-          position: absolute;
-          left: 17px;
-          top: 18px;
-          bottom: 18px;
-          width: 1px;
-          background: #b8ad9c;
-          z-index: 0;
+        .cast-row { display: flex; gap: 18px; padding: 4px 0 6px; margin: 0 0 2.5rem; flex-wrap: wrap; }
+        .cast-col { display: flex; flex-direction: column; align-items: center; min-width: 64px; }
+        .cast-avatar { width: 56px; height: 56px; border-radius: 50%; background: #f3eeea; border: 0.5px solid #c8bdb3; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; }
+        .cast-initials { font-family: 'Playfair Display', Georgia, serif; font-size: 14px; font-weight: 600; color: #6b1a1a; letter-spacing: 0.02em; }
+        .cast-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+        .cast-name { font-family: 'Inter', sans-serif; font-size: 11px; color: #4a4a4a; text-align: center; margin-top: 8px; line-height: 1.35; letter-spacing: 0.01em; }
+        @media (max-width: 480px) {
+          .cast-row { gap: 12px; }
+          .cast-col { min-width: 56px; }
+          .cast-avatar { width: 48px; height: 48px; }
+          .cast-initials { font-size: 12px; }
+          .cast-name { font-size: 10.5px; }
         }
       `}</style>
     </div>
-  )
+  );
 }
 
-function SectionMarker({ label, visible }) {
-  return (
-    <div className={`marker ${visible ? 'visible' : ''}`}>
-      <span className="marker-label">{label}</span>
-      <span className="marker-rule" />
-      <style jsx>{`
-        .marker {
-          position: relative;
-          margin: 18px 0 20px;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          opacity: 0;
-          transition: opacity 0.6s ease-out;
-        }
-        .marker.visible { opacity: 1; }
-        .marker::before {
-          content: "";
-          position: absolute;
-          left: -28px;
-          top: 50%;
-          width: 14px;
-          height: 1px;
-          background: #b8ad9c;
-        }
-        .marker-label {
-          font-family: 'Inter', sans-serif;
-          font-size: 10px;
-          font-weight: 500;
-          letter-spacing: 0.12em;
-          color: #8a8a8a;
-          text-transform: uppercase;
-          white-space: nowrap;
-        }
-        .marker-rule {
-          flex: 1;
-          height: 0.5px;
-          background: #d4cfc8;
-        }
-      `}</style>
-    </div>
-  )
-}
+function ShareButton({ url, question }) {
+  const [copied, setCopied] = useState(false);
+  const cleanQuestion = (question || '').trim().replace(/\s+/g, ' ');
+  const shareText = `"${cleanQuestion}" — debated by The Long Council\n\n${url}`;
 
-function ShareIcon({ name, sessionSlug }) {
-  const [copied, setCopied] = useState(false)
-
-  async function handleClick(e) {
-    e.preventDefault()
-    e.stopPropagation()
-    const cleanName = name.replace(/\s*[—–-]\s*(Practitioner|Framer|Leader|Thinker|Wildcard)\s*$/i, '').trim()
-    const shareUrl = `https://www.thelongcouncil.com/archive/${sessionSlug}?member=${encodeURIComponent(cleanName)}`
-
+  async function handleClick() {
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {
-        await navigator.share({
-          title: `${cleanName} — The Long Council`,
-          url: shareUrl,
-        })
-        return
-      } catch (err) {
-        if (err && err.name === 'AbortError') return
-      }
+        await navigator.share({ title: 'The Long Council', text: `"${cleanQuestion}" — debated by The Long Council`, url });
+        return;
+      } catch (e) { if (e && e.name === 'AbortError') return; }
     }
-
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
       try {
-        await navigator.clipboard.writeText(shareUrl)
-        setCopied(true)
-        setTimeout(() => setCopied(false), 2000)
-        return
-      } catch (err) {}
+        await navigator.clipboard.writeText(shareText);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+        return;
+      } catch (e) {}
     }
-
-    if (typeof window !== 'undefined') window.prompt('Copy this link:', shareUrl)
+    if (typeof window !== 'undefined') window.prompt('Copy this link:', shareText);
   }
 
   return (
-    <button
-      className="share-icon"
-      onClick={handleClick}
-      aria-label={`Share ${name}'s view`}
-      title={copied ? 'Link copied' : `Share ${name}'s view`}
-    >
-      {copied ? (
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="20 6 9 17 4 12" />
-        </svg>
-      ) : (
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-          <polyline points="16 6 12 2 8 6" />
-          <line x1="12" y1="2" x2="12" y2="15" />
-        </svg>
-      )}
-      <style jsx>{`
-        .share-icon {
-          width: 24px;
-          height: 24px;
-          border-radius: 50%;
-          border: 1px solid #6b1a1a;
-          background: transparent;
-          color: #6b1a1a;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          padding: 0;
-          flex-shrink: 0;
-          transition: background 0.2s ease, color 0.2s ease;
-        }
-        .share-icon:hover {
-          background: #6b1a1a;
-          color: #f3eeea;
-        }
-      `}</style>
-    </button>
-  )
-}
-
-function Seat({ card, tier, state, sessionSlug }) {
-  const { name, role, framing, body, challenge } = card
-  const isThinker = tier === 'F'
-  const [imgFailed, setImgFailed] = useState(false)
-  const slug = nameToAvatarSlug(name)
-  const showImage = !imgFailed && slug
-
-  return (
-    <div className={`seat ${isThinker ? 'thinker' : 'leader'} state-${state}`}>
-      <div className="avatar">
-        {showImage ? (
-          <img
-            src={`/avatars/avatar_${slug}.webp`}
-            alt={name}
-            onError={() => setImgFailed(true)}
-          />
+    <div className="share-row">
+      <button className="share-btn" onClick={handleClick} aria-label="Share this session">
+        {copied ? (
+          <span className="share-btn-content">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+            Link copied
+          </span>
         ) : (
-          <span className="initials">{getInitials(name)}</span>
+          <span className="share-btn-content">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" /><polyline points="16 6 12 2 8 6" /><line x1="12" y1="2" x2="12" y2="15" /></svg>
+            Share this session
+          </span>
         )}
-      </div>
-
-      <div className="content">
-        <div className="head">
-          <div className="head-meta">
-            <span className="name">{name}</span>
-            {role && <span className="role">{role}</span>}
-          </div>
-          {sessionSlug && <ShareIcon name={name} sessionSlug={sessionSlug} />}
-        </div>
-
-        {framing && <div className="framing">{framing}</div>}
-
-        {body && body.length > 0 && (
-          <div className="body">
-            {body.map((p, idx) => <p key={idx}>{renderInline(p)}</p>)}
-          </div>
-        )}
-
-        {challenge && <div className="challenge">{renderInline(challenge)}</div>}
-      </div>
-
+      </button>
       <style jsx>{`
-        .seat {
-          position: relative;
-          margin-bottom: 32px;
-          opacity: 0;
-          transform: translateX(-6px);
-          transition: opacity 0.6s ease-out, transform 0.6s ease-out;
-        }
-        .seat.state-seated,
-        .seat.state-speaking,
-        .seat.state-past {
-          opacity: 1;
-          transform: translateX(0);
-        }
-
-        .avatar {
-          position: absolute;
-          left: -36px;
-          top: 0;
-          width: 28px;
-          height: 28px;
-          border-radius: 50%;
-          overflow: hidden;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-family: 'Playfair Display', serif;
-          font-size: 9.5px;
-          font-weight: 600;
-          z-index: 2;
-          background: #fdf5ec;
-          color: #6b1a1a;
-          border: 1px solid #c4897a;
-          transition: box-shadow 0.4s ease;
-          box-shadow: 0 0 0 2px #f8f6f2;
-        }
-        .avatar img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          display: block;
-        }
-        .avatar .initials {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .seat.state-speaking .avatar {
-          box-shadow: 0 0 0 2px #f8f6f2, 0 0 0 5px rgba(107, 26, 26, 0.18);
-        }
-
-        .content {
-          padding-top: 1px;
-        }
-
-        .head {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          margin-bottom: 3px;
-        }
-        .head-meta {
-          flex: 1;
-          min-width: 0;
-          display: flex;
-          align-items: baseline;
-          gap: 10px;
-          flex-wrap: wrap;
-        }
-        .name {
-          font-family: 'Playfair Display', serif;
-          font-size: 16px;
-          font-weight: 600;
-          color: #0f0f0f;
-          line-height: 1.3;
-        }
-        .role {
-          font-family: 'Inter', sans-serif;
-          font-size: 11px;
-          color: #7a7a7a;
-          font-style: italic;
-        }
-
-        .framing {
-          font-family: 'Playfair Display', serif;
-          font-size: 17.5px;
-          font-weight: 500;
-          color: #0f0f0f;
-          line-height: 1.4;
-          letter-spacing: -0.005em;
-          margin-top: 10px;
-          margin-bottom: 0;
-          max-width: 62ch;
-          transition: margin-bottom 0.5s ease;
-        }
-        .seat.state-speaking .framing,
-        .seat.state-past .framing {
-          margin-bottom: 16px;
-        }
-
-        .body {
-          font-family: 'Inter', sans-serif;
-          font-size: 14.5px;
-          line-height: 1.7;
-          color: #1a1a1a;
-          max-width: 62ch;
-          max-height: 0;
-          overflow: hidden;
-          opacity: 0;
-          transition: max-height 0.9s ease-in-out, opacity 0.5s ease;
-        }
-        .seat.state-speaking .body,
-        .seat.state-past .body {
-          max-height: 2200px;
-          opacity: 1;
-        }
-        .body :global(p) {
-          margin-bottom: 12px;
-        }
-        .body :global(p:last-child) {
-          margin-bottom: 0;
-        }
-        .body :global(.sig) {
-          display: inline-block;
-          font-family: 'Inter', sans-serif;
-          font-size: 10px;
-          color: #7a7a7a;
-          background: #f0ede8;
-          padding: 1px 6px;
-          border-radius: 2px;
-          margin: 0 1px;
-          font-style: normal;
-          letter-spacing: 0.02em;
-          vertical-align: baseline;
-        }
-
-        .challenge {
-          font-family: 'Inter', sans-serif;
-          font-size: 13.5px;
-          color: #6b1a1a;
-          font-style: italic;
-          line-height: 1.65;
-          max-width: 62ch;
-          max-height: 0;
-          overflow: hidden;
-          opacity: 0;
-          margin-top: 0;
-          padding: 0 14px;
-          border-left: 2px solid transparent;
-          background: transparent;
-          border-radius: 2px;
-          transition:
-            max-height 0.6s ease-in-out,
-            opacity 0.5s ease,
-            margin-top 0.4s ease,
-            padding 0.4s ease,
-            border-left-color 0.4s ease,
-            background 0.4s ease;
-        }
-        .seat.state-speaking .challenge,
-        .seat.state-past .challenge {
-          max-height: 200px;
-          opacity: 1;
-          margin-top: 18px;
-          padding: 12px 14px;
-          border-left-color: #c4897a;
-          background: rgba(107, 26, 26, 0.03);
-        }
-        .challenge :global(strong) {
-          font-weight: 600;
-          font-style: normal;
-        }
-
-        @media (min-width: 768px) {
-          .name { font-size: 17px; }
-          .framing { font-size: 18px; }
-          .body { font-size: 15px; }
-          .challenge { font-size: 14px; }
-        }
+        .share-row { display: flex; justify-content: center; margin: 2rem 0; }
+        .share-btn { display: inline-flex; align-items: center; padding: 12px 24px; background: transparent; border: 1px solid #6b1a1a; color: #6b1a1a; border-radius: 2px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 14px; letter-spacing: 0.02em; transition: background 0.2s ease, color 0.2s ease; min-width: 200px; justify-content: center; }
+        .share-btn:hover { background: #6b1a1a; color: #f8f0e8; }
+        .share-btn-content { display: inline-flex; align-items: center; gap: 8px; }
       `}</style>
     </div>
-  )
+  );
+}
+
+function CollapsibleSection({ title, subtitle, children, defaultOpen = false }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="collapsible">
+      <button className="collapsible-header" onClick={() => setOpen(!open)} aria-expanded={open}>
+        <div className="collapsible-text">
+          <div className="collapsible-title">{title}</div>
+          {subtitle && <div className="collapsible-subtitle">{subtitle}</div>}
+        </div>
+        <span className="collapsible-toggle">{open ? 'Close ↑' : 'Open ↓'}</span>
+      </button>
+      {open && <div className="collapsible-body">{children}</div>}
+      <style jsx>{`
+        .collapsible { margin-bottom: 1rem; background: #fdfbf6; border: 0.5px solid #d4cfc8; border-radius: 2px; overflow: hidden; }
+        .collapsible-header { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.25rem; background: transparent; border: none; cursor: pointer; font-family: inherit; text-align: left; color: inherit; }
+        .collapsible-header:hover { background: #f5f1e8; }
+        .collapsible-title { font-family: 'Playfair Display', Georgia, serif; font-size: 16px; font-weight: 500; color: #0f0f0f; }
+        .collapsible-subtitle { font-family: 'Inter', sans-serif; font-size: 13px; color: #7a7a7a; margin-top: 2px; }
+        .collapsible-toggle { font-family: 'Inter', sans-serif; font-size: 13px; color: #6b1a1a; white-space: nowrap; margin-left: 12px; }
+        .collapsible-body { padding: 0 1.25rem 1.5rem; border-top: 0.5px solid #e8e3d8; }
+      `}</style>
+    </div>
+  );
+}
+
+export default function ArchiveDetail({ session, memberQuery }) {
+  const cards = session.cards || {};
+  const { verdict, reasoning } = parseVerdict(cards.verdict);
+  const deliberationText = cleanDeliberation(cards.deliberation);
+  const { cards: deliberationCards, convergence } = parseDeliberation(deliberationText);
+  const briefText = cards.brief || '';
+  const assemblyText = cards.assembly || '';
+
+  const memberCount = session.member_names ? session.member_names.length : 0;
+  const memberSummary = session.member_names && session.member_names.length > 0
+    ? session.member_names.slice(0, 4).map(stripTierSuffix).join(', ') + (session.member_names.length > 4 ? `, +${session.member_names.length - 4} more` : '')
+    : '';
+
+  const pageTitle = session.original_issue ? session.original_issue.substring(0, 60) : 'Archive';
+  const pageDescription = verdict ? verdict.substring(0, 155) : 'A past council debate.';
+
+  const baseShareUrl = `https://www.thelongcouncil.com/archive/${session.slug}`;
+  const canonicalUrl = memberQuery ? `${baseShareUrl}?member=${encodeURIComponent(memberQuery)}` : baseShareUrl;
+  const ogImageUrl = memberQuery
+    ? `https://www.thelongcouncil.com/api/og/vs/${session.slug}?member=${encodeURIComponent(memberQuery)}`
+    : `https://www.thelongcouncil.com/api/og/vs/${session.slug}`;
+
+  return (
+    <>
+      <Head>
+        <title>{pageTitle} — The Long Council</title>
+        <meta name="description" content={pageDescription} />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+        <meta property="og:type" content="article" />
+        <meta property="og:title" content={session.original_issue || 'The Long Council'} />
+        <meta property="og:description" content={pageDescription} />
+        <meta property="og:url" content={canonicalUrl} />
+        <meta property="og:image" content={ogImageUrl} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:alt" content={`${session.original_issue} — The Long Council`} />
+        <meta property="og:site_name" content="The Long Council" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={session.original_issue || 'The Long Council'} />
+        <meta name="twitter:description" content={pageDescription} />
+        <meta name="twitter:image" content={ogImageUrl} />
+      </Head>
+
+      <Link href="/" className="mast mast-link">
+        <div className="mast-name">The Long Council</div>
+        <div className="mast-tag">History&apos;s counsel on today&apos;s questions</div>
+      </Link>
+
+      <nav className="nav">
+        <Link href="/council" className="nav-link">The Council</Link>
+        <Link href="/archive" className="nav-link nav-active">The Archive</Link>
+        <Link href="/about" className="nav-link">About</Link>
+        <Link href="/" className="nav-raise">Raise an issue</Link>
+      </nav>
+
+      <div className="detail-wrap">
+        <Link href="/archive" className="back-link">← The Archive</Link>
+        <div className="detail-meta">{formatDate(session.created_at)} · {memberCount} member{memberCount !== 1 ? 's' : ''}</div>
+        <h1 className="detail-title">{session.original_issue}</h1>
+        <VerdictCast names={session.member_names} />
+
+        {verdict && (
+          <div className="verdict-block">
+            <div className="verdict-label">Verdict</div>
+            <div className="verdict-text"><ReactMarkdown>{verdict}</ReactMarkdown></div>
+            {reasoning && (
+              <>
+                <div className="verdict-label verdict-label-second">Reasoning</div>
+                <div className="verdict-reasoning"><ReactMarkdown>{reasoning}</ReactMarkdown></div>
+              </>
+            )}
+          </div>
+        )}
+
+        <ShareButton url={baseShareUrl} question={session.original_issue || 'The Long Council'} />
+
+        {deliberationText && (
+          <div className="debate-section">
+            <div className="debate-label">The debate</div>
+            {deliberationCards.length > 0 ? (
+              <Procession cards={deliberationCards} instant={true} scrollReveal={true} sessionSlug={session.slug} />
+            ) : (
+              <div className="md-body"><ReactMarkdown>{deliberationText}</ReactMarkdown></div>
+            )}
+            {convergence && <div className="md-body convergence-block"><ReactMarkdown>{convergence}</ReactMarkdown></div>}
+          </div>
+        )}
+
+        {briefText && (
+          <CollapsibleSection title="The policy brief" subtitle="The analyst's synthesis — what would change the verdict">
+            <div className="md-body"><ReactMarkdown>{briefText}</ReactMarkdown></div>
+          </CollapsibleSection>
+        )}
+
+        {assemblyText && (
+          <CollapsibleSection title="Who was selected, and why" subtitle="The assembly reasoning — who was at the table and who wasn't">
+            <div className="md-body"><ReactMarkdown>{assemblyText}</ReactMarkdown></div>
+          </CollapsibleSection>
+        )}
+
+        <div className="detail-nudge">
+          <div>Does this not quite answer your question?</div>
+          <Link href="/" className="nudge-link">Raise your own issue →</Link>
+        </div>
+      </div>
+
+      <footer>The Long Council · Counsel from history&apos;s greatest minds, brought to life by AI</footer>
+
+      <style jsx>{`
+        .detail-wrap { max-width: 680px; margin: 0 auto; padding: 0 1.25rem; }
+        .back-link, .back-link :global(*), .back-link:visited { text-decoration: none !important; color: #7a7a7a !important; }
+        .back-link { display: inline-block; font-family: 'Inter', sans-serif; font-size: 13px; margin-top: 2.5rem; margin-bottom: 3rem; transition: color 0.2s ease; }
+        .back-link:hover, .back-link:hover :global(*) { color: #6b1a1a !important; }
+        .detail-meta { font-family: 'Inter', sans-serif; font-size: 11px; color: #7a7a7a; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px; }
+        .detail-title { font-family: 'Playfair Display', Georgia, serif; font-size: 26px; color: #0f0f0f; font-weight: 600; line-height: 1.3; margin: 0 0 2.25rem; max-width: 62ch; }
+        .verdict-block { background: #f0ede3; border-left: 3px solid #6b1a1a; padding: 1.5rem 1.75rem; border-radius: 0 2px 2px 0; margin-bottom: 2rem; }
+        .verdict-label { font-family: 'Inter', sans-serif; font-size: 11px; color: #6b1a1a; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 10px; }
+        .verdict-label-second { margin-top: 1.25rem; margin-bottom: 10px; }
+        .verdict-text :global(p) { font-family: 'Playfair Display', Georgia, serif; font-size: 18px; color: #0f0f0f; font-weight: 500; line-height: 1.5; margin: 0 0 10px; }
+        .verdict-text :global(p:last-child) { margin-bottom: 0; }
+        .verdict-reasoning :global(p) { font-family: 'Inter', sans-serif; font-size: 15px; color: #2a2a2a; line-height: 1.7; margin: 0 0 12px; }
+        .verdict-reasoning :global(p:last-child) { margin-bottom: 0; }
+        .debate-section { margin: 0 0 2.5rem; }
+        .debate-label { font-family: 'Inter', sans-serif; font-size: 11px; color: #7a7a7a; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 0.5px solid #d4cfc8; }
+        .convergence-block { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 0.5px solid #d4cfc8; }
+        .md-body { padding-top: 1rem; font-family: 'Inter', sans-serif; color: #1a1a1a; line-height: 1.7; }
+        .md-body :global(h2) { font-family: 'Playfair Display', Georgia, serif; font-size: 20px; color: #0f0f0f; font-weight: 600; margin: 1.75rem 0 0.5rem; line-height: 1.3; }
+        .md-body :global(h2:first-child) { margin-top: 0; }
+        .md-body :global(h3) { font-family: 'Playfair Display', Georgia, serif; font-size: 17px; color: #0f0f0f; font-weight: 600; margin: 1.25rem 0 0.5rem; }
+        .md-body :global(p) { font-size: 15px; margin: 0 0 12px; max-width: 62ch; }
+        .md-body :global(em) { font-style: italic; color: #2a2a2a; }
+        .md-body :global(strong) { font-weight: 600; color: #0f0f0f; }
+        .md-body :global(hr) { border: none; border-top: 0.5px solid #d4cfc8; margin: 1.5rem 0; }
+        .md-body :global(ul), .md-body :global(ol) { padding-left: 1.25rem; margin: 0 0 12px; }
+        .md-body :global(li) { font-size: 15px; margin-bottom: 4px; }
+        .detail-nudge { margin-top: 3rem; padding-top: 1.5rem; border-top: 0.5px solid #d4cfc8; font-family: 'Inter', sans-serif; font-size: 13px; color: #7a7a7a; text-align: center; }
+        .detail-nudge > div { margin-bottom: 0.5rem; }
+        .nudge-link, .nudge-link :global(*), .nudge-link:hover, .nudge-link:visited { color: #6b1a1a !important; text-decoration: none !important; }
+        .nudge-link:hover { opacity: 0.75; }
+        @media (min-width: 768px) {
+          .detail-title { font-size: 28px; }
+          .md-body :global(p), .md-body :global(li) { font-size: 15.5px; }
+        }
+      `}</style>
+    </>
+  );
 }
