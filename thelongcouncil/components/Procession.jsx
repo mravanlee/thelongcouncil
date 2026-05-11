@@ -311,7 +311,7 @@ function Seat({ card, tier, state, sessionSlug, scrollReveal = false }) {
         .seat.scroll-reveal {
           opacity: 0;
           transform: translateY(16px);
-          transition: opacity 0.55s ease-out, transform 0.55s ease-out;
+          transition: opacity 0.85s ease-out, transform 0.85s ease-out;
         }
         .seat.scroll-reveal.revealed {
           opacity: 1;
