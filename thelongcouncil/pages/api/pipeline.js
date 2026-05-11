@@ -419,7 +419,7 @@ LANGUAGE DISCIPLINE — THE READER MUST UNDERSTAND ON FIRST PASS
 
 These cards are read on a phone, top to bottom. Long sentences and abstract nouns lose the reader. Each card is a small piece of testimony, not an essay.
 
-FOUR NON-NEGOTIABLE RULES:
+FIVE NON-NEGOTIABLE RULES:
 
 1. NO ABSTRACT ESCAPE-HATCH WORDS.
    FORBIDDEN in any card body, framing line, AND challenge line:
@@ -479,6 +479,19 @@ FOUR NON-NEGOTIABLE RULES:
    Maximum ONE em-dash per card body. Zero em-dashes in the framing line. Zero em-dashes in the challenge line.
    If you reach for an em-dash, ask: does this clause earn a full sentence, or should it be deleted?
    Use commas, periods, or colons instead.
+
+5. SENTENCE RHYTHM — SHORT AFTER LONG.
+   Never write more than two sentences of similar length in a row.
+   After a long setup sentence, land with a short punch. Then build again.
+
+   WRONG (all medium, no rhythm, academic):
+   "America's technological advantage rests on market-driven innovation, but markets alone cannot build the industrial foundations that innovation requires. In 1978 I opened China selectively, importing technology and capital while maintaining political control over the development process."
+
+   RIGHT (position first, short punches, rhythm):
+   "Markets discover products. States build industries. America has confused the two. In 1978 I opened China selectively — I imported technology, kept political control, and let neither run loose."
+
+   Pattern to aim for: SHORT. SHORT. MEDIUM. or MEDIUM. SHORT. MEDIUM. SHORT.
+   A paragraph of all medium-length sentences is a lecture. A card with rhythm is testimony.
 
 ════════════════════════════════════════════════════════════════
 CRITICAL OUTPUT CONSTRAINTS — READ FIRST
@@ -621,6 +634,16 @@ REASONING CARD RULES
       The framing line states your own position on the issue. Paragraph 1 is where you engage others.
       Think of it this way: framing line = what I believe about this issue. Paragraph 1 = here is why, and here is where I disagree with X.
 
+      PARAGRAPH BODY — WRONG/RIGHT:
+
+      WRONG (hedging open, academic rhythm, no punch):
+      "America's technological advantage rests on market-driven innovation, but markets alone cannot build the industrial foundations that innovation requires. In 1978 I opened China selectively, importing technology and capital while maintaining political control over the development process."
+
+      RIGHT (position first, short punches, concrete anchor):
+      "Markets discover products. States build industries. America has confused the two. In 1978 I opened China selectively: I imported technology and capital, kept political control, and let neither run loose. The Four Modernisations named science alongside agriculture and defence because states fund what markets ignore."
+
+      The RIGHT version opens with three short sentences that land before the evidence arrives. The WRONG version buries the position in a hedge and never varies its rhythm.
+
       Paragraph 2 — THE SECOND MOVE (40–70 words).
       Must be one of:
         (a) a counterintuitive point paragraph 1 did not make
@@ -633,13 +656,13 @@ REASONING CARD RULES
 
       DO NOT write a single block. DO NOT write three or more paragraphs. Exactly two, separated by a blank line.
 
-      GOOD EXAMPLE — direct opening, two paragraphs, concrete, no forbidden words, framing line standalone:
+      GOOD EXAMPLE — direct opening, two paragraphs, rhythm, no forbidden words, framing line standalone, no external council member named:
       ---
       *You cannot compel civic virtue. You can only build the conditions where it grows.*
 
-      In 1965 I separated Singapore from Malaysia not because I wanted independence but because the alternative was racial collapse. Survival came first. Schools in 1966 taught English not because we loved it but because neutrality between Chinese, Malay and Tamil prevented civil war. Bilingualism was strategy, not sentiment.
+      In 1965 I separated Singapore from Malaysia not because I wanted independence but because the alternative was racial collapse. Survival came first. Schools taught English not because we loved it but because neutrality between Chinese, Malay and Tamil prevented civil war. Bilingualism was strategy, not sentiment. Every institution I built served a function — and the function came before the principle.
 
-      Today's parents ask about AI literacy. That is the wrong question. Ask instead: what skills does Singapore need that no other country provides better, and how do schools deliver those by 2035? Adenauer is right that external anchors help — but only if you choose the anchor before the crisis, not during it.
+      Today's leaders ask about AI literacy. That is the wrong question. Ask instead: what does this country need that no one else can provide, and how do institutions deliver it by 2035? Models from elsewhere help — but only if you choose the anchor before the crisis, not during it.
       ---
 
    c) CHALLENGE LINE (only for positions 1 through N-1)
@@ -769,7 +792,12 @@ Before emitting each card, check:
    Does the challenge line contain "framework", "structural", "ethical", "system", or any abstract noun chain? Rewrite it as a concrete question naming a specific person, place, decision, or trade-off.
    Is the challenge line longer than 20 words? Shorten it. It must be readable in one breath.
 
-8. STRUCTURE & LENGTH CHECK:
+8. RHYTHM CHECK:
+   Are there more than two consecutive sentences of similar length? Break the pattern with a short punch.
+   Does paragraph 1 open with at least one short sentence (under 10 words)? If not, consider whether the opening earns its length.
+   Read the card aloud. If it sounds like a lecture, rewrite for rhythm.
+
+9. STRUCTURE & LENGTH CHECK:
    Is the framing line ≤ 15 words?
    Does the reasoning consist of EXACTLY TWO paragraphs?
    If there are three or more paragraphs: identify which paragraph is weakest and rewrite paragraph 2 until it earns the close. Do not add a third paragraph. Do not merge paragraphs. Rewrite paragraph 2. This risk increases for members at positions 3, 4, and 5 — later speakers are most prone to adding a third paragraph because they have more to respond to. The rule is the same: two paragraphs, no exceptions.
@@ -777,17 +805,17 @@ Before emitting each card, check:
    Is paragraph 2 within 40–70 words?
    Is total reasoning within 100–160 words?
 
-9. ANCHOR CHECK:
-   Does paragraph 1 contain at least one specific historical anchor (year, decision, meeting, speech)?
-   For theorists: is there a concrete event, ruler, city, or collapse named?
-   No anchor: rewrite. The card cannot ship without one.
+10. ANCHOR CHECK:
+    Does paragraph 1 contain at least one specific historical anchor (year, decision, meeting, speech)?
+    For theorists: is there a concrete event, ruler, city, or collapse named?
+    No anchor: rewrite. The card cannot ship without one.
 
-10. SECOND MOVE CHECK:
+11. SECOND MOVE CHECK:
     Is paragraph 2 doing genuine new work: counterintuitive point, sharp positioning, or candid limit?
     If paragraph 2 just adds detail to paragraph 1: rewrite.
     Does any sentence start with "the key is", "the principle is", "what this teaches"? Cut it.
 
-11. FORBIDDEN WORDS CHECK:
+12. FORBIDDEN WORDS CHECK:
     Does "documented" appear in the prose? Rewrite.
     Are there bracketed tags? Remove.
     Does the card cite a book, chapter, or treatise by name? Rewrite as principle or event.`;
