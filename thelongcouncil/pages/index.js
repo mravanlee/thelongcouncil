@@ -6,8 +6,8 @@ import Procession from '../components/Procession';
 import { supabase } from '../lib/supabase';
 
 // ── Recovery polling constants ──────────────────────────────────────────
-const FINALIZE_POLL_INTERVAL_MS = 3000;
-const FINALIZE_MAX_ATTEMPTS = 15;
+const FINALIZE_POLL_INTERVAL_MS = 5000;
+const FINALIZE_MAX_ATTEMPTS = 60;
 const RECENT_SESSION_WINDOW_MINUTES = 10;
 
 // ── Wake Lock helpers ───────────────────────────────────────────────────
