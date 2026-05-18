@@ -204,13 +204,20 @@ async function precreateSession(originalIssue) {
   }
 }
 
-async function finalizeSession({ slug, sharpenedIssue, assemblyOutput, deliberationOutput, verdictOutput, briefOutput, memberNames, memberTypes }) {
+async function finalizeSession({ slug, sharpenedIssue, assemblyOutput, deliberationOutput, verdictOutput, briefOutput, memberNames, memberTypes, featuredQuote, featuredQuoteMember }) {
   try {
     const supabase = getServiceSupabase();
     const cards = { assembly: assemblyOutput, deliberation: deliberationOutput, verdict: verdictOutput, brief: briefOutput };
     const { data, error } = await supabase
       .from('sessions')
-      .update({ sharpened_issue: sharpenedIssue || null, cards, member_names: memberNames, member_types: memberTypes })
+      .update({
+        sharpened_issue: sharpenedIssue || null,
+        cards,
+        member_names: memberNames,
+        member_types: memberTypes,
+        featured_quote: featuredQuote || null,
+        featured_quote_member: featuredQuoteMember || null,
+      })
       .eq('slug', slug)
       .select()
       .single();
@@ -223,7 +230,7 @@ async function finalizeSession({ slug, sharpenedIssue, assemblyOutput, deliberat
   }
 }
 
-async function saveSessionToDatabase({ originalIssue, sharpenedIssue, assemblyOutput, deliberationOutput, verdictOutput, briefOutput, memberNames, memberTypes }) {
+async function saveSessionToDatabase({ originalIssue, sharpenedIssue, assemblyOutput, deliberationOutput, verdictOutput, briefOutput, memberNames, memberTypes, featuredQuote, featuredQuoteMember }) {
   try {
     const supabase = getServiceSupabase();
     const cards = { assembly: assemblyOutput, deliberation: deliberationOutput, verdict: verdictOutput, brief: briefOutput };
@@ -234,7 +241,16 @@ async function saveSessionToDatabase({ originalIssue, sharpenedIssue, assemblyOu
     while (attempt < 3 && !inserted) {
       const { data, error } = await supabase
         .from('sessions')
-        .insert({ slug, original_issue: originalIssue, sharpened_issue: sharpenedIssue || null, cards, member_names: memberNames, member_types: memberTypes })
+        .insert({
+          slug,
+          original_issue: originalIssue,
+          sharpened_issue: sharpenedIssue || null,
+          cards,
+          member_names: memberNames,
+          member_types: memberTypes,
+          featured_quote: featuredQuote || null,
+          featured_quote_member: featuredQuoteMember || null,
+        })
         .select()
         .single();
       if (error && error.code === '23505') { attempt += 1; slug = generateSlug(sharpenedIssue || originalIssue); lastError = error; continue; }
@@ -283,6 +299,50 @@ async function callClaude(system, user, maxTokens = 4000, temperature = 1.0) {
   }
   const data = await res.json();
   return data.content[0].text;
+}
+
+// ── Featured quote extraction ───────────────────────────────────────────
+// Picks one short pull-quote from the deliberation for the homepage display.
+// Best-effort: returns null on any failure — session still saves, quote stays NULL.
+async function extractFeaturedQuote(originalIssue, deliberationOutput) {
+  try {
+    const prompt = `You are picking ONE pull-quote from a council deliberation. The quote will appear on a homepage as a magazine-style headline.
+
+CRITERIA — strict, in this order:
+1. PREFER SHORT. 6-12 words is ideal. 15 words is the absolute maximum.
+2. CONCRETE. No abstract jargon: avoid "tension", "paradigm", "framework", "fundamental", "trajectory", "dynamics", "the conditions for".
+3. SHARP. Must have a clear opinion or stance — not a hedge.
+4. MEMORABLE. Stands alone, would work as a poster headline.
+5. From a single member's card text (not a verdict summary).
+
+Examples of GREAT pull-quotes (style to emulate):
+- "There is no such thing as society." (6 words)
+- "Energy dependence is sovereignty dependence." (5 words)
+- "It always seems impossible until it's done." (7 words)
+- "Inflation is always and everywhere a monetary phenomenon." (8 words)
+
+ORIGINAL QUESTION:
+${originalIssue}
+
+DELIBERATION:
+${deliberationOutput}
+
+Return EXACTLY this format, no preamble:
+QUOTE: "the chosen quote here"
+MEMBER: Member Name`;
+
+    const responseText = await callClaude('', prompt, 200, 1.0);
+    const qm = responseText.match(/QUOTE:\s*"([^"]+)"/i);
+    const mm = responseText.match(/MEMBER:\s*(.+?)(?:\n|$)/i);
+    if (!qm || !mm) {
+      console.error('[pipeline] Quote parse failed:', responseText.slice(0, 200));
+      return null;
+    }
+    return { quote: qm[1].trim(), member: mm[1].trim() };
+  } catch (err) {
+    console.error('[pipeline] Quote extraction failed:', err.message);
+    return null;
+  }
 }
 
 // ── Prompts ─────────────────────────────────────────────────────────────
@@ -1214,6 +1274,12 @@ export default async function handler(req, res) {
     const summaryMatch = assemblyOutput.match(/ISSUE SUMMARY:\s*(.+?)(?:\n|$)/i);
     if (summaryMatch) sharpenedIssue = summaryMatch[1].trim();
 
+    // Extract featured quote for homepage display (best-effort, doesn't block save)
+    const featured = await extractFeaturedQuote(sharpenedIssue || question, deliberationOutput);
+    if (featured) {
+      console.log(`[pipeline] Featured quote: "${featured.quote}" — ${featured.member}`);
+    }
+
     let saved;
     if (preSlug) {
       saved = await finalizeSession({
@@ -1225,6 +1291,8 @@ export default async function handler(req, res) {
         briefOutput,
         memberNames: metadata.names,
         memberTypes: metadata.types,
+        featuredQuote: featured?.quote || null,
+        featuredQuoteMember: featured?.member || null,
       });
     } else {
       saved = await saveSessionToDatabase({
@@ -1236,6 +1304,8 @@ export default async function handler(req, res) {
         briefOutput,
         memberNames: metadata.names,
         memberTypes: metadata.types,
+        featuredQuote: featured?.quote || null,
+        featuredQuoteMember: featured?.member || null,
       });
     }
 
