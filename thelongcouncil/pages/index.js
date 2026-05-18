@@ -744,14 +744,25 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
 
       {screen === 'finalizing' && (
         <div className="loading">
+          <div className="finalizing-title">The council is still in session</div>
           <div className="loading-question">&quot;{confirmedQuestion}&quot;</div>
+          <p className="finalizing-message">
+            Your debate is taking longer than usual. We&apos;ll show you the result when it arrives.
+          </p>
           <div className="loading-steps">
             <div className="loading-step active">
               <div className="step-dot" />
-              <span>Wrapping up the council&apos;s verdict</span>
+              <span>Still working...</span>
             </div>
           </div>
-          <p className="loading-note">Just a moment — the council is finishing its work.</p>
+          <div className="finalizing-actions">
+            <Link href="/archive" className="finalizing-archive">
+              Find my session in the Archive →
+            </Link>
+            <button className="finalizing-reset" onClick={reset}>
+              Start a new question
+            </button>
+          </div>
         </div>
       )}
 
