@@ -18,9 +18,20 @@
 ## Stack
 
 - Next.js on Vercel
-- Anthropic API: `claude-sonnet-4-20250514` for pipeline prompts 1-4, `claude-haiku-4-5-20251001` for sharpener
+- Anthropic API: `claude-sonnet-4-20250514` for pipeline prompts 1-4 + quote extraction, `claude-haiku-4-5-20251001` for sharpener
 - Supabase (Frankfurt) for session storage
-- 4-prompt pipeline via SSE: assembly → deliberation → verdict → brief
+- 5-step pipeline via SSE: assembly → deliberation → verdict → brief → featured quote extraction
+
+## Local dev setup
+
+- `thelongcouncil/.env.local` (gitignored) holds: `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `ANTHROPIC_API_KEY`, `SUPABASE_ACCESS_TOKEN`.
+- `thelongcouncil/scripts/` — one-off scripts. `backfill-featured-quotes.mjs` regenerates `featured_quote` for sessions where it is NULL. Idempotent. Run from `thelongcouncil/`: `node scripts/backfill-featured-quotes.mjs [--limit N] [--dry-run]`.
+
+## Database schema (sessions table)
+
+- `id`, `slug`, `original_issue`, `sharpened_issue`, `cards` (jsonb: assembly/deliberation/verdict/brief), `member_names`, `member_types`, `created_at`, `updated_at`
+- **`featured_quote`** (text, nullable) — short pull-quote for homepage display, extracted by pipeline step 5
+- **`featured_quote_member`** (text, nullable) — name of the member who said the quote
 
 ## Critical sync rules
 
@@ -28,6 +39,8 @@
 - **`ALL_COUNCIL_MEMBERS`** in `pages/api/pipeline.js` must match current 37-member roster.
 - **`stripTierSuffix`** handles old ("Framer", "Practitioner") + new ("Leader", "Thinker") + slash variants ("Framer/Practitioner").
 - **Bestandsnaam-valkuil:** `pages/archive/[slug].js` en `pages/api/og/vs/[slug].js` eindigen beide op `[slug].js`. Bevestig eerste 5 regels voor elke commit.
+- **Quote extraction is best-effort**: if the Claude call fails, session still saves with NULL quote. The backfill script can fill these later. Don't break the save path to make quote required.
+- **Polling constants** in `pages/index.js`: `FINALIZE_POLL_INTERVAL_MS = 5000`, `FINALIZE_MAX_ATTEMPTS = 60` → total 5 min recovery window. Matches Vercel function max (300s). Keep aligned if changing pipeline timeout.
 
 ## Roster (37 members)
 
