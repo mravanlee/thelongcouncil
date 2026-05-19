@@ -29,11 +29,104 @@ function formatSessionCount(n) {
   return n.toLocaleString('en-US');
 }
 
+// ── Council member metadata ─────────────────────────────────────────────
+// SYNC: also defined in pages/council.js, Procession.jsx, archive/[slug].js.
+// Keep these aligned when adding new members. See CLAUDE.md sync rules.
+const AVATAR_NAME_EXPANSIONS = {
+  'machiavelli': 'niccolo_machiavelli',
+  'keynes': 'john_maynard_keynes',
+  'hayek': 'friedrich_hayek',
+  'friedman': 'milton_friedman',
+  'locke': 'john_locke',
+  'rousseau': 'jean_jacques_rousseau',
+  'rawls': 'john_rawls',
+  'arendt': 'hannah_arendt',
+  'sen': 'amartya_sen',
+  'hirschman': 'albert_hirschman',
+  'fanon': 'frantz_fanon',
+  'prebisch': 'raul_prebisch',
+  'ostrom': 'elinor_ostrom',
+  'bolivar': 'simon_bolivar',
+};
+
+const MEMBER_ROLES = {
+  'Albert Hirschman': 'Economist · Exit, Voice and Loyalty',
+  'Ali ibn Abi Talib': 'Fourth Caliph of Islam',
+  'Amartya Sen': 'Economist · Development as Freedom',
+  'Confucius': 'Philosopher · The Analects',
+  'David Ben-Gurion': 'Prime Minister, Israel 1948–63',
+  'Deng Xiaoping': 'Paramount Leader, China 1978–92',
+  'Eleanor Roosevelt': 'Human rights architect',
+  'Elinor Ostrom': 'Economist · Governing the Commons',
+  'Ellen Johnson Sirleaf': 'President, Liberia 2006–18',
+  'Franklin D. Roosevelt': 'President, United States 1933–45',
+  'Frantz Fanon': 'Philosopher · The Wretched of the Earth',
+  'Friedrich Hayek': 'Economist · The Road to Serfdom',
+  'Hannah Arendt': 'Philosopher · The Origins of Totalitarianism',
+  'Helmut Schmidt': 'Chancellor, West Germany 1974–82',
+  'Ibn Khaldun': 'Historian · The Muqaddimah',
+  'Indira Gandhi': 'Prime Minister, India 1966–84',
+  'Jawaharlal Nehru': 'Prime Minister, India 1947–64',
+  'Jean-Jacques Rousseau': 'Philosopher · The Social Contract',
+  'John Locke': 'Philosopher · Two Treatises of Government',
+  'John Maynard Keynes': 'Economist · The General Theory',
+  'John Rawls': 'Philosopher · A Theory of Justice',
+  'Julius Nyerere': 'President, Tanzania 1964–85',
+  'Kautilya': 'Statesman · The Arthashastra',
+  'Konrad Adenauer': 'Chancellor, West Germany 1949–63',
+  'Lee Kuan Yew': 'Prime Minister, Singapore 1959–90',
+  'Mahathir Mohamad': 'Prime Minister, Malaysia 1981–2003',
+  'Margaret Thatcher': 'Prime Minister, United Kingdom 1979–90',
+  'Milton Friedman': 'Economist · Capitalism and Freedom',
+  'Mustafa Kemal Ataturk': 'President, Turkey 1923–38',
+  'Nelson Mandela': 'President, South Africa 1994–99',
+  'Niccolo Machiavelli': 'Statesman · The Prince',
+  'Olof Palme': 'Prime Minister, Sweden 1969–86',
+  'Raul Prebisch': 'Economist · Dependency Theory',
+  'Rosa Luxemburg': 'Revolutionary theorist',
+  'Simon Bolivar': 'President, Gran Colombia 1819–30',
+  'Sun Tzu': 'Strategist · The Art of War',
+  'Wangari Maathai': 'Political ecologist · The Green Belt Movement',
+};
+
+function normalizeAccents(s) {
+  return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+
+function memberSlug(name) {
+  if (!name) return '';
+  const base = normalizeAccents(name)
+    .replace(/\s*\([^)]*\)/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+  return AVATAR_NAME_EXPANSIONS[base] || base;
+}
+
+function memberRole(name) {
+  if (!name) return '';
+  // Direct hit
+  if (MEMBER_ROLES[name]) return MEMBER_ROLES[name];
+  // Try accent-normalized match
+  const target = normalizeAccents(name).toLowerCase();
+  for (const [k, v] of Object.entries(MEMBER_ROLES)) {
+    if (normalizeAccents(k).toLowerCase() === target) return v;
+  }
+  return '';
+}
+
+function memberMonogram(name) {
+  if (!name) return '?';
+  const words = name.split(/\s+/).filter(w => w && !/^(de|von|van|ibn|al)$/i.test(w));
+  if (words.length === 1) return words[0][0].toUpperCase();
+  return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+}
+
 // ── Server-side props ───────────────────────────────────────────────────
 export async function getServerSideProps() {
   const recentPromise = supabase
     .from('sessions')
-    .select('id, slug, original_issue, created_at, cards')
+    .select('id, slug, original_issue, created_at, cards, featured_quote, featured_quote_member')
     .order('created_at', { ascending: false })
     .limit(3);
 
@@ -57,6 +150,8 @@ export async function getServerSideProps() {
       original_issue: s.original_issue,
       created_at: s.created_at,
       teaser: extractTeaser(s.cards),
+      featured_quote: s.featured_quote || null,
+      featured_quote_member: s.featured_quote_member || null,
     }));
 
   return { props: { recentSessions: enriched, sessionCount } };
@@ -78,6 +173,57 @@ function extractTeaser(cards) {
 function formatDate(iso) {
   const d = new Date(iso);
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+// ── Recent session card with avatar + pull-quote ───────────────────────
+function RecentSessionAvatar({ name }) {
+  const [imgFailed, setImgFailed] = useState(false);
+  const slug = memberSlug(name);
+  return (
+    <div className="rs-avatar" aria-hidden="true">
+      {!imgFailed && slug && (
+        <img
+          src={`/avatars/avatar_${slug}.webp`}
+          alt=""
+          onError={() => setImgFailed(true)}
+        />
+      )}
+      {imgFailed && (
+        <span className="rs-avatar-monogram">{memberMonogram(name)}</span>
+      )}
+    </div>
+  );
+}
+
+function RecentSessionCard({ session }) {
+  const s = session;
+  const hasQuote = !!(s.featured_quote && s.featured_quote_member);
+  return (
+    <Link href={`/archive/${s.slug}`} className="recent-item">
+      {hasQuote ? (
+        <>
+          <div className="rs-header">
+            <RecentSessionAvatar name={s.featured_quote_member} />
+            <div className="rs-byline">
+              <div className="rs-name">{s.featured_quote_member}</div>
+              {memberRole(s.featured_quote_member) && (
+                <div className="rs-role">{memberRole(s.featured_quote_member)}</div>
+              )}
+              <div className="rs-date">{formatDate(s.created_at)}</div>
+            </div>
+          </div>
+          <p className="rs-quote">{s.featured_quote}</p>
+          <p className="rs-question">On: <span>{s.original_issue}</span></p>
+        </>
+      ) : (
+        <>
+          <div className="recent-date">{formatDate(s.created_at)}</div>
+          <h3 className="recent-title">{s.original_issue}</h3>
+          {s.teaser && <p className="recent-teaser">{s.teaser}</p>}
+        </>
+      )}
+    </Link>
+  );
 }
 
 async function findRecentSessionByQuestion(question) {
@@ -656,11 +802,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
               </div>
               <div className="recent-list">
                 {recentSessions.map((s) => (
-                  <Link key={s.id} href={`/archive/${s.slug}`} className="recent-item">
-                    <div className="recent-date">{formatDate(s.created_at)}</div>
-                    <h3 className="recent-title">{s.original_issue}</h3>
-                    {s.teaser && <p className="recent-teaser">{s.teaser}</p>}
-                  </Link>
+                  <RecentSessionCard key={s.id} session={s} />
                 ))}
               </div>
               <div className="recent-footer">
