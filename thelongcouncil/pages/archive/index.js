@@ -47,10 +47,6 @@ function formatDate(iso) {
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
-function getDayOfMonth(iso) {
-  return new Date(iso).getDate();
-}
-
 function stripTierSuffix(name) {
   if (!name) return '';
   return name.replace(/\s*[—–-]\s*(Practitioner|Framer|Leader|Thinker|Wildcard)\s*$/i, '').trim();
@@ -138,8 +134,8 @@ export default function Archive({ sessions, error }) {
       {visible.length > 0 && (
         <div className="archive-timeline">
           <div className="timeline-rail">
-            {visible.map((session, i) => (
-              <TimelineEntry key={session.id} session={session} isFirst={i === 0} />
+            {visible.map((session) => (
+              <TimelineEntry key={session.id} session={session} />
             ))}
           </div>
         </div>
@@ -159,19 +155,15 @@ export default function Archive({ sessions, error }) {
         .archive-empty-sub :global(a) { color: #6b1a1a; text-decoration: none; }
         .archive-empty-sub :global(a:hover) { text-decoration: underline; }
         .archive-timeline { max-width: 680px; margin: 0 auto; padding: 0 1.25rem; }
-        .timeline-rail { position: relative; padding-left: 44px; }
-        .timeline-rail::before { content: ""; position: absolute; left: 17px; top: 8px; bottom: 8px; width: 1px; background: #b8ad9c; z-index: 0; }
+        .timeline-rail { position: relative; }
       `}</style>
     </>
   );
 }
 
-function TimelineEntry({ session, isFirst }) {
+function TimelineEntry({ session }) {
   return (
     <div className="entry">
-      <div className={`entry-dot ${isFirst ? 'entry-dot-new' : ''}`}>
-        {getDayOfMonth(session.created_at)}
-      </div>
       <div className="entry-meta">{formatDate(session.created_at)}</div>
       <Link href={`/archive/${session.slug}`} className="entry-title-link">
         <h3 className="entry-title">{session.original_issue}</h3>
@@ -189,8 +181,6 @@ function TimelineEntry({ session, isFirst }) {
 
       <style jsx>{`
         .entry { position: relative; margin-bottom: 2.25rem; padding: 0.5rem 0; }
-        .entry-dot { position: absolute; left: -36px; top: 4px; width: 28px; height: 28px; border-radius: 50%; background: #f8f6f2; color: #2a2a2a; border: 1px solid #b8ad9c; font-family: 'Playfair Display', Georgia, serif; font-size: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 2px #f8f6f2; z-index: 2; }
-        .entry-dot-new { background: #0f0f0f; color: #f8f6f2; border-color: #0f0f0f; }
         .entry-meta { font-family: 'Crimson Pro', Georgia, serif; font-size: 11px; color: #7a7a7a; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 4px; }
         .entry-title-link, .entry-title-link :global(h3) { display: inline-block; text-decoration: none !important; color: inherit; transition: opacity 0.2s ease; }
         .entry-title-link:hover { opacity: 0.7; }
