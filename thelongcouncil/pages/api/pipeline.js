@@ -152,6 +152,58 @@ const ALL_COUNCIL_MEMBERS = [
   'Elinor Ostrom', 'Ostrom', 'Sun Tzu',
 ];
 
+// Post-generation guard for the position-1 rule.
+// The prompt at line ~643 says: "The member at position 1 references NO
+// prior speaker." LLMs occasionally violate it — the position-1 card opens
+// with "Ostrom is right that..." when Ostrom is in fact position 2+.
+// This parses the SPEAKING ORDER header, isolates the first card, and
+// scans it for mentions of any LATER member.
+function validatePosition1Card(deliberationOutput) {
+  if (!deliberationOutput) return { ok: true, reason: 'empty' };
+
+  const orderMatch = deliberationOutput.match(/SPEAKING ORDER:\s*([^\n]+)/i);
+  if (!orderMatch) return { ok: true, reason: 'no_speaking_order_line' };
+
+  const order = orderMatch[1]
+    .split(/[→>,]+/)
+    .map(s => s.trim().replace(/^\[|\]$/g, '').trim())
+    .filter(Boolean);
+  if (order.length < 2) return { ok: true, reason: 'insufficient_members' };
+
+  const position1 = order[0];
+  const otherMembers = order.slice(1);
+
+  // Cards are separated by `---`. First block is the SPEAKING ORDER line,
+  // second block is card 1.
+  const blocks = deliberationOutput
+    .split(/(?:^|\n)\s*---\s*(?:\n|$)/)
+    .map(b => b.trim())
+    .filter(Boolean);
+  if (blocks.length < 2) return { ok: true, reason: 'no_cards' };
+  const card1 = blocks[1];
+
+  const mentions = [];
+  for (const other of otherMembers) {
+    const clean = other.trim();
+    const words = clean.split(/\s+/);
+    const lastName = words[words.length - 1];
+    const candidates = [clean];
+    if (lastName.length >= 4 && lastName !== clean) candidates.push(lastName);
+    for (const cand of candidates) {
+      const escaped = cand.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      if (new RegExp(`\\b${escaped}\\b`, 'i').test(card1)) {
+        mentions.push(other);
+        break;
+      }
+    }
+  }
+
+  if (mentions.length > 0) {
+    return { ok: false, position1, mentions, card1Preview: card1.slice(0, 300) };
+  }
+  return { ok: true };
+}
+
 function validateRoster(deliberationOutput, selectedNames) {
   const selectedNorm = new Set(selectedNames.map(normalizeName));
   for (const name of selectedNames) {
@@ -1232,12 +1284,38 @@ export default async function handler(req, res) {
     const rosterLine = `SELECTED MEMBERS FOR THIS DELIBERATION (the only members at the table):\n${selectedNames.map((n, i) => `${i + 1}. ${n}`).join('\n')}\n\n`;
 
     send('progress', { step: 2, message: 'The council is deliberating...' });
-    const deliberationOutput = await callClaude(
-  PROMPT2_SYSTEM,
-  `ISSUE:\n${question}\n\n${rosterLine}PROMPT 1 OUTPUT:\n${assemblyOutput}\n\nMEMBER PROFILES:\n${profilesForDeliberation}\n\nFINAL REMINDER: Each card is exactly two paragraphs, 100-160 words total. No exceptions.`,
-  2500,
-  0.7
-);
+    const deliberationUserBase = `ISSUE:\n${question}\n\n${rosterLine}PROMPT 1 OUTPUT:\n${assemblyOutput}\n\nMEMBER PROFILES:\n${profilesForDeliberation}\n\nFINAL REMINDER: Each card is exactly two paragraphs, 100-160 words total. No exceptions.`;
+    let deliberationOutput = await callClaude(
+      PROMPT2_SYSTEM,
+      deliberationUserBase,
+      2500,
+      0.7
+    );
+
+    // Position-1 guard: if card 1 references a later speaker, regenerate
+    // once with an explicit reminder. The original is kept only if the
+    // retry is no better.
+    let p1Check = validatePosition1Card(deliberationOutput);
+    if (!p1Check.ok) {
+      console.warn('[pipeline] POSITION-1 VIOLATION on first attempt — position 1:', p1Check.position1, '— mentioned later speakers:', p1Check.mentions);
+      send('progress', { step: 2, message: 'Refining the opening voice...' });
+      const retryMessage = `${deliberationUserBase}
+
+REGENERATION CONSTRAINT — CRITICAL:
+Your previous attempt placed ${p1Check.position1} at position 1 of the SPEAKING ORDER, but their card referenced ${p1Check.mentions.join(', ')} — members who had not yet spoken. THE MEMBER AT POSITION 1 MUST NOT REFERENCE ANY OTHER COUNCIL MEMBER ANYWHERE IN THEIR CARD. Their opening must engage the ISSUE directly, not another speaker. No "X is right that...", no "X's argument...", no "as X would say...". Rewrite the full deliberation. Keep the same speaking order.`;
+      const retried = await callClaude(PROMPT2_SYSTEM, retryMessage, 2500, 0.5);
+      const recheck = validatePosition1Card(retried);
+      if (recheck.ok) {
+        console.log('[pipeline] Position-1 retry SUCCEEDED');
+        deliberationOutput = retried;
+        p1Check = recheck;
+      } else {
+        console.warn('[pipeline] Position-1 retry STILL violated — using original. New mentions:', recheck.mentions);
+      }
+    } else {
+      console.log('[pipeline] Position-1 check PASSED.');
+    }
+
     send('deliberation', { data: deliberationOutput });
 
     const violations = validateRoster(deliberationOutput, selectedNames);
@@ -1245,6 +1323,7 @@ export default async function handler(req, res) {
     send('debug', {
       selectedNames,
       violations,
+      position1Check: p1Check,
       fellBackToAll,
       missingProfiles: loadInfo.missing,
       availableProfileKeys: loadInfo.availableKeys,
