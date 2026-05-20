@@ -422,12 +422,14 @@ export default function Archive({ sessions, error, initialFilters }) {
 
 function ArchiveEntry({ session, onMemberClick }) {
   return (
-    <Link href={`/archive/${session.slug}`} className="entry">
-      <div className="entry-meta">{formatDate(session.created_at)}</div>
-      <h3 className="entry-title">{session.original_issue}</h3>
-      {session.teaser && (
-        <p className="entry-teaser"><span className="verdict-label">Verdict —</span> {session.teaser}</p>
-      )}
+    <article className="archive-entry">
+      <Link href={`/archive/${session.slug}`} className="entry-link">
+        <div className="entry-meta">{formatDate(session.created_at)}</div>
+        <h3 className="entry-title">{session.original_issue}</h3>
+        {session.teaser && (
+          <p className="entry-teaser"><span className="verdict-label">Verdict —</span> {session.teaser}</p>
+        )}
+      </Link>
       {session.member_names.length > 0 && (
         <div className="entry-members">
           {session.member_names.map((name, i) => {
@@ -436,7 +438,7 @@ function ArchiveEntry({ session, onMemberClick }) {
               <button
                 key={i}
                 className="member-chip"
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onMemberClick(clean); }}
+                onClick={() => onMemberClick(clean)}
                 aria-label={`View ${clean} on the council page`}
                 type="button"
               >
@@ -448,19 +450,20 @@ function ArchiveEntry({ session, onMemberClick }) {
       )}
 
       <style jsx>{`
-        .entry { display: block; text-decoration: none; color: inherit; padding: 0.25rem 0 0; margin-bottom: 8rem; transition: color 0.15s ease; }
-        .entry:last-child { margin-bottom: 1rem; }
+        .archive-entry { display: block; margin-bottom: 8rem; }
+        .archive-entry:last-child { margin-bottom: 1rem; }
+        .entry-link { display: block; text-decoration: none; color: inherit; padding: 0.25rem 0 0; margin-bottom: 14px; transition: color 0.15s ease; }
         .entry-meta { font-family: 'Crimson Pro', Georgia, serif; font-size: 11px; color: #4a4a4a; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px; }
         .entry-title { font-family: 'Playfair Display', Georgia, serif; font-size: 20px; color: #0f0f0f; font-weight: 600; line-height: 1.35; margin: 0 0 10px 0; max-width: 62ch; text-decoration: underline; text-decoration-color: transparent; text-decoration-thickness: 1.5px; text-underline-offset: 4px; transition: text-decoration-color 0.18s ease, color 0.18s ease; }
-        .entry:hover .entry-title { color: #6b1a1a; text-decoration-color: #6b1a1a; }
-        .entry-teaser { font-family: 'Crimson Pro', Georgia, serif; font-size: 16px; color: #1a1a1a; line-height: 1.55; margin: 0 0 12px; }
+        .entry-link:hover .entry-title { color: #6b1a1a; text-decoration-color: #6b1a1a; }
+        .entry-teaser { font-family: 'Crimson Pro', Georgia, serif; font-size: 16px; color: #1a1a1a; line-height: 1.55; margin: 0; }
         .verdict-label { font-weight: 600; color: #6b1a1a; letter-spacing: 0.12em; text-transform: uppercase; font-size: 13px; margin-right: 4px; }
         .entry-members { display: flex; flex-wrap: wrap; gap: 6px; }
         .member-chip { font-family: 'Crimson Pro', Georgia, serif; font-size: 11px; padding: 2px 8px; border-radius: 2px; white-space: nowrap; background: #f5f1e8; color: #4a4a4a; border: 0.5px solid #d4cfc8; cursor: pointer; transition: all 0.15s ease; }
         .member-chip:hover { background: rgba(107, 26, 26, 0.08); border-color: #6b1a1a; color: #6b1a1a; }
 
         @media (max-width: 640px) {
-          .entry { margin-bottom: 5.5rem; }
+          .archive-entry { margin-bottom: 5.5rem; }
           .entry-title { font-size: 18px; }
           .entry-teaser { font-size: 15px; }
           .entry-meta { font-size: 11px; }
@@ -468,6 +471,6 @@ function ArchiveEntry({ session, onMemberClick }) {
           .member-chip { font-size: 10.5px; padding: 2px 7px; }
         }
       `}</style>
-    </Link>
+    </article>
   );
 }
