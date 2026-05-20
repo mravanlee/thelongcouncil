@@ -426,8 +426,9 @@ function ArchiveEntry({ session, activeMember, onMemberClick }) {
       )}
 
       <style jsx>{`
-        .entry { display: block; text-decoration: none; color: inherit; padding: 1.25rem 1rem 1.5rem; margin: 0 -1rem 2.5rem; border-radius: 4px; transition: background-color 0.15s ease; }
-        .entry:hover { background: rgba(245, 241, 232, 0.55); }
+        .entry { display: block; text-decoration: none; color: inherit; padding: 0 0 2.25rem; margin-bottom: 2.5rem; border-bottom: 0.5px solid rgba(0, 0, 0, 0.08); transition: color 0.15s ease; }
+        .entry:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0.5rem; }
+        .entry:hover .entry-title { color: #6b1a1a; }
         .entry-meta { font-family: 'Crimson Pro', Georgia, serif; font-size: 11px; color: #4a4a4a; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 4px; }
         .entry-title { font-family: 'Playfair Display', Georgia, serif; font-size: 19px; color: #0f0f0f; font-weight: 600; line-height: 1.35; margin: 0 0 6px 0; max-width: 62ch; }
         .entry-teaser { font-family: 'Crimson Pro', Georgia, serif; font-size: 16px; color: #1a1a1a; line-height: 1.55; margin: 0 0 10px; }
