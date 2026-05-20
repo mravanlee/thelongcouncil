@@ -7,8 +7,7 @@ export async function getServerSideProps() {
   const { data: sessions, error } = await supabase
     .from('sessions')
     .select('id, slug, original_issue, sharpened_issue, member_names, member_types, created_at, cards')
-    .order('created_at', { ascending: false })
-    .limit(50);
+    .order('created_at', { ascending: false });
 
   if (error) {
     console.error('[archive] Failed to load sessions:', error);
