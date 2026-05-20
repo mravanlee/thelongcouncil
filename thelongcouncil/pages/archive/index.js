@@ -308,7 +308,6 @@ export default function Archive({ sessions, error, initialFilters }) {
             <div className="archive-count">{countLabel}</div>
           </div>
           <div className="tag-block">
-            <span className="tag-label">Themes</span>
             <div className="tag-grid">
               {THEMES.map((t, i) => (
                 <span key={t.label} className="tag-item">
@@ -458,8 +457,8 @@ function ArchiveEntry({ session, onMemberClick }) {
       )}
 
       <style jsx>{`
-        .entry { display: block; text-decoration: none; color: inherit; padding: 0.25rem 0 0; margin-bottom: 4rem; transition: color 0.15s ease; }
-        .entry:last-child { margin-bottom: 0.5rem; }
+        .entry { display: block; text-decoration: none; color: inherit; padding: 0.25rem 0 0; margin-bottom: 6rem; transition: color 0.15s ease; }
+        .entry:last-child { margin-bottom: 1rem; }
         .entry-meta { font-family: 'Crimson Pro', Georgia, serif; font-size: 11px; color: #4a4a4a; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px; }
         .entry-title { font-family: 'Playfair Display', Georgia, serif; font-size: 20px; color: #0f0f0f; font-weight: 600; line-height: 1.35; margin: 0 0 10px 0; max-width: 62ch; text-decoration: underline; text-decoration-color: transparent; text-decoration-thickness: 1.5px; text-underline-offset: 4px; transition: text-decoration-color 0.18s ease, color 0.18s ease; }
         .entry:hover .entry-title { color: #6b1a1a; text-decoration-color: #6b1a1a; }
@@ -470,7 +469,7 @@ function ArchiveEntry({ session, onMemberClick }) {
         .member-chip:hover { background: rgba(107, 26, 26, 0.08); border-color: #6b1a1a; color: #6b1a1a; }
 
         @media (max-width: 640px) {
-          .entry { margin-bottom: 3rem; }
+          .entry { margin-bottom: 4.5rem; }
           .entry-title { font-size: 18px; }
           .entry-teaser { font-size: 15px; }
           .entry-meta { font-size: 11px; }
