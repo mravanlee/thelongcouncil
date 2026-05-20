@@ -310,16 +310,18 @@ export default function Archive({ sessions, error, initialFilters }) {
           <div className="tag-block">
             <span className="tag-label">Themes</span>
             <div className="tag-grid">
-              {THEMES.map(t => (
-                <button
-                  key={t.label}
-                  className={`tag-chip${activeTheme === t.label ? ' active' : ''}`}
-                  onClick={() => onThemeClick(t.label)}
-                  aria-pressed={activeTheme === t.label}
-                  type="button"
-                >
-                  {t.label}
-                </button>
+              {THEMES.map((t, i) => (
+                <span key={t.label} className="tag-item">
+                  {i > 0 && <span className="tag-sep" aria-hidden="true">·</span>}
+                  <button
+                    className={`tag-chip${activeTheme === t.label ? ' active' : ''}`}
+                    onClick={() => onThemeClick(t.label)}
+                    aria-pressed={activeTheme === t.label}
+                    type="button"
+                  >
+                    {t.label}
+                  </button>
+                </span>
               ))}
             </div>
           </div>
@@ -391,12 +393,14 @@ export default function Archive({ sessions, error, initialFilters }) {
         .archive-search::placeholder { color: #9a9388; font-style: italic; }
         .archive-count { font-family: 'Crimson Pro', Georgia, serif; font-size: 12px; color: #7a7a7a; letter-spacing: 0.04em; white-space: nowrap; }
 
-        .tag-block { display: grid; grid-template-columns: max-content 1fr; gap: 1.25rem; align-items: start; margin-top: 0.9rem; }
-        .tag-label { font-family: 'Crimson Pro', Georgia, serif; font-size: 12px; color: #7a7a7a; letter-spacing: 0.12em; text-transform: uppercase; padding-top: 9px; }
-        .tag-grid { display: flex; flex-wrap: wrap; gap: 8px; }
-        .tag-chip { font-family: 'Crimson Pro', Georgia, serif; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; padding: 8px 14px; background: transparent; border: 0.5px solid #c4bfb6; color: #2a2a2a; border-radius: 2px; cursor: pointer; transition: all 0.15s ease; white-space: nowrap; }
-        .tag-chip:hover { border-color: #6b1a1a; color: #6b1a1a; }
-        .tag-chip.active { background: #6b1a1a; color: #faf7f0; border-color: #6b1a1a; }
+        .tag-block { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 0.65rem; margin-top: 0.6rem; line-height: 1.7; }
+        .tag-label { font-family: 'Crimson Pro', Georgia, serif; font-size: 11px; color: #7a7a7a; letter-spacing: 0.14em; text-transform: uppercase; }
+        .tag-grid { display: inline; }
+        .tag-item { display: inline; }
+        .tag-sep { color: #c4bfb6; margin: 0 0.3rem; user-select: none; }
+        .tag-chip { font-family: 'Crimson Pro', Georgia, serif; font-size: 14px; padding: 0; background: transparent; border: none; color: #4a4a4a; cursor: pointer; transition: color 0.15s ease; display: inline; }
+        .tag-chip:hover { color: #6b1a1a; }
+        .tag-chip.active { color: #6b1a1a; font-weight: 600; }
 
         .archive-error, .archive-empty { max-width: 680px; margin: 3rem auto; padding: 0 1.25rem; text-align: center; font-family: 'Crimson Pro', Georgia, serif; color: #7a7a7a; font-size: 15px; }
         .archive-empty p { margin: 0.25rem 0; }
@@ -416,10 +420,9 @@ export default function Archive({ sessions, error, initialFilters }) {
           .archive-hd p { font-size: 15px; }
           .search-row { flex-direction: column; align-items: stretch; gap: 6px; }
           .archive-count { text-align: right; }
-          .tag-block { grid-template-columns: 1fr; gap: 0.4rem; }
-          .tag-label { padding-top: 0; }
-          .tag-grid { gap: 6px; }
-          .tag-chip { font-size: 10px; padding: 6px 10px; letter-spacing: 0.08em; }
+          .tag-block { gap: 0 0.4rem; }
+          .tag-chip { font-size: 13px; }
+          .tag-sep { margin: 0 0.2rem; }
           .month-header { font-size: 11px; letter-spacing: 0.15em; }
         }
       `}</style>
@@ -434,14 +437,6 @@ function ArchiveEntry({ session, onMemberClick }) {
       <h3 className="entry-title">{session.original_issue}</h3>
       {session.teaser && (
         <p className="entry-teaser"><span className="verdict-label">Verdict —</span> {session.teaser}</p>
-      )}
-      {session.featured_quote && session.featured_quote_member && (
-        <blockquote className="entry-quote">
-          <span className="quote-mark" aria-hidden="true">“</span>
-          {session.featured_quote}
-          <span className="quote-mark" aria-hidden="true">”</span>
-          <cite className="quote-cite">— {stripTierSuffix(session.featured_quote_member)}</cite>
-        </blockquote>
       )}
       {session.member_names.length > 0 && (
         <div className="entry-members">
@@ -470,9 +465,6 @@ function ArchiveEntry({ session, onMemberClick }) {
         .entry:hover .entry-title { color: #6b1a1a; text-decoration-color: #6b1a1a; }
         .entry-teaser { font-family: 'Crimson Pro', Georgia, serif; font-size: 16px; color: #1a1a1a; line-height: 1.55; margin: 0 0 12px; }
         .verdict-label { font-weight: 600; color: #6b1a1a; letter-spacing: 0.12em; text-transform: uppercase; font-size: 13px; margin-right: 4px; }
-        .entry-quote { font-family: 'Playfair Display', Georgia, serif; font-style: italic; font-size: 16px; color: #2a2a2a; line-height: 1.45; margin: 0 0 14px; padding: 4px 0 4px 14px; border-left: 2px solid #6b1a1a; max-width: 60ch; }
-        .quote-mark { color: #6b1a1a; font-size: 18px; font-style: normal; padding: 0 2px; }
-        .quote-cite { display: block; font-style: normal; font-family: 'Crimson Pro', Georgia, serif; font-size: 12px; color: #7a7a7a; margin-top: 6px; letter-spacing: 0.04em; }
         .entry-members { display: flex; flex-wrap: wrap; gap: 6px; }
         .member-chip { font-family: 'Crimson Pro', Georgia, serif; font-size: 11px; padding: 2px 8px; border-radius: 2px; white-space: nowrap; background: #f5f1e8; color: #4a4a4a; border: 0.5px solid #d4cfc8; cursor: pointer; transition: all 0.15s ease; }
         .member-chip:hover { background: rgba(107, 26, 26, 0.08); border-color: #6b1a1a; color: #6b1a1a; }
@@ -481,7 +473,6 @@ function ArchiveEntry({ session, onMemberClick }) {
           .entry { margin-bottom: 3rem; }
           .entry-title { font-size: 18px; }
           .entry-teaser { font-size: 15px; }
-          .entry-quote { font-size: 15px; }
           .entry-meta { font-size: 11px; }
           .verdict-label { font-size: 12px; letter-spacing: 0.1em; }
           .member-chip { font-size: 10.5px; padding: 2px 7px; }
