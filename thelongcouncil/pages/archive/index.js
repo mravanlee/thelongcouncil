@@ -279,7 +279,7 @@ function ArchiveEntry({ session }) {
       )}
 
       <style jsx>{`
-        .entry { display: block; text-decoration: none; color: inherit; padding: 1rem 1rem 1.1rem; margin: 0 -1rem 0.5rem; border-radius: 4px; transition: background-color 0.15s ease; }
+        .entry { display: block; text-decoration: none; color: inherit; padding: 1rem 1rem 1.25rem; margin: 0 -1rem 1.75rem; border-radius: 4px; transition: background-color 0.15s ease; }
         .entry:hover { background: rgba(245, 241, 232, 0.55); }
         .entry-meta { font-family: 'Crimson Pro', Georgia, serif; font-size: 11px; color: #4a4a4a; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 4px; }
         .entry-title { font-family: 'Playfair Display', Georgia, serif; font-size: 19px; color: #0f0f0f; font-weight: 600; line-height: 1.35; margin: 0 0 6px 0; }
