@@ -152,56 +152,49 @@ const ALL_COUNCIL_MEMBERS = [
   'Elinor Ostrom', 'Ostrom', 'Sun Tzu',
 ];
 
-// Post-generation guard for the position-1 rule.
-// The prompt at line ~643 says: "The member at position 1 references NO
-// prior speaker." LLMs occasionally violate it — the position-1 card opens
-// with "Ostrom is right that..." when Ostrom is in fact position 2+.
-// This parses the SPEAKING ORDER header, isolates the first card, and
-// scans it for mentions of any LATER member.
-function validatePosition1Card(deliberationOutput) {
+// Post-generation guard for the "first card names no other member" rule.
+// PROMPT2 says the opening card responds to the ISSUE directly with no
+// reference to any other council member. LLMs occasionally violate this
+// (the bug used to be position-1 referencing a forward speaker; same shape
+// now that order is free). This isolates the first card by --- separator
+// and scans it for any name from the selected roster other than the
+// speaker themselves.
+function validatePosition1Card(deliberationOutput, selectedNames) {
   if (!deliberationOutput) return { ok: true, reason: 'empty' };
+  if (!Array.isArray(selectedNames) || selectedNames.length < 2) return { ok: true, reason: 'too_few_members' };
 
-  const orderMatch = deliberationOutput.match(/SPEAKING ORDER:\s*([^\n]+)/i);
-  if (!orderMatch) return { ok: true, reason: 'no_speaking_order_line' };
-
-  const order = orderMatch[1]
-    .split(/[→>,]+/)
-    .map(s => s.trim().replace(/^\[|\]$/g, '').trim())
-    .filter(Boolean);
-  if (order.length < 2) return { ok: true, reason: 'insufficient_members' };
-
-  const position1 = order[0];
-  const otherMembers = order.slice(1);
-
-  // Cards are separated by `---`. First block is the SPEAKING ORDER line,
-  // second block is card 1.
   const blocks = deliberationOutput
     .split(/(?:^|\n)\s*---\s*(?:\n|$)/)
     .map(b => b.trim())
     .filter(Boolean);
-  if (blocks.length < 2) return { ok: true, reason: 'no_cards' };
-  const card1 = blocks[1];
+  if (blocks.length < 1) return { ok: true, reason: 'no_cards' };
+  const firstCard = blocks[0];
+
+  // Extract the speaker name from the ## heading
+  const headingMatch = firstCard.match(/##\s*([^\n]+)/);
+  const firstMember = headingMatch ? headingMatch[1].trim() : null;
 
   const mentions = [];
-  for (const other of otherMembers) {
-    const clean = other.trim();
-    const words = clean.split(/\s+/);
+  for (const member of selectedNames) {
+    const cleanMember = member.trim();
+    if (firstMember && cleanMember === firstMember) continue;
+    const words = cleanMember.split(/\s+/);
     const lastName = words[words.length - 1];
-    const candidates = [clean];
-    if (lastName.length >= 4 && lastName !== clean) candidates.push(lastName);
+    const candidates = [cleanMember];
+    if (lastName.length >= 4 && lastName !== cleanMember) candidates.push(lastName);
     for (const cand of candidates) {
       const escaped = cand.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      if (new RegExp(`\\b${escaped}\\b`, 'i').test(card1)) {
-        mentions.push(other);
+      if (new RegExp(`\\b${escaped}\\b`, 'i').test(firstCard)) {
+        mentions.push(cleanMember);
         break;
       }
     }
   }
 
   if (mentions.length > 0) {
-    return { ok: false, position1, mentions, card1Preview: card1.slice(0, 300) };
+    return { ok: false, firstMember, mentions, card1Preview: firstCard.slice(0, 300) };
   }
-  return { ok: true };
+  return { ok: true, firstMember };
 }
 
 function validateRoster(deliberationOutput, selectedNames) {
@@ -514,7 +507,7 @@ It cannot reference another council member by name. It cannot react to a previou
 It states what THIS member believes, independent of the debate.
 A reader who sees only this sentence — with no context — must understand it as a complete thought.
 
-THIS IS THE MOST COMMON FAILURE IN THIS PROMPT. The model writes paragraph 1 (which engages the previous speaker), then writes the framing line as a preview of paragraph 1. This is wrong. The framing line is not a preview of the engagement. It is this member's position on the ISSUE itself.
+THIS IS THE MOST COMMON FAILURE IN THIS PROMPT. The model writes paragraph 1 (which may engage another speaker), then writes the framing line as a preview of paragraph 1. This is wrong. The framing line is not a preview of the engagement. It is this member's position on the ISSUE itself.
 
 WRONG (references another council member): "Confucius mistakes the means for the end."
 WRONG (references another council member): "Roosevelt's verification problem is the heart of the matter."
@@ -609,25 +602,30 @@ FIVE NON-NEGOTIABLE RULES:
 CRITICAL OUTPUT CONSTRAINTS — READ FIRST
 ════════════════════════════════════════════════════════════════
 
-STEP 1 — COMMIT TO SPEAKING ORDER BEFORE WRITING.
+STEP 1 — PICK THE OPENING VOICE.
 
-The very first line of your output is:
+The first card reacts directly to the ISSUE itself. Choose whichever member is most positioned to respond first — usually a modern decision-maker with direct experience on this question, but it can be any member if their angle gives the sharpest opening.
 
-SPEAKING ORDER: [Member A] → [Member B] → [Member C] → [Member D]
+THE FIRST CARD NAMES NO OTHER COUNCIL MEMBER ANYWHERE. No "X is right", no "as Y would argue", no "echoing Z", no "Schmidt's experience" if Schmidt is at the table. The opening engages the ISSUE, not the lineup. Read the first card without context: it must stand alone as a complete response to the question.
 
-Where Member A is the most grounded, decision-based voice and the final member is the most theoretical voice. This line is required. It is stripped from the user-facing output but forces you to commit to sequence before writing any cards.
+STEP 2 — ORDER THE REMAINING CARDS BY WHAT READS NATURAL.
 
-HOW TO DETERMINE ORDER:
-- GROUNDED / FIRST: modern leaders who made decisions directly relevant to this issue. Examples: Schmidt on European policy, Roosevelt on wartime strategy, Lee Kuan Yew on governance, Keynes on economic crisis response.
-- THEORETICAL / LAST: ancient thinkers and pure theorists who offer theoretical lenses, not modern decisions. Examples: Sun Tzu, Confucius, Kautilya, Machiavelli, Ibn Khaldun, Ali ibn Abi Talib, Rawls, Arendt, Rousseau, Locke.
+There is no fixed sequence. No SPEAKING ORDER header. No "leaders first, thinkers last" rule. Order each next card so it builds genuine debate — not because the lineup requires it, but because that's what creates movement on the page.
 
-Ancient thinkers ALWAYS speak after modern leaders. Sun Tzu never speaks before a 20th-century policymaker. This is absolute.
+Subsequent cards MAY:
+- Engage a card already written, by name ("Schmidt is right that…", "Ostrom's polycentric approach fails to…")
+- Pick up a thread from two or three cards earlier — not necessarily the immediately preceding one
+- Respond purely to the issue without referencing any other member
 
-STEP 2 — BEGIN CARDS AFTER SPEAKING ORDER.
+REFERENCE RULE: a card may only name another member who has ALREADY been written in your output. Never reference a member who appears later. Forward references break the reading flow.
 
-After the SPEAKING ORDER line, emit a blank line, then begin the first card with \`---\`.
+STEP 3 — INTERACTION IS ESSENTIAL, BUT NOT REQUIRED IN EVERY CARD.
 
-NO PREAMBLE. NO META-COMMENTARY. NO TITLE BLOCK.
+A deliberation without engagement is a set of monologues. The MAJORITY of cards after the first must show real engagement with another voice — by name reference in paragraph 1, by a sharp disagreement, or by extending an earlier point. One card may be a pure response to the issue if its voice is strong enough to stand alone, but parallel monologues across all cards are a failed deliberation.
+
+STEP 4 — BEGIN CARDS.
+
+Begin the first card with \`---\`. No preamble, no meta-commentary, no title block.
 
 Do NOT emit any of the following:
 - Titles like "Deliberation Engine Output" or "The Long Council — Session"
@@ -688,16 +686,16 @@ Communicate confidence through the prose:
 REASONING CARD RULES
 ════════════════════════════════════════════════════════════════
 
-1. SPEAKING ORDER IS FIXED AFTER STEP 1.
-   Write the cards in exactly the order declared in the SPEAKING ORDER line.
+1. CARDS APPEAR IN THE ORDER YOU WRITE THEM.
+   No SPEAKING ORDER header. The first card you emit is the opening voice — chosen for substance, not lineup.
 
-2. STRICT SEQUENCING OF REFERENCES.
-   A member at position N may only reference members at positions 1 through N-1. Never reference a member who has not yet spoken. The member at position 1 references NO prior speaker.
+2. BACKWARD REFERENCES ONLY.
+   A card may name only members who have ALREADY been written in your output. Never reference a member who appears later. The first card names no other member at all.
 
-3. THE FINAL MEMBER HAS NO "CHALLENGE TO" LINE.
-   Members at positions 1 through N-1 end with:
-     **Challenge to [next member's name]:** [one sentence]
-   The member at position N does NOT emit a Challenge line. Their card ends with paragraph 2. Nothing more.
+3. CHALLENGE LINES ARE OPTIONAL AND FLEXIBLE.
+   A card MAY end with:
+     **Challenge to [any other member at the table]:** [one sentence]
+   Include the challenge only when there is a sharp disagreement worth surfacing. It may be directed at any other participant — not necessarily the next speaker. Some cards have a challenge, some don't. The first card has no challenge line (no one to address yet). The final card may or may not.
 
 4. EVERY CARD IS FIRST-PERSON, IN CONTEMPORARY ENGLISH.
 
@@ -711,7 +709,7 @@ REASONING CARD RULES
 
    Sun Tzu does not sound like a translation. Confucius does not say "the Master says". Ibn Khaldun does not sound medieval. Every member reads as contemporary prose — only their sensibility distinguishes them.
 
-5. EVERY MEMBER AFTER POSITION 1 MUST DIRECTLY ENGAGE THE PREVIOUS SPEAKER by name in the first sentence of paragraph 1. Parallel monologues are not deliberation.
+5. INTERACTION IS ESSENTIAL BUT NOT MANDATORY IN EACH CARD. The majority of cards after the first must show engagement with another voice — by name reference in paragraph 1, by a sharp disagreement, or by picking up an earlier thread. One card may stand alone on the issue. Parallel monologues across all cards are a failed deliberation. See Step 3 of CRITICAL OUTPUT CONSTRAINTS.
 
 6. GROUND CLAIMS IN SPECIFIC EVENTS — IN PROSE.
    Year, venue, decision, speech. Never bracketed tags. Never citing written works.
@@ -739,8 +737,8 @@ REASONING CARD RULES
 
       Paragraph 1 — THE GROUNDED ARGUMENT (60–90 words).
       Opens with a position, not a warm-up. The first sentence states what the member believes.
-      For position 1: anchor in a specific sourced moment.
-      For positions 2 through N: engage the previous speaker by name in the first sentence, then anchor in your own experience.
+      For the FIRST CARD: anchor in a specific sourced moment. Name no other member at the table.
+      For LATER CARDS: choose whether to engage another already-written speaker by name in the first sentence, or to respond purely to the issue. If engaging, anchor in your own experience after the engagement. The majority of later cards should engage; not all.
 
       CRITICAL SEPARATION: The name reference belongs in paragraph 1, NOT in the framing line.
       The framing line states your own position on the issue. Paragraph 1 is where you engage others.
@@ -759,7 +757,7 @@ REASONING CARD RULES
       Paragraph 2 — THE SECOND MOVE (40–70 words).
       Must be one of:
         (a) a counterintuitive point paragraph 1 did not make
-        (b) a sharp positioning against an alternative the next speaker might take
+        (b) a sharp positioning against an alternative another voice at the table might take
         (c) a candid limit or boundary on the position itself
 
       TEST: "Could a reader skip paragraph 2 and lose nothing meaningful?" If yes, rewrite.
@@ -786,10 +784,10 @@ REASONING CARD RULES
       Governments today are asking about AI literacy, but this is the wrong question to be asking. The right question is: what does this country need that no one else can provide, and how do institutions deliver those capabilities by 2035?
       ---
 
-   c) CHALLENGE LINE (only for positions 1 through N-1)
-      Exactly one sentence. To the NEXT speaker only.
+   c) CHALLENGE LINE (optional, on any card except the first)
+      Exactly one sentence when included. Directed at any other member at the table — not necessarily the next speaker.
       No em-dashes. No "framework". No "fundamental". No "genuine". No "authentic".
-      The final speaker omits this line entirely.
+      Include only when there is a sharp disagreement worth surfacing. Some cards have one, some don't. The first card never has one (no one to address yet).
 
 8. SURFACE LIVE CONTRADICTIONS.
    If a relevant contradiction exists in the member's record, surface it as a tension they acknowledge within their own argument — not as external criticism.
@@ -805,43 +803,34 @@ REASONING CARD RULES
 OUTPUT FORMAT — produce exactly this structure
 ════════════════════════════════════════════════════════════════
 
-SPEAKING ORDER: [Member A name] → [Member B name] → [Member C name] → [Member D name]
+No header above the cards. Begin with the first \`---\`.
 
 ---
-## [Member A name only — nothing else on this line]
+## [Opening member's name only — nothing else on this line]
 [Role, Country, Years]
 
 *[Framing line — THIS member's position on THE ISSUE. No other council member's name. 15 words max. No em-dash.]*
 
-[Paragraph 1 — 60–90 words. First sentence takes a position. Grounded in a sourced moment.]
+[Paragraph 1 — 60–90 words. First sentence takes a position on the ISSUE. No other member named anywhere in this card. Grounded in a sourced moment.]
 
 [Paragraph 2 — 40–70 words. The second move. NOT amplification of paragraph 1.]
 
-**Challenge to [Member B name]:** [One sentence. No "framework". No em-dash.]
+(No challenge line on the first card — no one to address yet.)
 ---
-## [Member B name only]
+## [Next member's name only]
 [Role, Country, Years]
 
-*[Framing line — THIS member's position on THE ISSUE. No other council member's name. 15 words max. No em-dash. Write this after paragraphs 1 and 2, then check: does it contain any council member's name? If yes, rewrite.]*
+*[Framing line — standalone position on the issue, no member named.]*
 
-[Paragraph 1 — 60–90 words. First sentence engages Member A by name and takes a position.]
+[Paragraph 1 — 60–90 words. Choose: either engage another already-written card by name in the first sentence, or respond purely to the issue. If engaging, anchor in your own experience after the engagement.]
 
 [Paragraph 2 — 40–70 words. Second move.]
 
-**Challenge to [Member C name]:** [One sentence.]
+**Challenge to [any other member at the table]:** [Optional. Include only when there is a sharp disagreement worth naming. One sentence. No "framework". No em-dash.]
 ---
 
-[... continue for each middle member, using the same framing line instruction as Member B ...]
+[Continue for each remaining member. Use the same structure. Majority of these cards should engage another voice; one may stand alone if its position is strong enough. Challenge lines are optional throughout.]
 
----
-## [Final member name only]
-[Role, Country, Years]
-
-*[Framing line — THIS member's position on THE ISSUE. No other council member's name. 15 words max. No em-dash. Write this after paragraphs 1 and 2, then check: does it contain any council member's name? If yes, rewrite.]*
-
-[Paragraph 1 — 60–90 words. First sentence engages previous speaker by name and takes a position.]
-
-[Paragraph 2 — 40–70 words. Second move. No Challenge line follows.]
 ---
 
 After the final card, emit:
@@ -865,8 +854,8 @@ QUALITY CHECKS — apply before producing output
 ════════════════════════════════════════════════════════════════
 
 Before writing, ask:
-- Is the SPEAKING ORDER line at the very top of my output?
-- Do modern practitioners come before ancient thinkers and pure theorists?
+- Have I chosen an opening voice that engages this specific issue directly?
+- Is the first card free of any other council member's name?
 
 Before emitting each card, check:
 
@@ -878,9 +867,9 @@ Before emitting each card, check:
    If yes, rewrite. Exception: historical persons in the member's own story.
 
 3. SEQUENCING CHECK:
-   Does this card reference only members earlier in the SPEAKING ORDER?
-   Is this position 1? Then no prior speaker is referenced.
-   Is this the final position? Then no Challenge line is present.
+   Does this card name only members ALREADY written above it in your output? Forward references are forbidden.
+   Is this the FIRST card? Then no other member is named anywhere in it (paragraphs or challenge).
+   Across all later cards: does the MAJORITY engage another voice? At most one card may stand alone on the issue.
 
 4. VOICE CHECK — BOLD AND DIRECT:
    Does paragraph 1 open with a position, not a warm-up?
@@ -904,7 +893,7 @@ Before emitting each card, check:
    BAD: "Roosevelt's verification problem is the heart of the matter." — contains another council member's name.
    GOOD: "Political survival demands methods suited to the contest, not to an ideal order."
    GOOD: "A ruler who cannot be trusted destroys governance faster than any bad policy."
-   This check applies to ALL members, including position 1.
+   This check applies to ALL members, including the opening card.
 
 7. EM-DASH CHECK:
    More than one em-dash in the card body? Rewrite the extras as separate sentences.
@@ -1292,28 +1281,28 @@ export default async function handler(req, res) {
       0.7
     );
 
-    // Position-1 guard: if card 1 references a later speaker, regenerate
-    // once with an explicit reminder. The original is kept only if the
-    // retry is no better.
-    let p1Check = validatePosition1Card(deliberationOutput);
+    // First-card guard: PROMPT2 says the opening card names no other
+    // council member. If violated, regenerate once with an explicit
+    // reminder. Keep the retry only if it passes.
+    let p1Check = validatePosition1Card(deliberationOutput, selectedNames);
     if (!p1Check.ok) {
-      console.warn('[pipeline] POSITION-1 VIOLATION on first attempt — position 1:', p1Check.position1, '— mentioned later speakers:', p1Check.mentions);
+      console.warn('[pipeline] FIRST-CARD VIOLATION on first attempt — opener:', p1Check.firstMember, '— mentioned:', p1Check.mentions);
       send('progress', { step: 2, message: 'Refining the opening voice...' });
       const retryMessage = `${deliberationUserBase}
 
 REGENERATION CONSTRAINT — CRITICAL:
-Your previous attempt placed ${p1Check.position1} at position 1 of the SPEAKING ORDER, but their card referenced ${p1Check.mentions.join(', ')} — members who had not yet spoken. THE MEMBER AT POSITION 1 MUST NOT REFERENCE ANY OTHER COUNCIL MEMBER ANYWHERE IN THEIR CARD. Their opening must engage the ISSUE directly, not another speaker. No "X is right that...", no "X's argument...", no "as X would say...". Rewrite the full deliberation. Keep the same speaking order.`;
+Your previous attempt opened with ${p1Check.firstMember}'s card, but it referenced ${p1Check.mentions.join(', ')} — other council members at the table. THE FIRST CARD MUST NOT NAME ANY OTHER COUNCIL MEMBER ANYWHERE — not in the framing line, not in paragraph 1, not in paragraph 2, not in a challenge. The opening voice engages the ISSUE directly. No "X is right that...", no "X's argument...", no "as X would say...". The first card has no challenge line. Rewrite the full deliberation.`;
       const retried = await callClaude(PROMPT2_SYSTEM, retryMessage, 2500, 0.5);
-      const recheck = validatePosition1Card(retried);
+      const recheck = validatePosition1Card(retried, selectedNames);
       if (recheck.ok) {
-        console.log('[pipeline] Position-1 retry SUCCEEDED');
+        console.log('[pipeline] First-card retry SUCCEEDED');
         deliberationOutput = retried;
         p1Check = recheck;
       } else {
-        console.warn('[pipeline] Position-1 retry STILL violated — using original. New mentions:', recheck.mentions);
+        console.warn('[pipeline] First-card retry STILL violated — using original. New mentions:', recheck.mentions);
       }
     } else {
-      console.log('[pipeline] Position-1 check PASSED.');
+      console.log('[pipeline] First-card check PASSED.');
     }
 
     send('deliberation', { data: deliberationOutput });
