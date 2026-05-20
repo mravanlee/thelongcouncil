@@ -1,9 +1,12 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import { supabase } from '../../lib/supabase';
 
-export async function getServerSideProps() {
+const PAGE_SIZE = 25;
+
+export async function getServerSideProps(ctx) {
   const { data: sessions, error } = await supabase
     .from('sessions')
     .select('id, slug, original_issue, sharpened_issue, member_names, member_types, created_at, cards')
@@ -11,7 +14,7 @@ export async function getServerSideProps() {
 
   if (error) {
     console.error('[archive] Failed to load sessions:', error);
-    return { props: { sessions: [], error: error.message } };
+    return { props: { sessions: [], error: error.message, initialFilters: { q: '', theme: null, member: null } } };
   }
 
   const enriched = (sessions || []).map(s => ({
@@ -25,7 +28,13 @@ export async function getServerSideProps() {
     teaser: extractTeaser(s.cards),
   }));
 
-  return { props: { sessions: enriched, error: null } };
+  const initialFilters = {
+    q: typeof ctx.query.q === 'string' ? ctx.query.q : '',
+    theme: typeof ctx.query.theme === 'string' ? ctx.query.theme : null,
+    member: typeof ctx.query.member === 'string' ? ctx.query.member : null,
+  };
+
+  return { props: { sessions: enriched, error: null, initialFilters } };
 }
 
 function extractTeaser(cards) {
@@ -46,6 +55,11 @@ function formatDate(iso) {
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
+function formatMonthYear(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+}
+
 function stripTierSuffix(name) {
   if (!name) return '';
   return name.replace(/\s*[—–-]\s*(Practitioner|Framer|Leader|Thinker|Wildcard)\s*$/i, '').trim();
@@ -53,7 +67,7 @@ function stripTierSuffix(name) {
 
 // Theme → keywords for the tag-chip filter. Each keyword is matched at word-start
 // (\b<kw>) so "democra" hits "democracy"/"democratic" but not "epidemic".
-// Acronyms with `acronym: true` require word boundaries on both sides to avoid
+// Acronyms with `acronyms` require word boundaries on both sides to avoid
 // false positives (e.g. "AI" should not match "Britain", "Maathai").
 const THEMES = [
   { label: 'Democracy & Polarisation', keywords: ['democra', 'polaris', 'polariser', 'election', 'electie', 'verkiezing', 'parlement', 'citizen', 'voter', 'vote', 'debate', 'civic', 'rechtsstaat', 'jetten'] },
@@ -71,8 +85,6 @@ function escapeRegex(s) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-// Build a single regex per theme. Word-start anchor for normal keywords;
-// full-word boundaries for acronyms. Case-insensitive.
 const THEME_REGEX = Object.fromEntries(
   THEMES.map(t => {
     const parts = [];
@@ -82,9 +94,53 @@ const THEME_REGEX = Object.fromEntries(
   })
 );
 
-export default function Archive({ sessions, error }) {
-  const [search, setSearch] = useState('');
-  const [activeTheme, setActiveTheme] = useState(null);
+export default function Archive({ sessions, error, initialFilters }) {
+  const router = useRouter();
+  const [search, setSearch] = useState(initialFilters?.q || '');
+  const [activeTheme, setActiveTheme] = useState(initialFilters?.theme || null);
+  const [activeMember, setActiveMember] = useState(initialFilters?.member || null);
+  const [page, setPage] = useState(1);
+
+  // Sync state → URL (debounced for search to avoid history spam while typing)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const t = setTimeout(() => {
+      const newQuery = {};
+      if (search.trim()) newQuery.q = search.trim();
+      if (activeTheme) newQuery.theme = activeTheme;
+      if (activeMember) newQuery.member = activeMember;
+
+      // Only push if different from current URL
+      const currentRelevant = {};
+      ['q', 'theme', 'member'].forEach(k => {
+        if (router.query[k]) currentRelevant[k] = router.query[k];
+      });
+      if (JSON.stringify(currentRelevant) === JSON.stringify(newQuery)) return;
+
+      router.replace({ pathname: '/archive', query: newQuery }, undefined, { shallow: true });
+    }, 200);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, activeTheme, activeMember]);
+
+  // Sync URL → state on browser back/forward
+  useEffect(() => {
+    const handleRouteChange = (url) => {
+      const qs = url.split('?')[1] || '';
+      const params = new URLSearchParams(qs);
+      const nextQ = params.get('q') || '';
+      const nextTheme = params.get('theme') || null;
+      const nextMember = params.get('member') || null;
+      setSearch(prev => prev !== nextQ ? nextQ : prev);
+      setActiveTheme(prev => prev !== nextTheme ? nextTheme : prev);
+      setActiveMember(prev => prev !== nextMember ? nextMember : prev);
+    };
+    router.events.on('routeChangeComplete', handleRouteChange);
+    return () => router.events.off('routeChangeComplete', handleRouteChange);
+  }, [router.events]);
+
+  // Reset pagination when filters change
+  useEffect(() => { setPage(1); }, [search, activeTheme, activeMember]);
 
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -92,19 +148,40 @@ export default function Archive({ sessions, error }) {
       const haystack = [s.original_issue, s.sharpened_issue, s.teaser, ...(s.member_names || [])]
         .filter(Boolean).join(' ').toLowerCase();
       if (q && !haystack.includes(q)) return false;
-      if (activeTheme && !THEME_REGEX[activeTheme].test(haystack)) return false;
+      if (activeTheme && !THEME_REGEX[activeTheme]?.test(haystack)) return false;
+      if (activeMember) {
+        const memberMatch = (s.member_names || []).some(n => stripTierSuffix(n).toLowerCase() === activeMember.toLowerCase());
+        if (!memberMatch) return false;
+      }
       return true;
     });
-  }, [sessions, search, activeTheme]);
+  }, [sessions, search, activeTheme, activeMember]);
 
-  const countLabel = (search.trim() || activeTheme)
+  const paginated = visible.slice(0, page * PAGE_SIZE);
+  const hasMore = visible.length > paginated.length;
+
+  // Group paginated entries by month-year for visual chunking
+  const grouped = useMemo(() => {
+    const groups = [];
+    for (const s of paginated) {
+      const key = formatMonthYear(s.created_at);
+      if (!groups.length || groups[groups.length - 1].key !== key) {
+        groups.push({ key, sessions: [] });
+      }
+      groups[groups.length - 1].sessions.push(s);
+    }
+    return groups;
+  }, [paginated]);
+
+  const hasActiveFilter = !!(search.trim() || activeTheme || activeMember);
+  const countLabel = hasActiveFilter
     ? `${visible.length} of ${sessions.length} issues`
     : `${sessions.length} issues`;
 
   function onSearchChange(value) {
     setSearch(value);
-    // Typing manually clears the active theme so the user isn't surprised by combined filters.
     if (value && activeTheme) setActiveTheme(null);
+    if (value && activeMember) setActiveMember(null);
   }
 
   function onThemeClick(label) {
@@ -113,6 +190,19 @@ export default function Archive({ sessions, error }) {
     } else {
       setActiveTheme(label);
       setSearch('');
+      setActiveMember(null);
+    }
+  }
+
+  function onMemberClick(name) {
+    if (activeMember === name) {
+      setActiveMember(null);
+    } else {
+      setActiveMember(name);
+      setSearch('');
+      setActiveTheme(null);
+      // Scroll to top so the user sees the filtered list and the active-filter banner
+      if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }
 
@@ -170,6 +260,7 @@ export default function Archive({ sessions, error }) {
                 placeholder="Search past issues..."
                 value={search}
                 onChange={e => onSearchChange(e.target.value)}
+                aria-label="Search archive"
               />
             </div>
             <div className="archive-count">{countLabel}</div>
@@ -182,6 +273,7 @@ export default function Archive({ sessions, error }) {
                   key={t.label}
                   className={`tag-chip${activeTheme === t.label ? ' active' : ''}`}
                   onClick={() => onThemeClick(t.label)}
+                  aria-pressed={activeTheme === t.label}
                   type="button"
                 >
                   {t.label}
@@ -191,6 +283,21 @@ export default function Archive({ sessions, error }) {
           </div>
         </div>
       </div>
+
+      {activeMember && (
+        <div className="active-filter-row">
+          <span className="active-filter-label">Filtering by member:</span>
+          <button
+            className="active-filter-pill"
+            onClick={() => setActiveMember(null)}
+            aria-label={`Clear filter for ${activeMember}`}
+            type="button"
+          >
+            {activeMember}
+            <span className="pill-x" aria-hidden="true">×</span>
+          </button>
+        </div>
+      )}
 
       {error && (
         <div className="archive-error">Something went wrong loading the archive. Please try again in a moment.</div>
@@ -207,11 +314,26 @@ export default function Archive({ sessions, error }) {
         <div className="archive-empty"><p>No past issues match your search.</p></div>
       )}
 
-      {visible.length > 0 && (
+      {grouped.length > 0 && (
         <div className="archive-list">
-          {visible.map((session) => (
-            <ArchiveEntry key={session.id} session={session} />
+          {grouped.map((group, gi) => (
+            <div key={group.key} className="month-group">
+              <div className={`month-header${gi === 0 ? ' first' : ''}`}>{group.key}</div>
+              {group.sessions.map((session) => (
+                <ArchiveEntry
+                  key={session.id}
+                  session={session}
+                  activeMember={activeMember}
+                  onMemberClick={onMemberClick}
+                />
+              ))}
+            </div>
           ))}
+          {hasMore && (
+            <button className="load-more" onClick={() => setPage(p => p + 1)} type="button">
+              Load older issues  ({visible.length - paginated.length} remaining)
+            </button>
+          )}
         </div>
       )}
 
@@ -239,12 +361,24 @@ export default function Archive({ sessions, error }) {
         .tag-chip:hover { border-color: #6b1a1a; color: #6b1a1a; }
         .tag-chip.active { background: #6b1a1a; color: #faf7f0; border-color: #6b1a1a; }
 
+        .active-filter-row { max-width: 680px; margin: -0.5rem auto 1.5rem; padding: 0 1.25rem; display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+        .active-filter-label { font-family: 'Crimson Pro', Georgia, serif; font-size: 12px; color: #7a7a7a; letter-spacing: 0.06em; }
+        .active-filter-pill { display: inline-flex; align-items: center; gap: 8px; font-family: 'Crimson Pro', Georgia, serif; font-size: 13px; color: #6b1a1a; background: rgba(107, 26, 26, 0.07); border: 0.5px solid rgba(107, 26, 26, 0.35); padding: 5px 12px; border-radius: 999px; cursor: pointer; transition: all 0.15s ease; }
+        .active-filter-pill:hover { background: rgba(107, 26, 26, 0.14); }
+        .pill-x { font-size: 15px; line-height: 1; color: #6b1a1a; }
+
         .archive-error, .archive-empty { max-width: 680px; margin: 3rem auto; padding: 0 1.25rem; text-align: center; font-family: 'Crimson Pro', Georgia, serif; color: #7a7a7a; font-size: 15px; }
         .archive-empty p { margin: 0.25rem 0; }
         .archive-empty-sub :global(a) { color: #6b1a1a; text-decoration: none; }
         .archive-empty-sub :global(a:hover) { text-decoration: underline; }
 
         .archive-list { max-width: 680px; margin: 0 auto; padding: 0 1.25rem 4rem; }
+        .month-group { margin-bottom: 1.5rem; }
+        .month-header { font-family: 'Crimson Pro', Georgia, serif; font-size: 12px; color: #7a7a7a; letter-spacing: 0.18em; text-transform: uppercase; padding: 1.25rem 0 0.6rem; margin-bottom: 0.75rem; border-bottom: 0.5px solid #d4cfc8; }
+        .month-header.first { padding-top: 0; }
+
+        .load-more { display: block; margin: 1.5rem auto 0; font-family: 'Crimson Pro', Georgia, serif; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; padding: 11px 22px; background: transparent; border: 0.5px solid #c4bfb6; color: #2a2a2a; border-radius: 2px; cursor: pointer; transition: all 0.15s ease; }
+        .load-more:hover { border-color: #6b1a1a; color: #6b1a1a; }
 
         @media (max-width: 640px) {
           .archive-hd h2 { font-size: 24px; }
@@ -255,13 +389,15 @@ export default function Archive({ sessions, error }) {
           .tag-label { padding-top: 0; }
           .tag-grid { gap: 6px; }
           .tag-chip { font-size: 10px; padding: 6px 10px; letter-spacing: 0.08em; }
+          .month-header { font-size: 11px; letter-spacing: 0.15em; }
+          .active-filter-pill { font-size: 12px; padding: 4px 10px; }
         }
       `}</style>
     </>
   );
 }
 
-function ArchiveEntry({ session }) {
+function ArchiveEntry({ session, activeMember, onMemberClick }) {
   return (
     <Link href={`/archive/${session.slug}`} className="entry">
       <div className="entry-meta">{formatDate(session.created_at)}</div>
@@ -271,9 +407,21 @@ function ArchiveEntry({ session }) {
       )}
       {session.member_names.length > 0 && (
         <div className="entry-members">
-          {session.member_names.map((name, i) => (
-            <span key={i} className="member-chip">{stripTierSuffix(name)}</span>
-          ))}
+          {session.member_names.map((name, i) => {
+            const clean = stripTierSuffix(name);
+            const isActive = activeMember === clean;
+            return (
+              <button
+                key={i}
+                className={`member-chip${isActive ? ' active' : ''}`}
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onMemberClick(clean); }}
+                aria-pressed={isActive}
+                type="button"
+              >
+                {clean}
+              </button>
+            );
+          })}
         </div>
       )}
 
@@ -281,17 +429,19 @@ function ArchiveEntry({ session }) {
         .entry { display: block; text-decoration: none; color: inherit; padding: 1rem 1rem 1.25rem; margin: 0 -1rem 1.75rem; border-radius: 4px; transition: background-color 0.15s ease; }
         .entry:hover { background: rgba(245, 241, 232, 0.55); }
         .entry-meta { font-family: 'Crimson Pro', Georgia, serif; font-size: 11px; color: #4a4a4a; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 4px; }
-        .entry-title { font-family: 'Playfair Display', Georgia, serif; font-size: 19px; color: #0f0f0f; font-weight: 600; line-height: 1.35; margin: 0 0 6px 0; }
+        .entry-title { font-family: 'Playfair Display', Georgia, serif; font-size: 19px; color: #0f0f0f; font-weight: 600; line-height: 1.35; margin: 0 0 6px 0; max-width: 62ch; }
         .entry-teaser { font-family: 'Crimson Pro', Georgia, serif; font-size: 16px; color: #1a1a1a; line-height: 1.55; margin: 0 0 10px; }
         .verdict-label { font-weight: 600; color: #6b1a1a; letter-spacing: 0.12em; text-transform: uppercase; font-size: 13px; margin-right: 4px; }
         .entry-members { display: flex; flex-wrap: wrap; gap: 6px; }
-        .member-chip { font-family: 'Crimson Pro', Georgia, serif; font-size: 11px; padding: 2px 8px; border-radius: 2px; white-space: nowrap; background: #f5f1e8; color: #4a4a4a; border: 0.5px solid #d4cfc8; transition: all 0.15s ease; }
+        .member-chip { font-family: 'Crimson Pro', Georgia, serif; font-size: 11px; padding: 2px 8px; border-radius: 2px; white-space: nowrap; background: #f5f1e8; color: #4a4a4a; border: 0.5px solid #d4cfc8; cursor: pointer; transition: all 0.15s ease; }
         .entry:hover .member-chip { background: #f0e8d8; border-color: #b8a888; color: #2a2a2a; }
+        .member-chip:hover { background: rgba(107, 26, 26, 0.08); border-color: #6b1a1a; color: #6b1a1a; }
+        .member-chip.active { background: #6b1a1a; color: #faf7f0; border-color: #6b1a1a; }
 
         @media (max-width: 640px) {
           .entry-title { font-size: 17px; }
           .entry-teaser { font-size: 15px; }
-          .entry-meta { font-size: 10px; }
+          .entry-meta { font-size: 11px; }
           .verdict-label { font-size: 12px; letter-spacing: 0.1em; }
           .member-chip { font-size: 10.5px; padding: 2px 7px; }
         }
