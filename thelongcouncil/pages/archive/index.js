@@ -308,21 +308,17 @@ export default function Archive({ sessions, error, initialFilters }) {
             <div className="archive-count">{countLabel}</div>
           </div>
           <div className="tag-block">
-            <div className="tag-grid">
-              {THEMES.map((t, i) => (
-                <span key={t.label} className="tag-item">
-                  {i > 0 && <span className="tag-sep" aria-hidden="true">·</span>}
-                  <button
-                    className={`tag-chip${activeTheme === t.label ? ' active' : ''}`}
-                    onClick={() => onThemeClick(t.label)}
-                    aria-pressed={activeTheme === t.label}
-                    type="button"
-                  >
-                    {t.label}
-                  </button>
-                </span>
-              ))}
-            </div>
+            {THEMES.map(t => (
+              <button
+                key={t.label}
+                className={`tag-chip${activeTheme === t.label ? ' active' : ''}`}
+                onClick={() => onThemeClick(t.label)}
+                aria-pressed={activeTheme === t.label}
+                type="button"
+              >
+                {t.label}
+              </button>
+            ))}
           </div>
         </div>
       </div>
@@ -392,14 +388,10 @@ export default function Archive({ sessions, error, initialFilters }) {
         .archive-search::placeholder { color: #9a9388; font-style: italic; }
         .archive-count { font-family: 'Crimson Pro', Georgia, serif; font-size: 12px; color: #7a7a7a; letter-spacing: 0.04em; white-space: nowrap; }
 
-        .tag-block { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 0.65rem; margin-top: 0.6rem; line-height: 1.7; }
-        .tag-label { font-family: 'Crimson Pro', Georgia, serif; font-size: 11px; color: #7a7a7a; letter-spacing: 0.14em; text-transform: uppercase; }
-        .tag-grid { display: inline; }
-        .tag-item { display: inline; }
-        .tag-sep { color: #c4bfb6; margin: 0 0.3rem; user-select: none; }
-        .tag-chip { font-family: 'Crimson Pro', Georgia, serif; font-size: 14px; padding: 0; background: transparent; border: none; color: #4a4a4a; cursor: pointer; transition: color 0.15s ease; display: inline; }
-        .tag-chip:hover { color: #6b1a1a; }
-        .tag-chip.active { color: #6b1a1a; font-weight: 600; }
+        .tag-block { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 0.75rem; }
+        .tag-chip { font-family: 'Crimson Pro', Georgia, serif; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; padding: 8px 14px; background: transparent; border: 0.5px solid #c4bfb6; color: #2a2a2a; border-radius: 2px; cursor: pointer; transition: all 0.15s ease; white-space: nowrap; }
+        .tag-chip:hover { border-color: #6b1a1a; color: #6b1a1a; }
+        .tag-chip.active { background: #6b1a1a; color: #faf7f0; border-color: #6b1a1a; }
 
         .archive-error, .archive-empty { max-width: 680px; margin: 3rem auto; padding: 0 1.25rem; text-align: center; font-family: 'Crimson Pro', Georgia, serif; color: #7a7a7a; font-size: 15px; }
         .archive-empty p { margin: 0.25rem 0; }
@@ -419,9 +411,8 @@ export default function Archive({ sessions, error, initialFilters }) {
           .archive-hd p { font-size: 15px; }
           .search-row { flex-direction: column; align-items: stretch; gap: 6px; }
           .archive-count { text-align: right; }
-          .tag-block { gap: 0 0.4rem; }
-          .tag-chip { font-size: 13px; }
-          .tag-sep { margin: 0 0.2rem; }
+          .tag-block { gap: 6px; }
+          .tag-chip { font-size: 10px; padding: 6px 10px; letter-spacing: 0.08em; }
           .month-header { font-size: 11px; letter-spacing: 0.15em; }
         }
       `}</style>
@@ -457,7 +448,7 @@ function ArchiveEntry({ session, onMemberClick }) {
       )}
 
       <style jsx>{`
-        .entry { display: block; text-decoration: none; color: inherit; padding: 0.25rem 0 0; margin-bottom: 6rem; transition: color 0.15s ease; }
+        .entry { display: block; text-decoration: none; color: inherit; padding: 0.25rem 0 0; margin-bottom: 8rem; transition: color 0.15s ease; }
         .entry:last-child { margin-bottom: 1rem; }
         .entry-meta { font-family: 'Crimson Pro', Georgia, serif; font-size: 11px; color: #4a4a4a; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px; }
         .entry-title { font-family: 'Playfair Display', Georgia, serif; font-size: 20px; color: #0f0f0f; font-weight: 600; line-height: 1.35; margin: 0 0 10px 0; max-width: 62ch; text-decoration: underline; text-decoration-color: transparent; text-decoration-thickness: 1.5px; text-underline-offset: 4px; transition: text-decoration-color 0.18s ease, color 0.18s ease; }
@@ -469,7 +460,7 @@ function ArchiveEntry({ session, onMemberClick }) {
         .member-chip:hover { background: rgba(107, 26, 26, 0.08); border-color: #6b1a1a; color: #6b1a1a; }
 
         @media (max-width: 640px) {
-          .entry { margin-bottom: 4.5rem; }
+          .entry { margin-bottom: 5.5rem; }
           .entry-title { font-size: 18px; }
           .entry-teaser { font-size: 15px; }
           .entry-meta { font-size: 11px; }
