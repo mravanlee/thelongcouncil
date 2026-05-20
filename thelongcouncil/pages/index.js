@@ -176,20 +176,21 @@ function formatDate(iso) {
 }
 
 // ── Recent session card with avatar + pull-quote ───────────────────────
+// Monogram is rendered up front; the image is layered on top and removes
+// itself via onError when the file is missing (e.g. when the pipeline added
+// a non-roster historical figure). This avoids the browser-default broken
+// image icon flashing while React updates state.
 function RecentSessionAvatar({ name }) {
-  const [imgFailed, setImgFailed] = useState(false);
   const slug = memberSlug(name);
   return (
     <div className="rs-avatar" aria-hidden="true">
-      {!imgFailed && slug && (
+      <span className="rs-avatar-monogram">{memberMonogram(name)}</span>
+      {slug && (
         <img
           src={`/avatars/avatar_${slug}.webp`}
           alt=""
-          onError={() => setImgFailed(true)}
+          onError={(e) => { e.target.style.display = 'none'; }}
         />
-      )}
-      {imgFailed && (
-        <span className="rs-avatar-monogram">{memberMonogram(name)}</span>
       )}
     </div>
   );

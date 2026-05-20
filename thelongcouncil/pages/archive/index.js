@@ -70,14 +70,14 @@ function stripTierSuffix(name) {
 // Acronyms with `acronyms` require word boundaries on both sides to avoid
 // false positives (e.g. "AI" should not match "Britain", "Maathai").
 const THEMES = [
-  { label: 'Democracy & Polarisation', keywords: ['democra', 'polaris', 'polariser', 'election', 'electie', 'verkiezing', 'parlement', 'citizen', 'voter', 'vote', 'debate', 'civic', 'rechtsstaat', 'jetten'] },
+  { label: 'Democracy', keywords: ['democra', 'polaris', 'polariser', 'election', 'electie', 'verkiezing', 'parlement', 'citizen', 'voter', 'vote', 'debate', 'civic', 'rechtsstaat', 'jetten'] },
   { label: 'Geopolitics', keywords: ['geopoli', 'foreign policy', 'sanction', 'alliance', 'autonom', 'sovereign', 'diplomacy', 'kissinger', 'henry kissinger'], acronyms: ['NATO', 'UN'] },
-  { label: 'Economy & Trade', keywords: ['econom', 'trade', 'handel', 'tariff', 'wealth', 'recession', 'inflation', 'export', 'import', 'monetary', 'fiscal', 'market', 'capital', 'industrial'], acronyms: ['GDP'] },
-  { label: 'Europe', keywords: ['europe', 'europ', 'brussels', 'eurozone', 'britain', 'german', 'french', 'italy', 'spain', 'adenauer', 'schmidt'], acronyms: ['EU'] },
-  { label: 'China & Asia', keywords: ['china', 'chinese', 'asia', 'asian', 'beijing', 'taiwan', 'japan', 'korea', 'singapore', 'india', 'mahathir', 'lee kuan', 'deng', 'confucius', 'sun tzu'] },
-  { label: 'War & Security', keywords: ['military', 'conflict', 'security', 'defense', 'defence', 'ukraine', 'russia', 'israel', 'gaza', 'warfare', 'sun tzu', 'churchill'], acronyms: ['NATO'] },
-  { label: 'Climate & Energy', keywords: ['climat', 'energy', 'oil', 'renewable', 'emission', 'carbon', 'fossil', 'groningen', 'sustainab', 'green', 'maathai'] },
-  { label: 'Technology & AI', keywords: ['artificial intelligence', 'technolog', 'semiconduct', 'algorithm', 'internet', 'social media', 'silicon'], acronyms: ['AI', 'ASML'] },
+  { label: 'Economy', keywords: ['econom', 'trade', 'handel', 'tariff', 'wealth', 'recession', 'inflation', 'export', 'import', 'monetary', 'fiscal', 'market', 'capital', 'industrial'], acronyms: ['GDP'] },
+  { label: 'Europe', keywords: ['europe', 'europ', 'brussels', 'eurozone', 'britain', 'german', 'french', 'italy', 'spain', 'adenauer', 'schmidt', 'monnet', 'de gaulle'], acronyms: ['EU'] },
+  { label: 'China', keywords: ['china', 'chinese', 'asia', 'asian', 'beijing', 'taiwan', 'japan', 'korea', 'singapore', 'india', 'mahathir', 'lee kuan', 'deng', 'confucius', 'sun tzu'] },
+  { label: 'War', keywords: ['military', 'conflict', 'security', 'defense', 'defence', 'ukraine', 'russia', 'israel', 'gaza', 'warfare', 'sun tzu', 'churchill'], acronyms: ['NATO'] },
+  { label: 'Climate', keywords: ['climat', 'energy', 'oil', 'renewable', 'emission', 'carbon', 'fossil', 'groningen', 'sustainab', 'green', 'maathai'] },
+  { label: 'AI', keywords: ['artificial intelligence', 'technolog', 'semiconduct', 'algorithm', 'internet', 'social media', 'silicon'], acronyms: ['AI', 'ASML'] },
   { label: 'Netherlands', keywords: ['nederland', 'dutch', 'netherlands', 'jetten', 'groningen', 'curaçao', 'rutte', 'amsterdam', 'haag', 'wilders'], acronyms: ['ASML'] },
 ];
 
@@ -426,7 +426,7 @@ function ArchiveEntry({ session, activeMember, onMemberClick }) {
       )}
 
       <style jsx>{`
-        .entry { display: block; text-decoration: none; color: inherit; padding: 1rem 1rem 1.25rem; margin: 0 -1rem 1.75rem; border-radius: 4px; transition: background-color 0.15s ease; }
+        .entry { display: block; text-decoration: none; color: inherit; padding: 1.25rem 1rem 1.5rem; margin: 0 -1rem 2.5rem; border-radius: 4px; transition: background-color 0.15s ease; }
         .entry:hover { background: rgba(245, 241, 232, 0.55); }
         .entry-meta { font-family: 'Crimson Pro', Georgia, serif; font-size: 11px; color: #4a4a4a; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 4px; }
         .entry-title { font-family: 'Playfair Display', Georgia, serif; font-size: 19px; color: #0f0f0f; font-weight: 600; line-height: 1.35; margin: 0 0 6px 0; max-width: 62ch; }
