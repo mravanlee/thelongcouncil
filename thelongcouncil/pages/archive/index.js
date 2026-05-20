@@ -5,16 +5,17 @@ import { useRouter } from 'next/router';
 import { supabase } from '../../lib/supabase';
 
 const PAGE_SIZE = 25;
+const SCROLL_KEY = 'archive_scroll_y';
 
 export async function getServerSideProps(ctx) {
   const { data: sessions, error } = await supabase
     .from('sessions')
-    .select('id, slug, original_issue, sharpened_issue, member_names, member_types, created_at, cards')
+    .select('id, slug, original_issue, sharpened_issue, member_names, member_types, created_at, cards, featured_quote, featured_quote_member')
     .order('created_at', { ascending: false });
 
   if (error) {
     console.error('[archive] Failed to load sessions:', error);
-    return { props: { sessions: [], error: error.message, initialFilters: { q: '', theme: null, member: null } } };
+    return { props: { sessions: [], error: error.message, initialFilters: { q: '', theme: null } } };
   }
 
   const enriched = (sessions || []).map(s => ({
@@ -26,12 +27,13 @@ export async function getServerSideProps(ctx) {
     member_types: s.member_types || [],
     created_at: s.created_at,
     teaser: extractTeaser(s.cards),
+    featured_quote: s.featured_quote || null,
+    featured_quote_member: s.featured_quote_member || null,
   }));
 
   const initialFilters = {
     q: typeof ctx.query.q === 'string' ? ctx.query.q : '',
     theme: typeof ctx.query.theme === 'string' ? ctx.query.theme : null,
-    member: typeof ctx.query.member === 'string' ? ctx.query.member : null,
   };
 
   return { props: { sessions: enriched, error: null, initialFilters } };
@@ -63,6 +65,38 @@ function formatMonthYear(iso) {
 function stripTierSuffix(name) {
   if (!name) return '';
   return name.replace(/\s*[—–-]\s*(Practitioner|Framer|Leader|Thinker|Wildcard)\s*$/i, '').trim();
+}
+
+// Mirror of council.js — keep in sync. Lets us link an archive member
+// chip to the matching council card anchor even when the session stored
+// only a short name ("Machiavelli" → "niccolo_machiavelli").
+const AVATAR_NAME_EXPANSIONS = {
+  'machiavelli': 'niccolo_machiavelli',
+  'keynes': 'john_maynard_keynes',
+  'hayek': 'friedrich_hayek',
+  'friedman': 'milton_friedman',
+  'locke': 'john_locke',
+  'rousseau': 'jean_jacques_rousseau',
+  'rawls': 'john_rawls',
+  'arendt': 'hannah_arendt',
+  'sen': 'amartya_sen',
+  'hirschman': 'albert_hirschman',
+  'fanon': 'frantz_fanon',
+  'prebisch': 'raul_prebisch',
+  'ostrom': 'elinor_ostrom',
+  'bolivar': 'simon_bolivar',
+};
+
+function memberToCouncilSlug(name) {
+  if (!name) return '';
+  const base = stripTierSuffix(name)
+    .replace(/\s*\([^)]*\)/g, '')
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+  return AVATAR_NAME_EXPANSIONS[base] || base;
 }
 
 // Theme → keywords for the tag-chip filter. Each keyword is matched at word-start
@@ -98,7 +132,6 @@ export default function Archive({ sessions, error, initialFilters }) {
   const router = useRouter();
   const [search, setSearch] = useState(initialFilters?.q || '');
   const [activeTheme, setActiveTheme] = useState(initialFilters?.theme || null);
-  const [activeMember, setActiveMember] = useState(initialFilters?.member || null);
   const [page, setPage] = useState(1);
 
   // Sync state → URL (debounced for search to avoid history spam while typing)
@@ -108,11 +141,9 @@ export default function Archive({ sessions, error, initialFilters }) {
       const newQuery = {};
       if (search.trim()) newQuery.q = search.trim();
       if (activeTheme) newQuery.theme = activeTheme;
-      if (activeMember) newQuery.member = activeMember;
 
-      // Only push if different from current URL
       const currentRelevant = {};
-      ['q', 'theme', 'member'].forEach(k => {
+      ['q', 'theme'].forEach(k => {
         if (router.query[k]) currentRelevant[k] = router.query[k];
       });
       if (JSON.stringify(currentRelevant) === JSON.stringify(newQuery)) return;
@@ -121,7 +152,7 @@ export default function Archive({ sessions, error, initialFilters }) {
     }, 200);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, activeTheme, activeMember]);
+  }, [search, activeTheme]);
 
   // Sync URL → state on browser back/forward
   useEffect(() => {
@@ -130,37 +161,56 @@ export default function Archive({ sessions, error, initialFilters }) {
       const params = new URLSearchParams(qs);
       const nextQ = params.get('q') || '';
       const nextTheme = params.get('theme') || null;
-      const nextMember = params.get('member') || null;
       setSearch(prev => prev !== nextQ ? nextQ : prev);
       setActiveTheme(prev => prev !== nextTheme ? nextTheme : prev);
-      setActiveMember(prev => prev !== nextMember ? nextMember : prev);
     };
     router.events.on('routeChangeComplete', handleRouteChange);
     return () => router.events.off('routeChangeComplete', handleRouteChange);
   }, [router.events]);
 
   // Reset pagination when filters change
-  useEffect(() => { setPage(1); }, [search, activeTheme, activeMember]);
+  useEffect(() => { setPage(1); }, [search, activeTheme]);
+
+  // Scroll position memory: when leaving the archive, remember scrollY in
+  // sessionStorage. When mounting (page reload OR returning via back button),
+  // restore it. Skips restoring if a filter was applied via URL — in that case
+  // the user is navigating to a fresh view and should start at the top.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const hasUrlFilter = !!(router.query.q || router.query.theme);
+    if (!hasUrlFilter) {
+      const saved = sessionStorage.getItem(SCROLL_KEY);
+      if (saved) {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => window.scrollTo({ top: parseInt(saved, 10), behavior: 'instant' in document.documentElement.style ? 'instant' : 'auto' }));
+        });
+      }
+    }
+    const save = () => sessionStorage.setItem(SCROLL_KEY, String(window.scrollY));
+    window.addEventListener('beforeunload', save);
+    const handleRouteChangeStart = () => save();
+    router.events.on('routeChangeStart', handleRouteChangeStart);
+    return () => {
+      window.removeEventListener('beforeunload', save);
+      router.events.off('routeChangeStart', handleRouteChangeStart);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
     return sessions.filter(s => {
-      const haystack = [s.original_issue, s.sharpened_issue, s.teaser, ...(s.member_names || [])]
+      const haystack = [s.original_issue, s.sharpened_issue, s.teaser, s.featured_quote, ...(s.member_names || [])]
         .filter(Boolean).join(' ').toLowerCase();
       if (q && !haystack.includes(q)) return false;
       if (activeTheme && !THEME_REGEX[activeTheme]?.test(haystack)) return false;
-      if (activeMember) {
-        const memberMatch = (s.member_names || []).some(n => stripTierSuffix(n).toLowerCase() === activeMember.toLowerCase());
-        if (!memberMatch) return false;
-      }
       return true;
     });
-  }, [sessions, search, activeTheme, activeMember]);
+  }, [sessions, search, activeTheme]);
 
   const paginated = visible.slice(0, page * PAGE_SIZE);
   const hasMore = visible.length > paginated.length;
 
-  // Group paginated entries by month-year for visual chunking
   const grouped = useMemo(() => {
     const groups = [];
     for (const s of paginated) {
@@ -173,7 +223,7 @@ export default function Archive({ sessions, error, initialFilters }) {
     return groups;
   }, [paginated]);
 
-  const hasActiveFilter = !!(search.trim() || activeTheme || activeMember);
+  const hasActiveFilter = !!(search.trim() || activeTheme);
   const countLabel = hasActiveFilter
     ? `${visible.length} of ${sessions.length} issues`
     : `${sessions.length} issues`;
@@ -181,7 +231,6 @@ export default function Archive({ sessions, error, initialFilters }) {
   function onSearchChange(value) {
     setSearch(value);
     if (value && activeTheme) setActiveTheme(null);
-    if (value && activeMember) setActiveMember(null);
   }
 
   function onThemeClick(label) {
@@ -190,20 +239,13 @@ export default function Archive({ sessions, error, initialFilters }) {
     } else {
       setActiveTheme(label);
       setSearch('');
-      setActiveMember(null);
     }
   }
 
   function onMemberClick(name) {
-    if (activeMember === name) {
-      setActiveMember(null);
-    } else {
-      setActiveMember(name);
-      setSearch('');
-      setActiveTheme(null);
-      // Scroll to top so the user sees the filtered list and the active-filter banner
-      if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+    const slug = memberToCouncilSlug(name);
+    if (!slug) return;
+    router.push(`/council#m-${slug}`);
   }
 
   return (
@@ -246,8 +288,8 @@ export default function Archive({ sessions, error, initialFilters }) {
         <p>Every issue the council has considered. Before raising a new question, you may find it has already been addressed here.</p>
       </div>
 
-      <div className="archive-sticky">
-        <div className="archive-sticky-inner">
+      <div className="archive-toolbar">
+        <div className="toolbar-inner">
           <div className="search-row">
             <div className="search-wrap">
               <svg className="search-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -284,21 +326,6 @@ export default function Archive({ sessions, error, initialFilters }) {
         </div>
       </div>
 
-      {activeMember && (
-        <div className="active-filter-row">
-          <span className="active-filter-label">Filtering by member:</span>
-          <button
-            className="active-filter-pill"
-            onClick={() => setActiveMember(null)}
-            aria-label={`Clear filter for ${activeMember}`}
-            type="button"
-          >
-            {activeMember}
-            <span className="pill-x" aria-hidden="true">×</span>
-          </button>
-        </div>
-      )}
-
       {error && (
         <div className="archive-error">Something went wrong loading the archive. Please try again in a moment.</div>
       )}
@@ -311,7 +338,10 @@ export default function Archive({ sessions, error, initialFilters }) {
       )}
 
       {!error && sessions.length > 0 && visible.length === 0 && (
-        <div className="archive-empty"><p>No past issues match your search.</p></div>
+        <div className="archive-empty">
+          <p>No issues match your filter.</p>
+          <p className="archive-empty-sub"><Link href="/">Raise this issue yourself →</Link></p>
+        </div>
       )}
 
       {grouped.length > 0 && (
@@ -323,7 +353,6 @@ export default function Archive({ sessions, error, initialFilters }) {
                 <ArchiveEntry
                   key={session.id}
                   session={session}
-                  activeMember={activeMember}
                   onMemberClick={onMemberClick}
                 />
               ))}
@@ -340,12 +369,20 @@ export default function Archive({ sessions, error, initialFilters }) {
       <footer>The Long Council · Counsel from history&apos;s greatest minds, brought to life by AI</footer>
 
       <style jsx>{`
-        .archive-hd { max-width: 680px; margin: 0 auto 1rem; padding: 0 1.25rem; }
+        .archive-hd { max-width: 680px; margin: 0 auto 1.25rem; padding: 0 1.25rem; }
         .archive-hd h2 { font-family: 'Playfair Display', Georgia, serif; font-size: 28px; font-weight: 600; color: #0f0f0f; margin: 0 0 0.5rem; line-height: 1.2; }
         .archive-hd p { font-family: 'Crimson Pro', Georgia, serif; font-size: 16px; line-height: 1.6; color: #2a2a2a; margin: 0; max-width: 62ch; }
 
-        .archive-sticky { position: sticky; top: 0; z-index: 10; background: rgba(250, 247, 240, 0.96); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-bottom: 0.5px solid #d4cfc8; padding: 0.75rem 1.25rem 0.85rem; margin-bottom: 1.5rem; }
-        .archive-sticky-inner { max-width: 680px; margin: 0 auto; }
+        /* Toolbar: matches body bg exactly, no border, no backdrop-filter. */
+        .archive-toolbar { padding: 0.5rem 1.25rem 0.5rem; margin-bottom: 2.5rem; background: #f8f6f2; }
+        .toolbar-inner { max-width: 680px; margin: 0 auto; }
+        @media (min-width: 641px) {
+          .archive-toolbar { position: sticky; top: 0; z-index: 10; }
+        }
+        @media (max-width: 640px) {
+          /* On mobile, only the search row sticks — themes scroll away with the rest of the header */
+          .search-row { position: sticky; top: 0; z-index: 10; background: #f8f6f2; padding: 0.6rem 0; margin: -0.6rem 0 0.6rem; }
+        }
         .search-row { display: flex; align-items: center; gap: 0.75rem; }
         .search-wrap { position: relative; flex: 1; min-width: 0; }
         .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: #9a9388; pointer-events: none; }
@@ -361,23 +398,17 @@ export default function Archive({ sessions, error, initialFilters }) {
         .tag-chip:hover { border-color: #6b1a1a; color: #6b1a1a; }
         .tag-chip.active { background: #6b1a1a; color: #faf7f0; border-color: #6b1a1a; }
 
-        .active-filter-row { max-width: 680px; margin: -0.5rem auto 1.5rem; padding: 0 1.25rem; display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
-        .active-filter-label { font-family: 'Crimson Pro', Georgia, serif; font-size: 12px; color: #7a7a7a; letter-spacing: 0.06em; }
-        .active-filter-pill { display: inline-flex; align-items: center; gap: 8px; font-family: 'Crimson Pro', Georgia, serif; font-size: 13px; color: #6b1a1a; background: rgba(107, 26, 26, 0.07); border: 0.5px solid rgba(107, 26, 26, 0.35); padding: 5px 12px; border-radius: 999px; cursor: pointer; transition: all 0.15s ease; }
-        .active-filter-pill:hover { background: rgba(107, 26, 26, 0.14); }
-        .pill-x { font-size: 15px; line-height: 1; color: #6b1a1a; }
-
         .archive-error, .archive-empty { max-width: 680px; margin: 3rem auto; padding: 0 1.25rem; text-align: center; font-family: 'Crimson Pro', Georgia, serif; color: #7a7a7a; font-size: 15px; }
         .archive-empty p { margin: 0.25rem 0; }
         .archive-empty-sub :global(a) { color: #6b1a1a; text-decoration: none; }
         .archive-empty-sub :global(a:hover) { text-decoration: underline; }
 
         .archive-list { max-width: 680px; margin: 0 auto; padding: 0 1.25rem 4rem; }
-        .month-group { margin-bottom: 1.5rem; }
-        .month-header { font-family: 'Crimson Pro', Georgia, serif; font-size: 12px; color: #7a7a7a; letter-spacing: 0.18em; text-transform: uppercase; padding: 1.25rem 0 0.6rem; margin-bottom: 0.75rem; border-bottom: 0.5px solid #d4cfc8; }
+        .month-group { margin-bottom: 2.5rem; }
+        .month-header { font-family: 'Crimson Pro', Georgia, serif; font-size: 12px; color: #7a7a7a; letter-spacing: 0.18em; text-transform: uppercase; padding: 1.5rem 0 0.6rem; margin-bottom: 1.5rem; border-bottom: 0.5px solid #d4cfc8; }
         .month-header.first { padding-top: 0; }
 
-        .load-more { display: block; margin: 1.5rem auto 0; font-family: 'Crimson Pro', Georgia, serif; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; padding: 11px 22px; background: transparent; border: 0.5px solid #c4bfb6; color: #2a2a2a; border-radius: 2px; cursor: pointer; transition: all 0.15s ease; }
+        .load-more { display: block; margin: 2rem auto 0; font-family: 'Crimson Pro', Georgia, serif; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; padding: 11px 22px; background: transparent; border: 0.5px solid #c4bfb6; color: #2a2a2a; border-radius: 2px; cursor: pointer; transition: all 0.15s ease; }
         .load-more:hover { border-color: #6b1a1a; color: #6b1a1a; }
 
         @media (max-width: 640px) {
@@ -390,14 +421,13 @@ export default function Archive({ sessions, error, initialFilters }) {
           .tag-grid { gap: 6px; }
           .tag-chip { font-size: 10px; padding: 6px 10px; letter-spacing: 0.08em; }
           .month-header { font-size: 11px; letter-spacing: 0.15em; }
-          .active-filter-pill { font-size: 12px; padding: 4px 10px; }
         }
       `}</style>
     </>
   );
 }
 
-function ArchiveEntry({ session, activeMember, onMemberClick }) {
+function ArchiveEntry({ session, onMemberClick }) {
   return (
     <Link href={`/archive/${session.slug}`} className="entry">
       <div className="entry-meta">{formatDate(session.created_at)}</div>
@@ -405,17 +435,24 @@ function ArchiveEntry({ session, activeMember, onMemberClick }) {
       {session.teaser && (
         <p className="entry-teaser"><span className="verdict-label">Verdict —</span> {session.teaser}</p>
       )}
+      {session.featured_quote && session.featured_quote_member && (
+        <blockquote className="entry-quote">
+          <span className="quote-mark" aria-hidden="true">“</span>
+          {session.featured_quote}
+          <span className="quote-mark" aria-hidden="true">”</span>
+          <cite className="quote-cite">— {stripTierSuffix(session.featured_quote_member)}</cite>
+        </blockquote>
+      )}
       {session.member_names.length > 0 && (
         <div className="entry-members">
           {session.member_names.map((name, i) => {
             const clean = stripTierSuffix(name);
-            const isActive = activeMember === clean;
             return (
               <button
                 key={i}
-                className={`member-chip${isActive ? ' active' : ''}`}
+                className="member-chip"
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); onMemberClick(clean); }}
-                aria-pressed={isActive}
+                aria-label={`View ${clean} on the council page`}
                 type="button"
               >
                 {clean}
@@ -426,22 +463,25 @@ function ArchiveEntry({ session, activeMember, onMemberClick }) {
       )}
 
       <style jsx>{`
-        .entry { display: block; text-decoration: none; color: inherit; padding: 0 0 2.25rem; margin-bottom: 2.5rem; border-bottom: 0.5px solid rgba(0, 0, 0, 0.08); transition: color 0.15s ease; }
-        .entry:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0.5rem; }
-        .entry:hover .entry-title { color: #6b1a1a; }
-        .entry-meta { font-family: 'Crimson Pro', Georgia, serif; font-size: 11px; color: #4a4a4a; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 4px; }
-        .entry-title { font-family: 'Playfair Display', Georgia, serif; font-size: 19px; color: #0f0f0f; font-weight: 600; line-height: 1.35; margin: 0 0 6px 0; max-width: 62ch; }
-        .entry-teaser { font-family: 'Crimson Pro', Georgia, serif; font-size: 16px; color: #1a1a1a; line-height: 1.55; margin: 0 0 10px; }
+        .entry { display: block; text-decoration: none; color: inherit; padding: 0.25rem 0 0; margin-bottom: 4rem; transition: color 0.15s ease; }
+        .entry:last-child { margin-bottom: 0.5rem; }
+        .entry-meta { font-family: 'Crimson Pro', Georgia, serif; font-size: 11px; color: #4a4a4a; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px; }
+        .entry-title { font-family: 'Playfair Display', Georgia, serif; font-size: 20px; color: #0f0f0f; font-weight: 600; line-height: 1.35; margin: 0 0 10px 0; max-width: 62ch; text-decoration: underline; text-decoration-color: transparent; text-decoration-thickness: 1.5px; text-underline-offset: 4px; transition: text-decoration-color 0.18s ease, color 0.18s ease; }
+        .entry:hover .entry-title { color: #6b1a1a; text-decoration-color: #6b1a1a; }
+        .entry-teaser { font-family: 'Crimson Pro', Georgia, serif; font-size: 16px; color: #1a1a1a; line-height: 1.55; margin: 0 0 12px; }
         .verdict-label { font-weight: 600; color: #6b1a1a; letter-spacing: 0.12em; text-transform: uppercase; font-size: 13px; margin-right: 4px; }
+        .entry-quote { font-family: 'Playfair Display', Georgia, serif; font-style: italic; font-size: 16px; color: #2a2a2a; line-height: 1.45; margin: 0 0 14px; padding: 4px 0 4px 14px; border-left: 2px solid #6b1a1a; max-width: 60ch; }
+        .quote-mark { color: #6b1a1a; font-size: 18px; font-style: normal; padding: 0 2px; }
+        .quote-cite { display: block; font-style: normal; font-family: 'Crimson Pro', Georgia, serif; font-size: 12px; color: #7a7a7a; margin-top: 6px; letter-spacing: 0.04em; }
         .entry-members { display: flex; flex-wrap: wrap; gap: 6px; }
         .member-chip { font-family: 'Crimson Pro', Georgia, serif; font-size: 11px; padding: 2px 8px; border-radius: 2px; white-space: nowrap; background: #f5f1e8; color: #4a4a4a; border: 0.5px solid #d4cfc8; cursor: pointer; transition: all 0.15s ease; }
-        .entry:hover .member-chip { background: #f0e8d8; border-color: #b8a888; color: #2a2a2a; }
         .member-chip:hover { background: rgba(107, 26, 26, 0.08); border-color: #6b1a1a; color: #6b1a1a; }
-        .member-chip.active { background: #6b1a1a; color: #faf7f0; border-color: #6b1a1a; }
 
         @media (max-width: 640px) {
-          .entry-title { font-size: 17px; }
+          .entry { margin-bottom: 3rem; }
+          .entry-title { font-size: 18px; }
           .entry-teaser { font-size: 15px; }
+          .entry-quote { font-size: 15px; }
           .entry-meta { font-size: 11px; }
           .verdict-label { font-size: 12px; letter-spacing: 0.1em; }
           .member-chip { font-size: 10.5px; padding: 2px 7px; }

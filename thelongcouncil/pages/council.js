@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { supabase } from '../lib/supabase';
@@ -76,8 +76,9 @@ function MemberAvatar({ member }) {
 }
 
 function MemberCard({ member: m, debates }) {
+  const anchorId = `m-${slugify(m.name)}`;
   return (
-    <div className="card">
+    <div className="card" id={anchorId}>
       <div className="card-top">
         <MemberAvatar member={m} />
         <div className="card-meta">
@@ -116,8 +117,9 @@ function MemberCard({ member: m, debates }) {
       )}
 
       <style jsx>{`
-        .card { background: #fdfbf6; border: 0.5px solid #d4cfc8; border-top: 2px solid #6b1a1a; border-radius: 2px; padding: 22px; display: flex; flex-direction: column; gap: 14px; transition: background 0.2s ease, border-color 0.2s ease; }
+        .card { background: #fdfbf6; border: 0.5px solid #d4cfc8; border-top: 2px solid #6b1a1a; border-radius: 2px; padding: 22px; display: flex; flex-direction: column; gap: 14px; transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.4s ease; scroll-margin-top: 24px; }
         .card:hover { background: #f5f1e8; border-color: #b8ad9c; border-top-color: #6b1a1a; }
+        .card.deep-link-highlight { box-shadow: 0 0 0 2px rgba(107, 26, 26, 0.5), 0 0 24px rgba(107, 26, 26, 0.15); background: #f5f1e8; }
         .card-top { display: flex; gap: 16px; align-items: flex-start; }
         .card-meta { flex: 1; display: flex; flex-direction: column; gap: 4px; padding-top: 2px; }
         .badge { display: inline-block; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #7a7a7a; background: #ede9e2; padding: 2px 8px; border-radius: 2px; width: fit-content; }
@@ -331,6 +333,31 @@ const COUNCIL_MEMBERS = [
 export default function Council({ debateCounts = {} }) {
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
+
+  // Deep-link support: when arriving at /council#m-<slug> (e.g. from an
+  // archive member chip), reset filters so the target is visible, scroll
+  // to that member's card and briefly highlight it.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const scrollToHash = () => {
+      const hash = window.location.hash;
+      if (!hash || !hash.startsWith('#m-')) return;
+      setFilter('all');
+      setSearch('');
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const el = document.getElementById(hash.slice(1));
+          if (!el) return;
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          el.classList.add('deep-link-highlight');
+          setTimeout(() => el.classList.remove('deep-link-highlight'), 2200);
+        });
+      });
+    };
+    scrollToHash();
+    window.addEventListener('hashchange', scrollToHash);
+    return () => window.removeEventListener('hashchange', scrollToHash);
+  }, []);
 
   const counts = useMemo(() => ({
     all: COUNCIL_MEMBERS.length,
