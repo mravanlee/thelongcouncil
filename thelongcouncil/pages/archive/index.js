@@ -57,11 +57,6 @@ function formatDate(iso) {
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
-function formatMonthYear(iso) {
-  const d = new Date(iso);
-  return d.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
-}
-
 function stripTierSuffix(name) {
   if (!name) return '';
   return name.replace(/\s*[—–-]\s*(Practitioner|Framer|Leader|Thinker|Wildcard)\s*$/i, '').trim();
@@ -211,18 +206,6 @@ export default function Archive({ sessions, error, initialFilters }) {
   const paginated = visible.slice(0, page * PAGE_SIZE);
   const hasMore = visible.length > paginated.length;
 
-  const grouped = useMemo(() => {
-    const groups = [];
-    for (const s of paginated) {
-      const key = formatMonthYear(s.created_at);
-      if (!groups.length || groups[groups.length - 1].key !== key) {
-        groups.push({ key, sessions: [] });
-      }
-      groups[groups.length - 1].sessions.push(s);
-    }
-    return groups;
-  }, [paginated]);
-
   const hasActiveFilter = !!(search.trim() || activeTheme);
   const countLabel = hasActiveFilter
     ? `${visible.length} of ${sessions.length} issues`
@@ -341,19 +324,14 @@ export default function Archive({ sessions, error, initialFilters }) {
         </div>
       )}
 
-      {grouped.length > 0 && (
+      {paginated.length > 0 && (
         <div className="archive-list">
-          {grouped.map((group, gi) => (
-            <div key={group.key} className="month-group">
-              <div className={`month-header${gi === 0 ? ' first' : ''}`}>{group.key}</div>
-              {group.sessions.map((session) => (
-                <ArchiveEntry
-                  key={session.id}
-                  session={session}
-                  onMemberClick={onMemberClick}
-                />
-              ))}
-            </div>
+          {paginated.map((session) => (
+            <ArchiveEntry
+              key={session.id}
+              session={session}
+              onMemberClick={onMemberClick}
+            />
           ))}
           {hasMore && (
             <button className="load-more" onClick={() => setPage(p => p + 1)} type="button">
@@ -399,9 +377,6 @@ export default function Archive({ sessions, error, initialFilters }) {
         .archive-empty-sub :global(a:hover) { text-decoration: underline; }
 
         .archive-list { max-width: 680px; margin: 0 auto; padding: 0 1.25rem 4rem; }
-        .month-group { margin-bottom: 2.5rem; }
-        .month-header { font-family: 'Crimson Pro', Georgia, serif; font-size: 12px; color: #7a7a7a; letter-spacing: 0.18em; text-transform: uppercase; padding: 1.5rem 0 0.6rem; margin-bottom: 1.5rem; border-bottom: 0.5px solid #d4cfc8; }
-        .month-header.first { padding-top: 0; }
 
         .load-more { display: block; margin: 2rem auto 0; font-family: 'Crimson Pro', Georgia, serif; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; padding: 11px 22px; background: transparent; border: 0.5px solid #c4bfb6; color: #2a2a2a; border-radius: 2px; cursor: pointer; transition: all 0.15s ease; }
         .load-more:hover { border-color: #6b1a1a; color: #6b1a1a; }
@@ -413,7 +388,6 @@ export default function Archive({ sessions, error, initialFilters }) {
           .archive-count { text-align: right; }
           .tag-block { gap: 6px; }
           .tag-chip { font-size: 10px; padding: 6px 10px; letter-spacing: 0.08em; }
-          .month-header { font-size: 11px; letter-spacing: 0.15em; }
         }
       `}</style>
     </>
