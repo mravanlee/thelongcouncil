@@ -450,7 +450,7 @@ function ArchiveEntry({ session, onMemberClick }) {
       )}
 
       <style jsx>{`
-        .archive-entry { display: block; margin-bottom: 8rem; }
+        .archive-entry { display: block; margin-bottom: 4rem; }
         .archive-entry:last-child { margin-bottom: 1rem; }
         .entry-link { display: block; text-decoration: none; color: inherit; padding: 0.25rem 0 0; margin-bottom: 14px; transition: color 0.15s ease; }
         .entry-meta { font-family: 'Crimson Pro', Georgia, serif; font-size: 11px; color: #4a4a4a; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px; }
@@ -463,7 +463,7 @@ function ArchiveEntry({ session, onMemberClick }) {
         .member-chip:hover { background: rgba(107, 26, 26, 0.08); border-color: #6b1a1a; color: #6b1a1a; }
 
         @media (max-width: 640px) {
-          .archive-entry { margin-bottom: 5.5rem; }
+          .archive-entry { margin-bottom: 2.5rem; }
           .entry-title { font-size: 18px; }
           .entry-teaser { font-size: 15px; }
           .entry-meta { font-size: 11px; }
