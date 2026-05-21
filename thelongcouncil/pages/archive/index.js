@@ -405,8 +405,8 @@ function ArchiveEntry({ session, onMemberClick }) {
       )}
 
       <style jsx>{`
-        .archive-entry { display: block; margin-bottom: 2.5rem; }
-        .archive-entry:last-child { margin-bottom: 1rem; }
+        .archive-entry { display: block; padding-bottom: 2rem; margin-bottom: 3rem; border-bottom: 0.5px solid rgba(0, 0, 0, 0.08); }
+        .archive-entry:last-child { padding-bottom: 0; margin-bottom: 1rem; border-bottom: none; }
         .entry-link { display: block; text-decoration: none; color: inherit; padding: 0.25rem 0 0; margin-bottom: 14px; transition: color 0.15s ease; }
         .entry-meta { font-family: 'Crimson Pro', Georgia, serif; font-size: 11px; color: #4a4a4a; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px; }
         .entry-title { font-family: 'Playfair Display', Georgia, serif; font-size: 20px; color: #0f0f0f; font-weight: 600; line-height: 1.35; margin: 0 0 10px 0; max-width: 62ch; text-decoration: underline; text-decoration-color: transparent; text-decoration-thickness: 1.5px; text-underline-offset: 4px; transition: text-decoration-color 0.18s ease, color 0.18s ease; }
@@ -418,7 +418,7 @@ function ArchiveEntry({ session, onMemberClick }) {
         .member-chip:hover { background: rgba(107, 26, 26, 0.08); border-color: #6b1a1a; color: #6b1a1a; }
 
         @media (max-width: 640px) {
-          .archive-entry { margin-bottom: 1.75rem; }
+          .archive-entry { padding-bottom: 1.25rem; margin-bottom: 2rem; }
           .entry-title { font-size: 18px; }
           .entry-teaser { font-size: 15px; }
           .entry-meta { font-size: 11px; }
