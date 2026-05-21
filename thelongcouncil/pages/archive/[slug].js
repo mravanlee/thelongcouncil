@@ -203,6 +203,7 @@ export default function ArchiveDetail({ session, memberQuery }) {
   const { cards: deliberationCards, convergence } = parseDeliberation(deliberationText);
   const briefText = cards.brief || '';
   const assemblyText = cards.assembly || '';
+  const actions = Array.isArray(cards.actions) ? cards.actions.filter(Boolean) : [];
 
   const memberCount = session.member_names ? session.member_names.length : 0;
   const memberSummary = session.member_names && session.member_names.length > 0
@@ -272,6 +273,17 @@ export default function ArchiveDetail({ session, memberQuery }) {
           </div>
         )}
 
+        {actions.length > 0 && (
+          <div className="actions-block">
+            <div className="actions-label">What to do now</div>
+            <ol className="actions-list">
+              {actions.map((action, i) => (
+                <li key={i}>{action}</li>
+              ))}
+            </ol>
+          </div>
+        )}
+
         <ShareButton url={baseShareUrl} question={session.original_issue || 'The Long Council'} />
 
         {deliberationText && (
@@ -320,6 +332,14 @@ export default function ArchiveDetail({ session, memberQuery }) {
         .verdict-text :global(p:last-child) { margin-bottom: 0; }
         .verdict-reasoning :global(p) { font-family: 'Inter', sans-serif; font-size: 15px; color: #2a2a2a; line-height: 1.7; margin: 0 0 12px; }
         .verdict-reasoning :global(p:last-child) { margin-bottom: 0; }
+
+        .actions-block { background: #efece4; border-left: 3px solid #6b1a1a; padding: 1.25rem 1.5rem 1.4rem; border-radius: 0 2px 2px 0; margin-bottom: 2rem; }
+        .actions-label { font-family: 'Inter', sans-serif; font-size: 11px; color: #6b1a1a; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 0.85rem; }
+        .actions-list { list-style: none; padding: 0; margin: 0; counter-reset: act; }
+        .actions-list li { font-family: 'Inter', sans-serif; font-size: 15px; color: #1a1a1a; line-height: 1.55; padding-left: 32px; position: relative; margin-bottom: 0.7rem; }
+        .actions-list li:last-child { margin-bottom: 0; }
+        .actions-list li::before { counter-increment: act; content: counter(act); position: absolute; left: 0; top: 1px; width: 22px; height: 22px; background: #6b1a1a; color: #faf7f0; border-radius: 50%; font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600; line-height: 22px; text-align: center; }
+
         .debate-section { margin: 0 0 2.5rem; }
         .debate-label { font-family: 'Inter', sans-serif; font-size: 11px; color: #7a7a7a; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 0.5px solid #d4cfc8; }
         .convergence-block { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 0.5px solid #d4cfc8; }

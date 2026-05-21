@@ -249,10 +249,10 @@ async function precreateSession(originalIssue) {
   }
 }
 
-async function finalizeSession({ slug, sharpenedIssue, assemblyOutput, deliberationOutput, verdictOutput, briefOutput, memberNames, memberTypes, featuredQuote, featuredQuoteMember }) {
+async function finalizeSession({ slug, sharpenedIssue, assemblyOutput, deliberationOutput, verdictOutput, briefOutput, memberNames, memberTypes, featuredQuote, featuredQuoteMember, actions }) {
   try {
     const supabase = getServiceSupabase();
-    const cards = { assembly: assemblyOutput, deliberation: deliberationOutput, verdict: verdictOutput, brief: briefOutput };
+    const cards = { assembly: assemblyOutput, deliberation: deliberationOutput, verdict: verdictOutput, brief: briefOutput, actions: actions || [] };
     const { data, error } = await supabase
       .from('sessions')
       .update({
@@ -275,10 +275,10 @@ async function finalizeSession({ slug, sharpenedIssue, assemblyOutput, deliberat
   }
 }
 
-async function saveSessionToDatabase({ originalIssue, sharpenedIssue, assemblyOutput, deliberationOutput, verdictOutput, briefOutput, memberNames, memberTypes, featuredQuote, featuredQuoteMember }) {
+async function saveSessionToDatabase({ originalIssue, sharpenedIssue, assemblyOutput, deliberationOutput, verdictOutput, briefOutput, memberNames, memberTypes, featuredQuote, featuredQuoteMember, actions }) {
   try {
     const supabase = getServiceSupabase();
-    const cards = { assembly: assemblyOutput, deliberation: deliberationOutput, verdict: verdictOutput, brief: briefOutput };
+    const cards = { assembly: assemblyOutput, deliberation: deliberationOutput, verdict: verdictOutput, brief: briefOutput, actions: actions || [] };
     let slug = generateSlug(sharpenedIssue || originalIssue);
     let attempt = 0;
     let inserted = null;
@@ -388,6 +388,54 @@ MEMBER: Member Name`;
     console.error('[pipeline] Quote extraction failed:', err.message);
     return null;
   }
+}
+
+// ── Action extraction (Layer-1 "What to do now") ────────────────────────
+// Distils 2-3 imperative next-step actions from the deliberation + verdict.
+// Each action is required to derive from a specific member's argument
+// (the D-rule) so we don't invent policy mechanisms no one proposed.
+async function generateActions(originalIssue, deliberationOutput, verdictOutput) {
+  try {
+    const userMessage = `ISSUE:\n${originalIssue}\n\nDELIBERATION (Layer 2 member cards):\n${deliberationOutput}\n\nVERDICT:\n${verdictOutput}`;
+    const output = await callClaude(PROMPT_ACTIONS_SYSTEM, userMessage, 700, 0.6);
+    return output.trim();
+  } catch (err) {
+    console.error('[pipeline] Action extraction failed:', err.message);
+    return null;
+  }
+}
+
+function parseActions(actionsOutput) {
+  if (!actionsOutput) return [];
+  const actions = [];
+  for (const line of actionsOutput.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    const match = trimmed.match(/^\d+\.\s*(.+)$/);
+    if (match) actions.push(match[1].trim());
+  }
+  return actions;
+}
+
+const VAGUE_ACTION_VERBS = /\b(consider|explore|examine|review|assess|evaluate|investigate|study|look into|think about|reflect on|contemplate)\b/i;
+const SHOULD_PREFIX = /^(should\b|it should\b|the\s+\w+\s+should\b)/i;
+
+function validateActions(actions) {
+  if (!actions || actions.length === 0) return { ok: false, reason: 'no_actions' };
+  if (actions.length > 3) return { ok: false, reason: 'too_many', count: actions.length };
+  const violations = [];
+  for (const action of actions) {
+    const words = action.split(/\s+/).length;
+    if (words > 30) violations.push({ action: action.slice(0, 60), reason: 'too_long', words });
+    if (VAGUE_ACTION_VERBS.test(action)) violations.push({ action: action.slice(0, 60), reason: 'vague_verb' });
+    if (SHOULD_PREFIX.test(action)) violations.push({ action: action.slice(0, 60), reason: 'should_framing' });
+    // Concrete anchor check: at least one of [Capitalised proper noun > 3 chars] OR [digit] OR [% / year-like]
+    const hasProperNoun = /\b[A-Z][a-zA-Z]{2,}/.test(action);
+    const hasDigit = /\d/.test(action);
+    if (!hasProperNoun && !hasDigit) violations.push({ action: action.slice(0, 60), reason: 'no_concrete_anchor' });
+  }
+  if (violations.length > 0) return { ok: false, violations };
+  return { ok: true };
 }
 
 // ── Prompts ─────────────────────────────────────────────────────────────
@@ -1213,6 +1261,81 @@ Before emitting, check:
 - Does section 2 stay within 100–130 words total?
 - Is the total brief within 460–630 words?`;
 
+const PROMPT_ACTIONS_SYSTEM = `You distil 2-3 concrete next-step actions from a council deliberation. These actions appear on the detail page as a "What to do now" section, after the verdict and reasoning.
+
+You read the Layer 2 member cards and the verdict. You extract 2-3 actions that the council's reasoning logically points toward.
+
+════════════════════════════════════════════════════════════════
+SOURCING RULE — NON-NEGOTIABLE
+════════════════════════════════════════════════════════════════
+
+Each action MUST derive from a specific position taken by a member in the deliberation. Before writing an action, identify the sentence in a member's card that implies it. If no member said anything that implies this action, do not write it.
+
+You may NOT invent:
+- Percentages, numbers, or budget figures no member named (no "2% defence spending" unless a member said it)
+- Specific institutions, treaties, consortia, or laws no member referenced
+- Timelines ("within 18 months", "by 2027") no member proposed
+- Policy mechanisms (taxes, agencies, levies) no one in the deliberation proposed
+
+You MAY consolidate. If two members converge on the same direction, the action represents both.
+
+════════════════════════════════════════════════════════════════
+WRITING STYLE
+════════════════════════════════════════════════════════════════
+
+EVERY ACTION MUST:
+1. Begin with an imperative verb. "Pass", "Restate", "Maintain", "Reject", "Increase", "Define", "Anchor", "Replace", "Codify", "Publish", "Stop".
+2. Name a concrete entity — a country, institution, sector, named decision, specific policy, identifiable actor. Vague subjects are not actions.
+3. Be ≤ 25 words.
+4. State WHAT — not whether to consider doing it.
+
+FORBIDDEN OPENINGS — these are pre-actions, not actions:
+- "Consider..." / "Explore..." / "Examine..." / "Review..." / "Assess..."
+- "Evaluate whether..."
+- "Should..." — the verdict already established direction. Actions describe what.
+- "It is important to..."
+
+CONCRETE EXAMPLES OF GOOD ACTIONS (style to emulate):
+
+- "Restate publicly which trade-offs the government has chosen and which costs the country is being asked to carry."
+- "Define in legislation the exact conditions under which the field may restart. Three triggers only, each requiring Tweede Kamer approval."
+- "Reject any policy proposal that treats Atlantic integration as optional or replaceable."
+- "Anchor the next political reckoning to the May 2027 local elections, not to weekly polling."
+- "Maintain wells at minimum-readiness cost. Publish annual readiness audits."
+
+NOTICE: each names a specific entity (Tweede Kamer, May 2027, the wells), uses imperative verbs, ≤ 25 words.
+
+EXAMPLES OF BAD ACTIONS (do not emit anything like these):
+
+- "Consider strengthening European defence." — vague verb.
+- "Lock 2% defence spending into law in every member state." — no member named 2%.
+- "Should explore deeper EU integration." — should-framing + vague verb.
+- "Build long-term industrial capability for strategic autonomy." — no concrete entity, abstract noun stack.
+
+════════════════════════════════════════════════════════════════
+OUTPUT FORMAT — exactly this
+════════════════════════════════════════════════════════════════
+
+Emit exactly 2-3 actions, one per line, numbered. No header, no preamble, no attribution, no commentary.
+
+1. [Verb-first action sentence, ≤ 25 words.]
+2. [Verb-first action sentence, ≤ 25 words.]
+3. [Verb-first action sentence, ≤ 25 words. — optional]
+
+════════════════════════════════════════════════════════════════
+QUALITY CHECKS — apply before emitting
+════════════════════════════════════════════════════════════════
+
+For each action:
+1. Does it start with an imperative verb? If no, rewrite.
+2. Does it contain "consider", "explore", "examine", "review", "assess", "evaluate", "investigate"? If yes, rewrite — these are not actions.
+3. Does it begin with "should" or "the X should"? If yes, rewrite — the verdict already established direction.
+4. Does it name a specific entity (country, institution, sector, named decision, identifiable actor)? If no, rewrite.
+5. Is it ≤ 25 words? If no, split or shorten.
+6. Can I point at a sentence in the deliberation that implies this? If no, drop the action — do not invent.
+
+If, after applying these checks, you cannot produce 2 actions that meet every rule, emit only 1 action. Better one defensible action than three invented ones.`;
+
 // ── Main handler ────────────────────────────────────────────────────────
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end('Method not allowed');
@@ -1328,6 +1451,35 @@ Your previous attempt opened with ${p1Check.firstMember}'s card, but it referenc
     );
     send('verdict', { data: verdictOutput });
 
+    // Step 3b — extract concrete next-step actions from the deliberation.
+    // Best-effort: the actions enrich the detail page but are not blocking
+    // for save. If extraction or validation fails twice, we save with
+    // actions=[] and the UI hides the block.
+    send('progress', { step: 3, message: 'Distilling next steps...' });
+    let actionsRaw = await generateActions(question, deliberationOutput, verdictOutput);
+    let actions = parseActions(actionsRaw);
+    let actionsCheck = validateActions(actions);
+    if (!actionsCheck.ok) {
+      console.warn('[pipeline] ACTIONS validation failed on first attempt:', actionsCheck);
+      const constraintNote = (actionsCheck.violations || []).map(v => `- "${v.action}" (${v.reason})`).join('\n');
+      const retryUser = `ISSUE:\n${question}\n\nDELIBERATION (Layer 2 member cards):\n${deliberationOutput}\n\nVERDICT:\n${verdictOutput}\n\nREGENERATION CONSTRAINT:\nYour previous attempt produced actions that failed validation:\n${constraintNote}\n\nRewrite. Every action must (a) begin with an imperative verb, (b) name a concrete entity, (c) be ≤ 25 words, (d) contain no "consider/explore/examine/review/assess/evaluate", (e) not begin with "should". If you cannot produce 2 defensible actions, emit only 1.`;
+      const retryRaw = await callClaude(PROMPT_ACTIONS_SYSTEM, retryUser, 700, 0.4);
+      const retryActions = parseActions(retryRaw);
+      const recheck = validateActions(retryActions);
+      if (recheck.ok) {
+        console.log('[pipeline] Actions retry SUCCEEDED');
+        actions = retryActions;
+        actionsRaw = retryRaw;
+        actionsCheck = recheck;
+      } else {
+        console.warn('[pipeline] Actions retry STILL invalid — saving with empty actions. Violations:', recheck);
+        actions = [];
+      }
+    } else {
+      console.log('[pipeline] Actions check PASSED.', actions.length, 'actions');
+    }
+    send('actions', { data: actions });
+
     const todayForBrief = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 
     send('progress', { step: 4, message: 'Writing the policy brief...' });
@@ -1361,6 +1513,7 @@ Your previous attempt opened with ${p1Check.firstMember}'s card, but it referenc
         memberTypes: metadata.types,
         featuredQuote: featured?.quote || null,
         featuredQuoteMember: featured?.member || null,
+        actions,
       });
     } else {
       saved = await saveSessionToDatabase({
@@ -1374,6 +1527,7 @@ Your previous attempt opened with ${p1Check.firstMember}'s card, but it referenc
         memberTypes: metadata.types,
         featuredQuote: featured?.quote || null,
         featuredQuoteMember: featured?.member || null,
+        actions,
       });
     }
 
