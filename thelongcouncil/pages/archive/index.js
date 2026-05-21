@@ -322,7 +322,7 @@ export default function Archive({ sessions, error, initialFilters }) {
         </div>
       )}
 
-      <footer>The Long Council · Counsel from history&apos;s greatest minds, brought to life by AI</footer>
+      <footer>The Long Council · Counsel from history&apos;s greatest minds</footer>
 
       <style jsx>{`
         .archive-hd { max-width: 680px; margin: 0 auto 1.25rem; padding: 0 1.25rem; }

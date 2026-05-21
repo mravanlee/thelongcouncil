@@ -1003,7 +1003,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
         </div>
       )}
 
-      <footer>The Long Council · Counsel from history&apos;s greatest minds, brought to life by AI</footer>
+      <footer>The Long Council · Counsel from history&apos;s greatest minds</footer>
 
       <style jsx global>{`
         .issue-input {

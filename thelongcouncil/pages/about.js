@@ -59,7 +59,7 @@ export default function About() {
         </div>
       </article>
       <footer>
-        The Long Council · Counsel from history's greatest minds, brought to life by AI
+        The Long Council · Counsel from history's greatest minds
       </footer>
     </>
   );

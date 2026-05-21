@@ -300,7 +300,7 @@ export default function ArchiveDetail({ session, memberQuery }) {
         </div>
       </div>
 
-      <footer>The Long Council · Counsel from history&apos;s greatest minds, brought to life by AI</footer>
+      <footer>The Long Council · Counsel from history&apos;s greatest minds</footer>
 
       <style jsx>{`
         .detail-wrap { max-width: 680px; margin: 0 auto; padding: 0 1.25rem; }

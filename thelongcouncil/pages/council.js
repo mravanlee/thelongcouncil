@@ -410,7 +410,7 @@ export default function Council({ debateCounts = {} }) {
 
       {visible.length === 0 && <div className="council-empty">No members match your search.</div>}
 
-      <footer>The Long Council · Counsel from history&apos;s greatest minds, brought to life by AI</footer>
+      <footer>The Long Council · Counsel from history&apos;s greatest minds</footer>
 
       <style jsx>{`
         .council-hd { max-width: 680px; margin: 2.5rem auto 0; padding: 0 1.25rem; }
