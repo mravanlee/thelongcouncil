@@ -646,6 +646,8 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
               } else if (currentEvent === 'verdict') {
                 result.verdict = data.data;
                 setLoadingStep(4);
+              } else if (currentEvent === 'actions') {
+                result.actions = Array.isArray(data.data) ? data.data : [];
               } else if (currentEvent === 'brief') {
                 result.brief = data.data;
               } else if (currentEvent === 'complete') {
@@ -674,6 +676,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
         brief: result.brief || '',
         assembly: result.assembly || '',
         deliberation: result.deliberation || '',
+        actions: Array.isArray(result.actions) ? result.actions : [],
         memberNames,
       });
 
@@ -964,6 +967,17 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
                 </div>
               )}
             </div>
+
+            {sessionData.actions && sessionData.actions.length > 0 && (
+              <div className="actions-block">
+                <div className="actions-label">What to do now</div>
+                <ol className="actions-list">
+                  {sessionData.actions.map((action, i) => (
+                    <li key={i}>{action}</li>
+                  ))}
+                </ol>
+              </div>
+            )}
 
             {sessionSlug && (
               <ShareButton

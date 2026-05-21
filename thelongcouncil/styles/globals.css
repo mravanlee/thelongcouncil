@@ -489,6 +489,57 @@ a:link, a:visited {
 }
 .conc-summary .md-p:last-child { margin-bottom: 0; }
 
+.actions-block {
+  background: #f3eeea;
+  border: 0.5px solid #d4cdbf;
+  border-left: 3px solid #6b1a1a;
+  border-radius: 2px;
+  padding: 22px 28px 24px;
+  margin-top: 18px;
+}
+.actions-label {
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #6b1a1a;
+  margin-bottom: 14px;
+  font-weight: 500;
+}
+.actions-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  counter-reset: act;
+}
+.actions-list li {
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  color: #1a1a1a;
+  line-height: 1.55;
+  padding-left: 34px;
+  position: relative;
+  margin-bottom: 12px;
+}
+.actions-list li:last-child { margin-bottom: 0; }
+.actions-list li::before {
+  counter-increment: act;
+  content: counter(act);
+  position: absolute;
+  left: 0;
+  top: 1px;
+  width: 24px;
+  height: 24px;
+  background: #6b1a1a;
+  color: #faf7f0;
+  border-radius: 50%;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 24px;
+  text-align: center;
+}
+
 .brief-toggle-row { opacity: 0; transition: opacity 0.5s; margin-top: 8px; }
 .brief-toggle-row.visible { opacity: 1; }
 .brief-toggle-btn {
