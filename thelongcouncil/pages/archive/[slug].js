@@ -235,7 +235,7 @@ export default function ArchiveDetail({ session, memberQuery }) {
         <Link href="/council" className="nav-link">The Council</Link>
         <Link href="/archive" className="nav-link nav-active">The Archive</Link>
         <Link href="/about" className="nav-link">About</Link>
-        <Link href="/" className="nav-raise">Raise an issue</Link>
+        <Link href="/" className="nav-raise">Ask a question</Link>
       </nav>
 
       <div className="detail-wrap">
@@ -296,7 +296,7 @@ export default function ArchiveDetail({ session, memberQuery }) {
 
         <div className="detail-nudge">
           <div>Does this not quite answer your question?</div>
-          <Link href="/" className="nudge-link">Raise your own issue →</Link>
+          <Link href="/" className="nudge-link">Ask your own question →</Link>
         </div>
       </div>
 

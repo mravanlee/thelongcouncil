@@ -768,7 +768,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
         <Link href="/council" className="nav-link">The Council</Link>
         <Link href="/archive" className="nav-link">The Archive</Link>
         <Link href="/about" className="nav-link">About</Link>
-        <a className="nav-raise nav-raise-hide-mobile" onClick={reset}>Raise an issue</a>
+        <a className="nav-raise nav-raise-hide-mobile" onClick={reset}>Ask a question</a>
       </nav>
 
       {screen === 'landing' && (
@@ -791,7 +791,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(); } }}
               />
               <button className="submit-btn" onClick={handleSubmit} disabled={!question.trim() || sharpenerLoading}>
-                {sharpenerLoading ? 'Considering...' : 'Raise this issue →'}
+                {sharpenerLoading ? 'Considering...' : 'Ask the council →'}
               </button>
               <p className="landing-hint">Vague questions get returned for sharpening. Specific ones get debated.</p>
             </div>
@@ -998,7 +998,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
           </div>
 
           <div className="new-session-row">
-            <button className="new-session-btn" onClick={reset}>Raise a new issue</button>
+            <button className="new-session-btn" onClick={reset}>Ask a new question</button>
           </div>
         </div>
       )}

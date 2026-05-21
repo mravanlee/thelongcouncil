@@ -31,7 +31,7 @@ export default function About() {
         <Link href="/council" className="nav-link">The Council</Link>
         <Link href="/archive" className="nav-link">The Archive</Link>
         <Link href="/about" className="nav-link nav-active">About</Link>
-        <Link href="/" className="nav-raise">Raise an issue</Link>
+        <Link href="/" className="nav-raise">Ask a question</Link>
       </nav>
       <article className="about">
         <h1 className="about-title">About The Long Council</h1>

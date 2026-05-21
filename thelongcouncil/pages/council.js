@@ -390,7 +390,7 @@ export default function Council({ debateCounts = {} }) {
         <Link href="/council" className="nav-link nav-active">The Council</Link>
         <Link href="/archive" className="nav-link">The Archive</Link>
         <Link href="/about" className="nav-link">About</Link>
-        <Link href="/" className="nav-raise">Raise an issue</Link>
+        <Link href="/" className="nav-raise">Ask a question</Link>
       </nav>
 
       <div className="council-hd">

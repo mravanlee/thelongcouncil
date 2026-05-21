@@ -244,7 +244,7 @@ export default function Archive({ sessions, error, initialFilters }) {
         <Link href="/council" className="nav-link">The Council</Link>
         <Link href="/archive" className="nav-link nav-active">The Archive</Link>
         <Link href="/about" className="nav-link">About</Link>
-        <Link href="/" className="nav-raise">Raise an issue</Link>
+        <Link href="/" className="nav-raise">Ask a question</Link>
       </nav>
 
       <div className="archive-hd">
@@ -294,14 +294,14 @@ export default function Archive({ sessions, error, initialFilters }) {
       {!error && sessions.length === 0 && (
         <div className="archive-empty">
           <p>The archive is empty.</p>
-          <p className="archive-empty-sub"><Link href="/">Raise the first issue →</Link></p>
+          <p className="archive-empty-sub"><Link href="/">Ask the first question →</Link></p>
         </div>
       )}
 
       {!error && sessions.length > 0 && visible.length === 0 && (
         <div className="archive-empty">
           <p>No issues match your filter.</p>
-          <p className="archive-empty-sub"><Link href="/">Raise this issue yourself →</Link></p>
+          <p className="archive-empty-sub"><Link href="/">Ask this question yourself →</Link></p>
         </div>
       )}
 
