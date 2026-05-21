@@ -515,6 +515,32 @@ CHECK BEFORE EMITTING EACH CARD: every person you name who is being agreed with,
 VIOLATION OF THIS RULE BREAKS THE PRODUCT. A council member referring to someone who isn't at the table is a critical error, not a stylistic choice.
 
 ════════════════════════════════════════════════════════════════
+NAMING DISCIPLINE — USE THE CANONICAL FORM EXACTLY
+════════════════════════════════════════════════════════════════
+
+The names listed in SELECTED MEMBERS are the CANONICAL forms for this session. Every \`##\` heading and every inline reference must match the canonical form EXACTLY, character for character.
+
+DO NOT add a middle initial that is not in the canonical form.
+DO NOT drop a middle initial that IS in the canonical form.
+DO NOT add or drop titles (\`Sir\`, \`Dame\`, \`Jr.\`, \`Sr.\`).
+DO NOT acronymise (\`FDR\`, \`MLK\`, \`JFK\`).
+DO NOT change accents, diacritics or spelling.
+
+EXAMPLES (illustrative — adapt to actual SELECTED MEMBERS):
+
+- If SELECTED MEMBERS says "Albert Hirschman" — write **"Albert Hirschman"** in heading and references.
+  WRONG: "Albert O. Hirschman" (added middle initial).
+- If SELECTED MEMBERS says "Franklin D. Roosevelt" — write **"Franklin D. Roosevelt"**.
+  WRONG: "Franklin Roosevelt" (dropped initial). WRONG: "FDR" (acronym substitute).
+- If SELECTED MEMBERS says "Niccolò Machiavelli" — preserve the accent: **"Niccolò Machiavelli"**.
+  WRONG: "Niccolo Machiavelli" (dropped accent). WRONG: "Machiavelli" (dropped first name).
+- If SELECTED MEMBERS says "Lee Kuan Yew" — write **"Lee Kuan Yew"**, not "Lee K. Yew" or "Kuan Yew".
+
+WHY THIS MATTERS: the canonical form is used to look up avatar assets and to link card references back to the council page. Any variation breaks both. There is no creative latitude here.
+
+CHECK BEFORE EMITTING EACH CARD: does the \`##\` heading match the SELECTED MEMBERS entry character-for-character? If not, rewrite the heading.
+
+════════════════════════════════════════════════════════════════
 VOICE — BOLD, DIRECT, POSITIONED
 ════════════════════════════════════════════════════════════════
 

@@ -36,7 +36,7 @@
 
 ## Critical sync rules
 
-- **`AVATAR_NAME_EXPANSIONS`** map exists in 3 files: `Procession.jsx`, `archive/[slug].js`, `council.js`. Update all three together when adding members.
+- **`AVATAR_NAME_EXPANSIONS`** and `KNOWN_AVATAR_SLUGS` live in `lib/avatarSlugs.js`. When adding/removing council members, update `KNOWN_AVATAR_SLUGS` to match the new `/public/avatars/*.webp` filenames. `resolveAvatarSlug()` does exact match → expansion lookup → fuzzy last-name match against the known-slugs set. The 4 callers (`Procession.jsx`, `archive/[slug].js`, `council.js`, `archive/index.js`) each compute a naive slug from a member name and pass it through `resolveAvatarSlug()`.
 - **`ALL_COUNCIL_MEMBERS`** in `pages/api/pipeline.js` must match current 37-member roster.
 - **`stripTierSuffix`** handles old ("Framer", "Practitioner") + new ("Leader", "Thinker") + slash variants ("Framer/Practitioner").
 - **Bestandsnaam-valkuil:** `pages/archive/[slug].js` en `pages/api/og/vs/[slug].js` eindigen beide op `[slug].js`. Bevestig eerste 5 regels voor elke commit.

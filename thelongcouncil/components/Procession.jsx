@@ -1,26 +1,9 @@
 import { useMemo, useEffect, useState, useRef, Fragment } from 'react'
 import { getTier, getInitials, slugify, parseCard, renderInline } from '../lib/cardParser'
-
-const AVATAR_NAME_EXPANSIONS = {
-  'machiavelli': 'niccolo_machiavelli',
-  'keynes': 'john_maynard_keynes',
-  'hayek': 'friedrich_hayek',
-  'friedman': 'milton_friedman',
-  'locke': 'john_locke',
-  'rousseau': 'jean_jacques_rousseau',
-  'rawls': 'john_rawls',
-  'arendt': 'hannah_arendt',
-  'sen': 'amartya_sen',
-  'hirschman': 'albert_hirschman',
-  'fanon': 'frantz_fanon',
-  'prebisch': 'raul_prebisch',
-  'ostrom': 'elinor_ostrom',
-  'bolivar': 'simon_bolivar',
-}
+import { resolveAvatarSlug } from '../lib/avatarSlugs'
 
 function nameToAvatarSlug(name) {
-  const slug = slugify(name)
-  return AVATAR_NAME_EXPANSIONS[slug] || slug
+  return resolveAvatarSlug(slugify(name))
 }
 
 export default function Procession({ cards = [], onComplete, instant = false, sessionSlug = null, scrollReveal = false }) {

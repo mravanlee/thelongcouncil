@@ -4,6 +4,7 @@ import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { supabase } from '../../lib/supabase';
 import Procession from '../../components/Procession';
+import { resolveAvatarSlug } from '../../lib/avatarSlugs';
 
 export async function getServerSideProps(context) {
   const { slug } = context.params;
@@ -54,26 +55,9 @@ function stripTierSuffix(name) {
   return name.replace(/\s*[—–-]\s*(Practitioner|Framer|Leader|Thinker|Wildcard)(\/\w+)?\s*$/i, '').trim();
 }
 
-const AVATAR_NAME_EXPANSIONS = {
-  'machiavelli': 'niccolo_machiavelli',
-  'keynes': 'john_maynard_keynes',
-  'hayek': 'friedrich_hayek',
-  'friedman': 'milton_friedman',
-  'locke': 'john_locke',
-  'rousseau': 'jean_jacques_rousseau',
-  'rawls': 'john_rawls',
-  'arendt': 'hannah_arendt',
-  'sen': 'amartya_sen',
-  'hirschman': 'albert_hirschman',
-  'fanon': 'frantz_fanon',
-  'prebisch': 'raul_prebisch',
-  'ostrom': 'elinor_ostrom',
-  'bolivar': 'simon_bolivar',
-};
-
 function nameToAvatarSlug(name) {
-  const slug = stripTierSuffix(name).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\s.\-]+/g, '_').replace(/[^a-z0-9_]/g, '').replace(/_+/g, '_').replace(/^_|_$/g, '');
-  return AVATAR_NAME_EXPANSIONS[slug] || slug;
+  const naive = stripTierSuffix(name).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\s.\-]+/g, '_').replace(/[^a-z0-9_]/g, '').replace(/_+/g, '_').replace(/^_|_$/g, '');
+  return resolveAvatarSlug(naive);
 }
 
 function splitNameForCast(name) {

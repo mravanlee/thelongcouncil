@@ -3,6 +3,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { supabase } from '../../lib/supabase';
+import { resolveAvatarSlug } from '../../lib/avatarSlugs';
 
 const PAGE_SIZE = 25;
 const SCROLL_KEY = 'archive_scroll_y';
@@ -62,26 +63,6 @@ function stripTierSuffix(name) {
   return name.replace(/\s*[—–-]\s*(Practitioner|Framer|Leader|Thinker|Wildcard)\s*$/i, '').trim();
 }
 
-// Mirror of council.js — keep in sync. Lets us link an archive member
-// chip to the matching council card anchor even when the session stored
-// only a short name ("Machiavelli" → "niccolo_machiavelli").
-const AVATAR_NAME_EXPANSIONS = {
-  'machiavelli': 'niccolo_machiavelli',
-  'keynes': 'john_maynard_keynes',
-  'hayek': 'friedrich_hayek',
-  'friedman': 'milton_friedman',
-  'locke': 'john_locke',
-  'rousseau': 'jean_jacques_rousseau',
-  'rawls': 'john_rawls',
-  'arendt': 'hannah_arendt',
-  'sen': 'amartya_sen',
-  'hirschman': 'albert_hirschman',
-  'fanon': 'frantz_fanon',
-  'prebisch': 'raul_prebisch',
-  'ostrom': 'elinor_ostrom',
-  'bolivar': 'simon_bolivar',
-};
-
 function memberToCouncilSlug(name) {
   if (!name) return '';
   const base = stripTierSuffix(name)
@@ -91,7 +72,7 @@ function memberToCouncilSlug(name) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '_')
     .replace(/^_+|_+$/g, '');
-  return AVATAR_NAME_EXPANSIONS[base] || base;
+  return resolveAvatarSlug(base);
 }
 
 // Theme → keywords for the tag-chip filter. Each keyword is matched at word-start

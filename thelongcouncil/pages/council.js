@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { supabase } from '../lib/supabase';
+import { resolveAvatarSlug } from '../lib/avatarSlugs';
 
 export async function getServerSideProps() {
   try {
@@ -23,23 +24,6 @@ export async function getServerSideProps() {
   }
 }
 
-const AVATAR_NAME_EXPANSIONS = {
-  'machiavelli': 'niccolo_machiavelli',
-  'keynes': 'john_maynard_keynes',
-  'hayek': 'friedrich_hayek',
-  'friedman': 'milton_friedman',
-  'locke': 'john_locke',
-  'rousseau': 'jean_jacques_rousseau',
-  'rawls': 'john_rawls',
-  'arendt': 'hannah_arendt',
-  'sen': 'amartya_sen',
-  'hirschman': 'albert_hirschman',
-  'fanon': 'frantz_fanon',
-  'prebisch': 'raul_prebisch',
-  'ostrom': 'elinor_ostrom',
-  'bolivar': 'simon_bolivar',
-};
-
 function slugify(name) {
   if (!name) return '';
   const base = name
@@ -49,7 +33,7 @@ function slugify(name) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '_')
     .replace(/^_+|_+$/g, '');
-  return AVATAR_NAME_EXPANSIONS[base] || base;
+  return resolveAvatarSlug(base);
 }
 
 function MemberAvatar({ member }) {
