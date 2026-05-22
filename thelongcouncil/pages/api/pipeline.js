@@ -879,37 +879,41 @@ REASONING CARD RULES
 
 7. EACH CARD HAS THREE PARTS — FOLLOW EXACTLY:
 
-   a) FRAMING LINE — THIS IS THE HOOK
+   a) FRAMING LINE — THIS IS THE HOOK, AND IT MUST ANSWER THIS SPECIFIC ISSUE
       One sentence in italics, MAXIMUM 12 WORDS. Present tense. One claim, declarative.
-      It is a CLAIM, not a topic. It states what the member believes about the ISSUE.
+      It is a CLAIM about THE ISSUE BEING DEBATED, not a general philosophy.
       No "but", "however", "although", "while". No hedging. No two-clause constructions.
-      Zero em-dashes. No abstract escape-hatch words. No "framework". No "fundamental". No "genuine". No "authentic".
+      Zero em-dashes. ANY em-dash means rewrite. No abstract escape-hatch words. No "framework". No "fundamental". No "genuine". No "authentic".
       No other council member's name. No reaction to the debate. Standalone.
 
-      This sentence is what readers screenshot and share. Make it triggerend. Sharp enough to provoke either nodding or disagreement on first read.
+      ISSUE-SPECIFICITY TEST — THE MOST IMPORTANT ONE:
+      Could this exact framing line appear unchanged on a deliberation about a totally different topic? If yes, it is too generic. Rewrite so the line is the member's specific answer to THE QUESTION at the top of this session.
 
-      GOOD FRAMING LINES (≤ 12 words, declarative, sharp, triggers a reaction):
-      ✓ "Markets discover products. States build industries." (7 words)
-      ✓ "Bureaucracies survive every reformer they meet." (6 words)
-      ✓ "Sovereignty without enforcement is a press release." (7 words)
-      ✓ "Polarisation is a luxury crises cannot afford." (7 words)
-      ✓ "A ruler who cannot be trusted destroys governance faster than bad policy." (12 words)
-      ✓ "Every state that joins a treaty assumes the others will cheat." (11 words)
+      Generic aphorisms ("Survival is the precondition of everything else", "Markets discover products. States build industries.") sound profound but say nothing about THIS ISSUE. A reader who sees only the framing line should be able to tell which side of the question the member takes.
 
-      BAD FRAMING LINES (too long, hedged, abstract, or two clauses):
-      ✗ "The relationship between innovation and regulation requires careful balance, but markets must lead." (13 words, hedged, "but" clause)
+      This sentence is what readers screenshot and share. Make it triggerend AND specific. Sharp enough to provoke nodding or disagreement on first read AND clearly an answer to the question being asked.
+
+      GOOD FRAMING LINES (for the example issue "Will China's population demand democracy as prosperity grows?"):
+      ✓ "China's growth buys consent, not voice." (6 words, takes a side on THIS question)
+      ✓ "Prosperity makes the party indispensable, until it doesn't." (8 words, specific to China + party dynamics)
+      ✓ "Singapore proved: results bind louder than votes." (7 words, makes a case via concrete reference)
+      ✓ "Famine prevention needs democracy more than wealth does." (8 words, answers the democracy-vs-prosperity tension)
+
+      BAD FRAMING LINES (could appear for any topic, or hedged, or abstract):
+      ✗ "Survival is the precondition of everything else." (generic philosophy, says nothing about China or democracy)
+      ✗ "Markets discover products. States build industries." (could appear in any economic deliberation)
+      ✗ "Legitimacy requires inclusion." (generic, no position on the China question)
+      ✗ "The relationship between prosperity and democracy is complex." (no position taken)
       ✗ "On balance, it appears that some form of intervention is warranted." (warm-up, no claim)
       ✗ "Democratic legitimacy in the age of AI rests on authentic civic engagement." (abstract noun chain, "authentic")
-      ✗ "We need to think carefully about what regulation really means in practice." (no position taken)
 
       WRITE THE FRAMING LINE LAST, after the body is done. Place it first in output.
-      Then ask: ≤ 12 words? Declarative? No other member's name? No "but/however"? Reads like a headline a reader would screenshot?
-      If any answer is no: rewrite as if you are the first and only speaker.
+      Then run the ISSUE-SPECIFICITY TEST: imagine swapping this framing line into a deliberation on a totally different question (climate, taxation, war). Would it fit unchanged? If yes, it is too generic. Rewrite to lock it to THIS issue.
 
-   b) REASONING — ONE PARAGRAPH, 50–80 WORDS
+   b) REASONING — ONE PARAGRAPH, 60–100 WORDS
       A single paragraph. No second paragraph. No three paragraphs. ONE.
 
-      Opens with a position, not a warm-up. The first sentence states what the member believes.
+      Opens with a position that directly addresses THE ISSUE, not a warm-up. The first sentence states what the member believes about THIS specific question.
       Contains exactly ONE historical anchor: a year, a decision, a meeting, a speech, a city.
       For the FIRST CARD: anchor in a specific sourced moment. Name no other member at the table.
       For LATER CARDS: choose whether to engage another already-written speaker by name in the first sentence, or to respond purely to the issue. If engaging, anchor in your own experience after the engagement. The majority of later cards should engage; not all.
@@ -930,16 +934,17 @@ REASONING CARD RULES
 
       The RIGHT version opens with three short sentences that land before the evidence arrives. The WRONG version buries the position in a hedge.
 
-      IF YOU FIND YOURSELF WRITING A SECOND PARAGRAPH: stop. Cut. The card is the headline, not the essay. Move the second-move material to your mental model of the brief; do not emit it here. A single paragraph between 50 and 80 words is the discipline.
+      IF YOU FIND YOURSELF WRITING A SECOND PARAGRAPH: stop. Cut. The card is the headline, not the essay. Move the second-move material to your mental model of the brief; do not emit it here. A single paragraph between 60 and 100 words is the discipline.
 
-     GOOD EXAMPLE — direct opening, ONE paragraph, rhythm, no forbidden words, framing line standalone, no em-dashes:
+     GOOD EXAMPLE — assume the issue is: "Will China's population demand democracy as prosperity grows?"
+     Direct opening, ONE paragraph, rhythm, no forbidden words, framing line ANSWERS the issue, no em-dashes, ~80 words:
       ---
-      *You cannot compel civic virtue.*
+      *China buys consent with growth, not with voice.*
 
-      In 1965 I separated Singapore from Malaysia because the alternative was racial collapse. Survival came first. Schools taught English not because we loved it but because neutrality between Chinese, Malay and Tamil prevented civil war. Every institution I built served a function. The function came before the principle.
+      In 1965 I separated Singapore from Malaysia because the alternative was racial collapse. Survival came first, and citizens accepted competent rule over an empty ballot. We built meritocracy, attracted investment, and delivered housing to nine out of ten families. The same logic operates in Beijing now. As long as the party delivers visible improvement, demands for democratic participation stay narrow. Pressure rises only when results stop arriving.
       ---
 
-      BAD EXAMPLE — same content, two paragraphs (now forbidden), no rhythm, reads like an essay:
+      BAD EXAMPLE — generic philosophy (does not answer the issue), two paragraphs (now forbidden), no rhythm, reads like an essay:
       ---
       *You cannot compel civic virtue. You can only build the conditions where it grows.*
 
@@ -980,7 +985,7 @@ REASONING CARD RULES
    If members genuinely disagree, show it. Agreement must be earned through argument, not always assumed.
 
 10. LENGTH DISCIPLINE — STRICT.
-    Total reasoning per card: 50–80 words in ONE paragraph. No second paragraph.
+    Total reasoning per card: 60–100 words in ONE paragraph. No second paragraph.
     Framing line: ≤ 12 words. Challenge line: ≤ 8 words, ending in ?. Each sentence in the paragraph: ≤ 22 words.
 
 ════════════════════════════════════════════════════════════════
@@ -1069,7 +1074,9 @@ Before emitting each card, check:
    Is it ≤ 12 WORDS? Count them. If 13 or more: rewrite shorter. No exceptions.
    Does it contain the name of any other council member? If yes: STOP. Rewrite.
    Does it contain "underestimates", "overestimates", "is right", "is wrong", "unlike", "contrary to", "but", "however", "although", "while"? If yes: rewrite as a single declarative claim.
-   Read the framing line with zero context, as if this is the only sentence you have ever seen. Does it state a complete position on the issue? If no: rewrite.
+   Does it contain ANY em-dash ("—")? If yes: replace with period, comma, or colon. Zero tolerance.
+   ISSUE-SPECIFICITY: Could this exact line appear unchanged on a deliberation about a totally different topic (e.g., climate, taxation, war)? If yes: too generic. Rewrite so the line is THIS member's specific answer to THE QUESTION at the top of this session. A reader who knows the question should be able to tell which side the member takes from the framing line alone.
+   Read the framing line with zero context, as if this is the only sentence you have ever seen. Does it state a complete position on THIS issue? If no: rewrite.
    Is it sharp enough that a reader would either nod or disagree on first read? If it's bland or hedged: rewrite.
    BAD: "Confucius mistakes the means for the end." — contains another council member's name.
    BAD: "Roosevelt's verification problem is the heart of the matter." — contains another council member's name.
@@ -1090,7 +1097,7 @@ Before emitting each card, check:
 9. STRUCTURE & LENGTH CHECK:
    Is the framing line ≤ 12 words? Count them.
    Does the reasoning consist of EXACTLY ONE paragraph? If two or more, MERGE the strongest into one or CUT the second. Do not split into two. The second-move material belongs in the policy brief, not on the card.
-   Is the single paragraph within 50–80 words? Count them.
+   Is the single paragraph within 60–100 words? Count them.
    Is each sentence ≤ 22 words?
 
 10. ANCHOR CHECK:
@@ -1559,7 +1566,7 @@ export default async function handler(req, res) {
     const rosterLine = `SELECTED MEMBERS FOR THIS DELIBERATION (the only members at the table):\n${selectedNames.map((n, i) => `${i + 1}. ${n}`).join('\n')}\n\n`;
 
     send('progress', { step: 2, message: 'The council is deliberating...' });
-    const deliberationUserBase = `ISSUE:\n${question}\n\n${rosterLine}PROMPT 1 OUTPUT:\n${assemblyOutput}\n\nMEMBER PROFILES:\n${profilesForDeliberation}\n\nFINAL REMINDER: Each card is exactly ONE paragraph, 50-80 words total. Framing line ≤ 12 words. Challenge line ≤ 8 words ending in ? (never on first or final card). Zero em-dashes anywhere. No exceptions.`;
+    const deliberationUserBase = `ISSUE:\n${question}\n\n${rosterLine}PROMPT 1 OUTPUT:\n${assemblyOutput}\n\nMEMBER PROFILES:\n${profilesForDeliberation}\n\nFINAL REMINDER: Each card is exactly ONE paragraph, 60-100 words total. Framing line ≤ 12 words AND must answer THIS specific issue (not generic philosophy). Challenge line ≤ 8 words ending in ? (chain forward to next speaker; never on the final card). Zero em-dashes anywhere. No exceptions.`;
     let deliberationOutput = await callClaude(
       PROMPT2_SYSTEM,
       deliberationUserBase,
