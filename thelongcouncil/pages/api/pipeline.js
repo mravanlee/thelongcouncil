@@ -197,6 +197,46 @@ function validatePosition1Card(deliberationOutput, selectedNames) {
   return { ok: true, firstMember };
 }
 
+// Post-generation guard: the FINAL member card must NEVER have a challenge
+// line. PROMPT2 says so explicitly but Claude still slips. The last speaker
+// closes the debate; opening a new question that nobody can answer breaks the
+// flow. This isolates the last card (the block before the convergence note)
+// and scans it for a "**Challenge to" prefix.
+function validateLastCardNoChallenge(deliberationOutput) {
+  if (!deliberationOutput) return { ok: true, reason: 'empty' };
+
+  const blocks = deliberationOutput
+    .split(/(?:^|\n)\s*---\s*(?:\n|$)/)
+    .map(b => b.trim())
+    .filter(Boolean);
+  if (blocks.length < 2) return { ok: true, reason: 'no_cards' };
+
+  // The convergence note is the very last block (heading "## The convergence note").
+  // The final MEMBER card is the block immediately before that.
+  let lastMemberCard = null;
+  for (let i = blocks.length - 1; i >= 0; i--) {
+    if (/##\s*The convergence note/i.test(blocks[i])) continue;
+    lastMemberCard = blocks[i];
+    break;
+  }
+  if (!lastMemberCard) return { ok: true, reason: 'no_member_card_found' };
+
+  const headingMatch = lastMemberCard.match(/##\s*([^\n]+)/);
+  const lastMember = headingMatch ? headingMatch[1].trim() : null;
+
+  // Detect the challenge line. Pattern: bold "Challenge to ...".
+  const hasChallenge = /\*\*\s*Challenge to\b/i.test(lastMemberCard);
+  if (hasChallenge) {
+    const challengeMatch = lastMemberCard.match(/\*\*\s*Challenge to[^*]*\*\*[^\n]*/i);
+    return {
+      ok: false,
+      lastMember,
+      challenge: challengeMatch ? challengeMatch[0].slice(0, 200) : '(challenge line found)',
+    };
+  }
+  return { ok: true, lastMember };
+}
+
 function validateRoster(deliberationOutput, selectedNames) {
   const selectedNorm = new Set(selectedNames.map(normalizeName));
   for (const name of selectedNames) {
@@ -544,7 +584,7 @@ CHECK BEFORE EMITTING EACH CARD: does the \`##\` heading match the SELECTED MEMB
 VOICE — BOLD, DIRECT, POSITIONED
 ════════════════════════════════════════════════════════════════
 
-Every card is testimony, not an essay. The member sits at a table and says something that stays with you. They do not introduce a position — they take one.
+Every card is testimony, not an essay. The member sits at a table and says something that stays with you. They do not introduce a position. They take one.
 
 THE FIRST SENTENCE OF PARAGRAPH 1 MUST TAKE A POSITION. Not warm up to one.
 
@@ -559,7 +599,7 @@ REQUIRED: State what you believe in the first sentence. Back it up in the senten
 WRONG: "Tocqueville's civic education argument has merit, but it confuses the means with the end."
 RIGHT: "Forced participation destroys the thing it tries to save."
 
-WRONG: "Mandatory voting is a governance necessity — democracy requires informed participation."
+WRONG: "Mandatory voting is a governance necessity; democracy requires informed participation."
 RIGHT: "Passionate minorities govern when moderate majorities stay home. That is not democracy."
 
 WRONG: "Roosevelt raises an important point about moral accountability."
@@ -571,26 +611,28 @@ A topic names what the card is about. A claim says what the member believes.
 WRONG (topic): "Democracy requires deliberation to function."
 WRONG (topic): "The relationship between participation and legitimacy is complex."
 RIGHT (claim): "Forced participation destroys the choice that makes participation meaningful."
-RIGHT (claim): "Moderate majorities don't vote because politics doesn't reach them — not because they're lazy."
+RIGHT (claim): "Moderate majorities don't vote because politics doesn't reach them. Not because they're lazy."
 RIGHT (claim): "You cannot compel civic virtue. You can only create the conditions where it grows."
 
-The framing line is the member's core position in one sentence. It does not introduce what follows — it states the conclusion. Paragraph 1 grounds it with evidence. The framing line does not need to be restated in the paragraphs.
+The framing line is the member's core position in one sentence. It does not introduce what follows; it states the conclusion. The paragraph grounds it with evidence. The framing line does not need to be restated in the paragraph.
 
 THE FRAMING LINE MUST STAND ALONE — FOR EVERY MEMBER, INCLUDING POSITIONS 2, 3, 4, 5.
 It cannot reference another council member by name. It cannot react to a previous argument. It cannot use "but", "however", "contrary to", "unlike X", "underestimates", "overestimates", "is right", or "is wrong".
 It states what THIS member believes, independent of the debate.
-A reader who sees only this sentence — with no context — must understand it as a complete thought.
+A reader who sees only this sentence, with no context, must understand it as a complete thought.
 
-THIS IS THE MOST COMMON FAILURE IN THIS PROMPT. The model writes paragraph 1 (which may engage another speaker), then writes the framing line as a preview of paragraph 1. This is wrong. The framing line is not a preview of the engagement. It is this member's position on the ISSUE itself.
+THIS IS THE MOST COMMON FAILURE IN THIS PROMPT. The model writes the paragraph (which may engage another speaker), then writes the framing line as a preview of the paragraph. This is wrong. The framing line is not a preview of the engagement. It is this member's position on the ISSUE itself.
 
 WRONG (references another council member): "Confucius mistakes the means for the end."
 WRONG (references another council member): "Roosevelt's verification problem is the heart of the matter."
 WRONG (reactive): "Schmidt underestimates what moral authority can achieve."
 WRONG (reactive): "Keynes is right but ignores the supply side."
 RIGHT (standalone position on the issue): "Political survival demands methods suited to the contest, not to an ideal order."
-RIGHT (standalone position on the issue): "Moral authority without enforcement is not authority — it is aspiration."
+RIGHT (standalone position on the issue): "Moral authority without enforcement is not authority. It is aspiration."
 RIGHT (standalone position on the issue): "Every state that joins a treaty assumes the others will cheat."
-RIGHT (standalone position on the issue): "A ruler who cannot be trusted destroys governance faster than any bad policy."
+RIGHT (standalone position on the issue): "A ruler who cannot be trusted destroys governance faster than bad policy."
+RIGHT (standalone position on the issue): "Bureaucracies survive every reformer they meet."
+RIGHT (standalone position on the issue): "Sovereignty without enforcement is a press release."
 
 ════════════════════════════════════════════════════════════════
 LANGUAGE DISCIPLINE — THE READER MUST UNDERSTAND ON FIRST PASS
@@ -654,10 +696,11 @@ FIVE NON-NEGOTIABLE RULES:
 3. MAX 22 WORDS PER SENTENCE.
    Hard ceiling. Short sentences at moments of emphasis. If a sentence runs longer, split at the first natural break.
 
-4. EM-DASH DISCIPLINE.
-   Maximum ONE em-dash per card body. Zero em-dashes in the framing line. Zero em-dashes in the challenge line.
+4. EM-DASH DISCIPLINE — ZERO EM-DASHES ANYWHERE.
+   No em-dashes ("—") in the card body, the framing line, the challenge line, OR the convergence note. None. Anywhere.
+   Em-dashes are a Claude tic that signals AI-generated prose. Every em-dash you would write must become a comma, a period, a colon, or a semicolon.
    If you reach for an em-dash, ask: does this clause earn a full sentence, or should it be deleted?
-   Use commas, periods, or colons instead.
+   This rule applies to en-dashes as text separators too. Year ranges like "1974–82" in the role line are fine; everywhere else use punctuation.
 
 5. SENTENCE RHYTHM — SHORT AFTER LONG.
    Never write more than two sentences of similar length in a row.
@@ -667,7 +710,7 @@ FIVE NON-NEGOTIABLE RULES:
    "America's technological advantage rests on market-driven innovation, but markets alone cannot build the industrial foundations that innovation requires. In 1978 I opened China selectively, importing technology and capital while maintaining political control over the development process."
 
    RIGHT (position first, short punches, rhythm):
-   "Markets discover products. States build industries. America has confused the two. In 1978 I opened China selectively — I imported technology, kept political control, and let neither run loose."
+   "Markets discover products. States build industries. America has confused the two. In 1978 I opened China selectively. I imported technology, kept political control, and let neither run loose."
 
    Pattern to aim for: SHORT. SHORT. MEDIUM. or MEDIUM. SHORT. MEDIUM. SHORT.
    A paragraph of all medium-length sentences is a lecture. A card with rhythm is testimony.
@@ -695,7 +738,7 @@ REFERENCE RULE: a card may only name another member who has ALREADY been written
 
 STEP 3 — INTERACTION IS ESSENTIAL, BUT NOT REQUIRED IN EVERY CARD.
 
-A deliberation without engagement is a set of monologues. The MAJORITY of cards after the first must show real engagement with another voice — by name reference in paragraph 1, by a sharp disagreement, or by extending an earlier point. One card may be a pure response to the issue if its voice is strong enough to stand alone, but parallel monologues across all cards are a failed deliberation.
+A deliberation without engagement is a set of monologues. The MAJORITY of cards after the first must show real engagement with another voice: by name reference in the paragraph, by a sharp disagreement, or by extending an earlier point. One card may be a pure response to the issue if its voice is strong enough to stand alone, but parallel monologues across all cards are a failed deliberation.
 
 STEP 4 — BEGIN CARDS.
 
@@ -753,7 +796,7 @@ Communicate confidence through the prose:
 
 - GROUNDED: name the decision, year, speech, or event — always in first person. "In November 1973 I told the Bundestag..."
 - CONSISTENT: state the claim directly.
-- EXTENDED: frame the leap explicitly. "I did not govern in an era of cyber warfare — but I governed during the oil embargo, and the structure is identical."
+- EXTENDED: frame the leap explicitly. "I did not govern in an era of cyber warfare, but I governed during the oil embargo, and the structure is identical."
 - ABSENT: acknowledge silence plainly. "On 21st-century digital currency I have no position to offer."
 
 ════════════════════════════════════════════════════════════════
@@ -766,10 +809,10 @@ REASONING CARD RULES
 2. BACKWARD REFERENCES ONLY.
    A card may name only members who have ALREADY been written in your output. Never reference a member who appears later. The first card names no other member at all.
 
-3. CHALLENGE LINES ARE OPTIONAL AND FLEXIBLE.
+3. CHALLENGE LINES ARE OPTIONAL, FLEXIBLE, AND NEVER ON THE FINAL CARD.
    A card MAY end with:
-     **Challenge to [any other member at the table]:** [one sentence]
-   Include the challenge only when there is a sharp disagreement worth surfacing. It may be directed at any other participant — not necessarily the next speaker. Some cards have a challenge, some don't. The first card has no challenge line (no one to address yet). The final card may or may not.
+     **Challenge to [any other member at the table]:** [≤ 8 words, ending in ?]
+   Include the challenge only when there is a sharp disagreement worth surfacing. It may be directed at any other participant, not necessarily the next speaker. Some cards have a challenge, some don't. The first card has no challenge line (no one to address yet). THE FINAL CARD ALSO HAS NO CHALLENGE LINE. The last speaker closes the debate; they do not open a new question that nobody can answer.
 
 4. EVERY CARD IS FIRST-PERSON, IN CONTEMPORARY ENGLISH.
 
@@ -783,85 +826,106 @@ REASONING CARD RULES
 
    Sun Tzu does not sound like a translation. Confucius does not say "the Master says". Ibn Khaldun does not sound medieval. Every member reads as contemporary prose — only their sensibility distinguishes them.
 
-5. INTERACTION IS ESSENTIAL BUT NOT MANDATORY IN EACH CARD. The majority of cards after the first must show engagement with another voice — by name reference in paragraph 1, by a sharp disagreement, or by picking up an earlier thread. One card may stand alone on the issue. Parallel monologues across all cards are a failed deliberation. See Step 3 of CRITICAL OUTPUT CONSTRAINTS.
+5. INTERACTION IS ESSENTIAL BUT NOT MANDATORY IN EACH CARD. The majority of cards after the first must show engagement with another voice: by name reference in the paragraph, by a sharp disagreement, or by picking up an earlier thread. One card may stand alone on the issue. Parallel monologues across all cards are a failed deliberation. See Step 3 of CRITICAL OUTPUT CONSTRAINTS.
 
 6. GROUND CLAIMS IN SPECIFIC EVENTS — IN PROSE.
    Year, venue, decision, speech. Never bracketed tags. Never citing written works.
 
-   THE ANCHOR IS NON-NEGOTIABLE. Each card MUST contain at least one specific historical anchor in paragraph 1: a year, a decision, a meeting, a speech.
+   THE ANCHOR IS NON-NEGOTIABLE. Each card MUST contain at least one specific historical anchor in the paragraph: a year, a decision, a meeting, a speech.
 
-   THEORISTS AND ANCIENT THINKERS: this rule applies to you too. Name a historical event you witnessed, a ruler you advised, a collapse you observed, a city you governed. If no direct anchor exists, frame the extended claim explicitly: "I did not govern in an era of X, but I watched [concrete event] and the pattern is the same." A card with no person, place, or year in paragraph 1 cannot ship.
+   THEORISTS AND ANCIENT THINKERS: this rule applies to you too. Name a historical event you witnessed, a ruler you advised, a collapse you observed, a city you governed. If no direct anchor exists, frame the extended claim explicitly: "I did not govern in an era of X, but I watched [concrete event] and the pattern is the same." A card with no person, place, or year in the paragraph cannot ship.
 
 7. EACH CARD HAS THREE PARTS — FOLLOW EXACTLY:
 
-   a) FRAMING LINE
-      One sentence in italics, maximum 15 words.
+   a) FRAMING LINE — THIS IS THE HOOK
+      One sentence in italics, MAXIMUM 12 WORDS. Present tense. One claim, declarative.
       It is a CLAIM, not a topic. It states what the member believes about the ISSUE.
-      No em-dashes. No abstract escape-hatch words. No "framework". No "fundamental". No "genuine". No "authentic".
+      No "but", "however", "although", "while". No hedging. No two-clause constructions.
+      Zero em-dashes. No abstract escape-hatch words. No "framework". No "fundamental". No "genuine". No "authentic".
       No other council member's name. No reaction to the debate. Standalone.
 
-      The framing line is a promise. Paragraph 1 pays it off with lived evidence. It does not restate it in different words.
+      This sentence is what readers screenshot and share. Make it triggerend. Sharp enough to provoke either nodding or disagreement on first read.
 
-      WRITE THE FRAMING LINE LAST, after you have written both paragraphs — but place it first in the output.
-      Then ask: does this framing line contain any council member's name? Does it react to something said earlier?
-      If yes to either: rewrite it as if you are the first and only speaker.
+      GOOD FRAMING LINES (≤ 12 words, declarative, sharp, triggers a reaction):
+      ✓ "Markets discover products. States build industries." (7 words)
+      ✓ "Bureaucracies survive every reformer they meet." (6 words)
+      ✓ "Sovereignty without enforcement is a press release." (7 words)
+      ✓ "Polarisation is a luxury crises cannot afford." (7 words)
+      ✓ "A ruler who cannot be trusted destroys governance faster than bad policy." (12 words)
+      ✓ "Every state that joins a treaty assumes the others will cheat." (11 words)
 
-   b) REASONING — EXACTLY TWO PARAGRAPHS
-      100–160 words total, separated by a blank line.
+      BAD FRAMING LINES (too long, hedged, abstract, or two clauses):
+      ✗ "The relationship between innovation and regulation requires careful balance, but markets must lead." (13 words, hedged, "but" clause)
+      ✗ "On balance, it appears that some form of intervention is warranted." (warm-up, no claim)
+      ✗ "Democratic legitimacy in the age of AI rests on authentic civic engagement." (abstract noun chain, "authentic")
+      ✗ "We need to think carefully about what regulation really means in practice." (no position taken)
 
-      Paragraph 1 — THE GROUNDED ARGUMENT (60–90 words).
+      WRITE THE FRAMING LINE LAST, after the body is done. Place it first in output.
+      Then ask: ≤ 12 words? Declarative? No other member's name? No "but/however"? Reads like a headline a reader would screenshot?
+      If any answer is no: rewrite as if you are the first and only speaker.
+
+   b) REASONING — ONE PARAGRAPH, 50–80 WORDS
+      A single paragraph. No second paragraph. No three paragraphs. ONE.
+
       Opens with a position, not a warm-up. The first sentence states what the member believes.
+      Contains exactly ONE historical anchor: a year, a decision, a meeting, a speech, a city.
       For the FIRST CARD: anchor in a specific sourced moment. Name no other member at the table.
       For LATER CARDS: choose whether to engage another already-written speaker by name in the first sentence, or to respond purely to the issue. If engaging, anchor in your own experience after the engagement. The majority of later cards should engage; not all.
 
-      CRITICAL SEPARATION: The name reference belongs in paragraph 1, NOT in the framing line.
-      The framing line states your own position on the issue. Paragraph 1 is where you engage others.
-      Think of it this way: framing line = what I believe about this issue. Paragraph 1 = here is why, and here is where I disagree with X.
+      CRITICAL SEPARATION: The name reference belongs IN this paragraph, NOT in the framing line.
+      The framing line states your own position on the issue. The paragraph is where you engage others.
+      Think of it this way: framing line = what I believe about this issue. Paragraph = here is why, with one anchor, possibly engaging another member.
+
+      WHAT GETS CUT: the old "second move" (counterintuitive point, candid limit, sharp positioning against alternative) does NOT belong on this card anymore. That depth lives in the policy brief. The card is the headline; the brief is the long-form.
 
       PARAGRAPH BODY — WRONG/RIGHT:
 
       WRONG (hedging open, academic rhythm, no punch):
       "America's technological advantage rests on market-driven innovation, but markets alone cannot build the industrial foundations that innovation requires. In 1978 I opened China selectively, importing technology and capital while maintaining political control over the development process."
 
-      RIGHT (position first, short punches, concrete anchor):
+      RIGHT (position first, short punches, concrete anchor, ONE paragraph, ~70 words):
       "Markets discover products. States build industries. America has confused the two. In 1978 I opened China selectively: I imported technology and capital, kept political control, and let neither run loose. The Four Modernisations named science alongside agriculture and defence because states fund what markets ignore."
 
-      The RIGHT version opens with three short sentences that land before the evidence arrives. The WRONG version buries the position in a hedge and never varies its rhythm.
+      The RIGHT version opens with three short sentences that land before the evidence arrives. The WRONG version buries the position in a hedge.
 
-      Paragraph 2 — THE SECOND MOVE (40–70 words).
-      Must be one of:
-        (a) a counterintuitive point paragraph 1 did not make
-        (b) a sharp positioning against an alternative another voice at the table might take
-        (c) a candid limit or boundary on the position itself
+      IF YOU FIND YOURSELF WRITING A SECOND PARAGRAPH: stop. Cut. The card is the headline, not the essay. Move the second-move material to your mental model of the brief; do not emit it here. A single paragraph between 50 and 80 words is the discipline.
 
-      TEST: "Could a reader skip paragraph 2 and lose nothing meaningful?" If yes, rewrite.
+     GOOD EXAMPLE — direct opening, ONE paragraph, rhythm, no forbidden words, framing line standalone, no em-dashes:
+      ---
+      *You cannot compel civic virtue.*
 
-      IF YOU FIND YOURSELF WRITING A THIRD PARAGRAPH: paragraph 2 has not done its job. Go back and rewrite paragraph 2 until it earns the close. Ask which of the three options above it is doing. If it is doing none of them, cut it and start again. A third paragraph is never the answer — not for practitioners, not for theorists, not for anyone.
+      In 1965 I separated Singapore from Malaysia because the alternative was racial collapse. Survival came first. Schools taught English not because we loved it but because neutrality between Chinese, Malay and Tamil prevented civil war. Every institution I built served a function. The function came before the principle.
+      ---
 
-      DO NOT write a single block. DO NOT write three or more paragraphs. Exactly two, separated by a blank line.
-
-     GOOD EXAMPLE — direct opening, two paragraphs, rhythm, no forbidden words, framing line standalone, no external council member named:
+      BAD EXAMPLE — same content, two paragraphs (now forbidden), no rhythm, reads like an essay:
       ---
       *You cannot compel civic virtue. You can only build the conditions where it grows.*
 
-      In 1965 I separated Singapore from Malaysia not because I wanted independence but because the alternative was racial collapse. Survival came first. Schools taught English not because we loved it but because neutrality between Chinese, Malay and Tamil prevented civil war. Bilingualism was strategy, not sentiment. Every institution I built served a function. The function came before the principle.
-
-      Governments today ask about AI literacy. That is the wrong question. Ask instead: what does this country need that no one else can provide, and how do institutions deliver it by 2035? Choose the anchor before the crisis. Not during it.
-      ---
-
-      BAD EXAMPLE — same content, no rhythm, reads like an essay:
-      ---
-      *You cannot compel civic virtue. You can only build the conditions where it grows.*
-
-      In 1965 I separated Singapore from Malaysia not because I wanted independence but because the alternative was racial collapse, and survival had to come before any other consideration. Schools taught English not because we loved it but because neutrality between Chinese, Malay and Tamil communities was necessary to prevent civil war, and bilingualism served as a strategic instrument rather than a sentimental preference. Every institution I built served a specific function, and the function always came before the principle it was meant to embody.
+      In 1965 I separated Singapore from Malaysia not because I wanted independence but because the alternative was racial collapse, and survival had to come before any other consideration. Schools taught English not because we loved it but because neutrality between Chinese, Malay and Tamil communities was necessary to prevent civil war.
 
       Governments today are asking about AI literacy, but this is the wrong question to be asking. The right question is: what does this country need that no one else can provide, and how do institutions deliver those capabilities by 2035?
       ---
 
-   c) CHALLENGE LINE (optional, on any card except the first)
-      Exactly one sentence when included. Directed at any other member at the table — not necessarily the next speaker.
-      No em-dashes. No "framework". No "fundamental". No "genuine". No "authentic".
-      Include only when there is a sharp disagreement worth surfacing. Some cards have one, some don't. The first card never has one (no one to address yet).
+   c) CHALLENGE LINE (optional, on any card except the FIRST and the FINAL)
+      MAXIMUM 8 WORDS. Must end in a question mark. Directed at any other member at the table, not necessarily the next speaker.
+      Zero em-dashes. No "framework". No "fundamental". No "genuine". No "authentic". No abstract noun chains.
+      Include only when there is a sharp, focused disagreement worth surfacing. Some cards have one, some don't.
+      THE FIRST CARD never has a challenge line (no one to address yet). THE FINAL CARD never has a challenge line (no one to respond). Both are hard rules.
+
+      The challenge must hit something specific the other member would actually have to answer. Vague abstractions like "your framework" or "your system" fail because there is nothing to answer.
+
+      GOOD CHALLENGE EXAMPLES (≤ 8 words, sharp, end in ?):
+      - "Schmidt, who pays when markets fail?"
+      - "Hayek, what about the polluter?"
+      - "Ostrom, can 27 states coordinate fast?"
+      - "Friedman, what stops Big Tech capture?"
+      - "Arendt, does enforcement need violence?"
+      - "Confucius, does virtue scale beyond a city?"
+
+      BAD CHALLENGE EXAMPLES (too long, abstract, or empty):
+      - "How do you reconcile this with the structural framework of governance?" (abstract, too long)
+      - "Your approach ignores deeper institutional dynamics." (not a question, abstract)
+      - "But what about the trade-offs involved here?" (vague, no specific thing to answer)
 
 8. SURFACE LIVE CONTRADICTIONS.
    If a relevant contradiction exists in the member's record, surface it as a tension they acknowledge within their own argument — not as external criticism.
@@ -870,8 +934,8 @@ REASONING CARD RULES
    If members genuinely disagree, show it. Agreement must be earned through argument, not always assumed.
 
 10. LENGTH DISCIPLINE — STRICT.
-    Total reasoning per card: 100–160 words. Paragraph 1: 60–90 words. Paragraph 2: 40–70 words.
-    Framing line: ≤ 15 words. Challenge line: exactly one sentence. Each sentence: ≤ 22 words.
+    Total reasoning per card: 50–80 words in ONE paragraph. No second paragraph.
+    Framing line: ≤ 12 words. Challenge line: ≤ 8 words, ending in ?. Each sentence in the paragraph: ≤ 22 words.
 
 ════════════════════════════════════════════════════════════════
 OUTPUT FORMAT — produce exactly this structure
@@ -880,30 +944,26 @@ OUTPUT FORMAT — produce exactly this structure
 No header above the cards. Begin with the first \`---\`.
 
 ---
-## [Opening member's name only — nothing else on this line]
+## [Opening member's name only, nothing else on this line]
 [Role, Country, Years]
 
-*[Framing line — THIS member's position on THE ISSUE. No other council member's name. 15 words max. No em-dash.]*
+*[Framing line, THIS member's position on THE ISSUE. No other council member's name. ≤ 12 words. Zero em-dashes.]*
 
-[Paragraph 1 — 60–90 words. First sentence takes a position on the ISSUE. No other member named anywhere in this card. Grounded in a sourced moment.]
+[ONE paragraph, 50–80 words. First sentence takes a position on the ISSUE. No other member named anywhere in this card. Grounded in ONE specific sourced moment. Zero em-dashes.]
 
-[Paragraph 2 — 40–70 words. The second move. NOT amplification of paragraph 1.]
-
-(No challenge line on the first card — no one to address yet.)
+(No challenge line on the first card. No one to address yet.)
 ---
 ## [Next member's name only]
 [Role, Country, Years]
 
-*[Framing line — standalone position on the issue, no member named.]*
+*[Framing line, standalone position on the issue, no member named, ≤ 12 words.]*
 
-[Paragraph 1 — 60–90 words. Choose: either engage another already-written card by name in the first sentence, or respond purely to the issue. If engaging, anchor in your own experience after the engagement.]
+[ONE paragraph, 50–80 words. Choose: either engage another already-written card by name in the first sentence, or respond purely to the issue. If engaging, anchor in your own experience after the engagement. Zero em-dashes.]
 
-[Paragraph 2 — 40–70 words. Second move.]
-
-**Challenge to [any other member at the table]:** [Optional. Include only when there is a sharp disagreement worth naming. One sentence. No "framework". No em-dash.]
+**Challenge to [any other member at the table]:** [Optional, except: NEVER on the final card. ≤ 8 words, ending in ?. Zero em-dashes.]
 ---
 
-[Continue for each remaining member. Use the same structure. Majority of these cards should engage another voice; one may stand alone if its position is strong enough. Challenge lines are optional throughout.]
+[Continue for each remaining member. Use the same structure. Majority of these cards should engage another voice; one may stand alone if its position is strong enough. Challenge lines are optional throughout, except: the FINAL card never has one.]
 
 ---
 
@@ -946,7 +1006,7 @@ Before emitting each card, check:
    Across all later cards: does the MAJORITY engage another voice? At most one card may stand alone on the issue.
 
 4. VOICE CHECK — BOLD AND DIRECT:
-   Does paragraph 1 open with a position, not a warm-up?
+   Does the paragraph open with a position, not a warm-up?
    Does the first sentence state what the member believes?
    Does any sentence open with "X has merit, but...", "The question is whether...", "It is important to consider..."? Rewrite.
    Does the member speak in first person throughout? No last-name self-reference.
@@ -959,44 +1019,41 @@ Before emitting each card, check:
    Does any sentence have NO concrete content (no person, place, year, or object)? Rewrite.
    Does any sentence run longer than 22 words? Split it.
 
-6. FRAMING LINE STANDALONE CHECK — THIS IS THE MOST COMMONLY VIOLATED RULE:
-   Does the framing line contain the name of any other council member? If yes: STOP. Rewrite. No exceptions.
-   Does it contain "underestimates", "overestimates", "is right", "is wrong", "unlike", "contrary to", "but", "however"? If yes: rewrite.
+6. FRAMING LINE CHECK — THIS IS THE MOST COMMONLY VIOLATED RULE:
+   Is it ≤ 12 WORDS? Count them. If 13 or more: rewrite shorter. No exceptions.
+   Does it contain the name of any other council member? If yes: STOP. Rewrite.
+   Does it contain "underestimates", "overestimates", "is right", "is wrong", "unlike", "contrary to", "but", "however", "although", "while"? If yes: rewrite as a single declarative claim.
    Read the framing line with zero context, as if this is the only sentence you have ever seen. Does it state a complete position on the issue? If no: rewrite.
+   Is it sharp enough that a reader would either nod or disagree on first read? If it's bland or hedged: rewrite.
    BAD: "Confucius mistakes the means for the end." — contains another council member's name.
    BAD: "Roosevelt's verification problem is the heart of the matter." — contains another council member's name.
    GOOD: "Political survival demands methods suited to the contest, not to an ideal order."
    GOOD: "A ruler who cannot be trusted destroys governance faster than any bad policy."
    This check applies to ALL members, including the opening card.
 
-7. EM-DASH CHECK:
-   More than one em-dash in the card body? Rewrite the extras as separate sentences.
-   Em-dash in the framing line? Remove it.
-   Em-dash in the challenge line? Remove it.
-   Does the challenge line contain "framework", "structural", "ethical", "system", or any abstract noun chain? Rewrite it as a concrete question naming a specific person, place, decision, or trade-off.
-   Is the challenge line longer than 20 words? Shorten it. It must be readable in one breath.
+7. EM-DASH CHECK — ZERO TOLERANCE:
+   ANY em-dash ("—") anywhere in the output? Rewrite. No exceptions for "emphasis", "asides", or "stylistic choice".
+   Replace every em-dash with a comma, period, colon, or semicolon. If two clauses are joined by an em-dash, ask whether they want to be two sentences. Usually they do.
+   This is the single most violated rule. Scan one final time before emitting: zero em-dashes in body, framing line, challenge line, or convergence note.
 
 8. RHYTHM CHECK:
    Are there more than two consecutive sentences of similar length? Break the pattern with a short punch.
-   Does paragraph 1 open with at least one short sentence (under 10 words)? If not, consider whether the opening earns its length.
+   Does the paragraph open with at least one short sentence (under 10 words)? If not, consider whether the opening earns its length.
    Read the card aloud. If it sounds like a lecture, rewrite for rhythm.
 
 9. STRUCTURE & LENGTH CHECK:
-   Is the framing line ≤ 15 words?
-   Does the reasoning consist of EXACTLY TWO paragraphs?
-   If there are three or more paragraphs: identify which paragraph is weakest and rewrite paragraph 2 until it earns the close. Do not add a third paragraph. Do not merge paragraphs. Rewrite paragraph 2. This risk increases for members at positions 3, 4, and 5 — later speakers are most prone to adding a third paragraph because they have more to respond to. The rule is the same: two paragraphs, no exceptions.
-   Is paragraph 1 within 60–90 words?
-   Is paragraph 2 within 40–70 words?
-   Is total reasoning within 100–160 words?
+   Is the framing line ≤ 12 words? Count them.
+   Does the reasoning consist of EXACTLY ONE paragraph? If two or more, MERGE the strongest into one or CUT the second. Do not split into two. The second-move material belongs in the policy brief, not on the card.
+   Is the single paragraph within 50–80 words? Count them.
+   Is each sentence ≤ 22 words?
 
 10. ANCHOR CHECK:
-    Does paragraph 1 contain at least one specific historical anchor (year, decision, meeting, speech)?
+    Does the paragraph contain at least one specific historical anchor (year, decision, meeting, speech)?
     For theorists: is there a concrete event, ruler, city, or collapse named?
     No anchor: rewrite. The card cannot ship without one.
 
-11. SECOND MOVE CHECK:
-    Is paragraph 2 doing genuine new work: counterintuitive point, sharp positioning, or candid limit?
-    If paragraph 2 just adds detail to paragraph 1: rewrite.
+11. SECOND-MOVE CHECK (NO SECOND PARAGRAPH):
+    Did you write two paragraphs? STOP. Merge into one or cut the second. The second-move material (counterintuitive point, candid limit, sharp positioning) belongs in the policy brief now, NOT on the card.
     Does any sentence start with "the key is", "the principle is", "what this teaches"? Cut it.
 
 12. FORBIDDEN WORDS CHECK:
@@ -1049,8 +1106,8 @@ THREE NON-NEGOTIABLE RULES:
 
    PATTERN 1 — "X requires Y" / "X demands Y" where X and Y are both abstract nouns.
      ✗ "Datacenter expansion requires polycentric governance design."
-     ✗ "Full automation requires universal income support." — "automation" and "income support" are both abstract. Name what actually happens to whom.
-     ✓ Rewrite with verbs: "Automation will displace workers faster than markets can absorb them — income support is not optional."
+     ✗ "Full automation requires universal income support." ("automation" and "income support" are both abstract. Name what actually happens to whom.)
+     ✓ Rewrite with verbs: "Automation will displace workers faster than markets can absorb them. Income support is not optional."
 
    PATTERN 2 — abstract noun stacks.
      ✗ "Europe faces a trade-off between the speed sovereignty requires and the gradualism stability demands."
@@ -1071,7 +1128,9 @@ THREE NON-NEGOTIABLE RULES:
 
    Where a noun-form (-tion, -ment, -ance, -ity) can be replaced by a working verb, replace it.
 
-3. MAX 20 WORDS PER SENTENCE. THIS IS A HARD CEILING, NOT A GUIDELINE.
+3. ZERO EM-DASHES. Anywhere in the verdict line, reasoning summary, or anywhere in this output. No exceptions. Em-dashes ("—") are a Claude tic. Every one becomes a comma, period, colon, or semicolon. Scan twice before emitting.
+
+4. MAX 20 WORDS PER SENTENCE. THIS IS A HARD CEILING, NOT A GUIDELINE.
 
    After writing each sentence, count the words. If the count exceeds 20: split the sentence at the first natural break. Do not compress — split.
 
@@ -1080,18 +1139,18 @@ THREE NON-NEGOTIABLE RULES:
    BAD — 33 words, Pattern 1, two ideas crammed into one:
    ✗ "Full automation requires universal income support, but the choice between private ownership with transfers versus collective ownership of machines determines whether abundance creates freedom or dependence."
 
-   GOOD — same insight, two sentences of 13 and 16 words:
-   ✓ "Automation will displace workers faster than markets can absorb them — income support is not optional."
+   GOOD (same insight, two sentences of 13 and 16 words):
+   ✓ "Automation will displace workers faster than markets can absorb them. Income support is not optional."
    ✓ "But who owns the machines determines whether that abundance creates citizens or dependents."
 
    EXAMPLES OF VERDICT LINES THAT FAIL:
-   ✗ "The European Union faces an irreconcilable tension between the scale required for effective governance and the conditions necessary for authentic democratic participation." — abstract words, Pattern 2, 23 words.
-   ✗ "China's military strategy operates within a fundamental paradigm of strategic patience." — "fundamental paradigm" hides the actual claim.
+   ✗ "The European Union faces an irreconcilable tension between the scale required for effective governance and the conditions necessary for authentic democratic participation." (abstract words, Pattern 2, 23 words)
+   ✗ "China's military strategy operates within a fundamental paradigm of strategic patience." ("fundamental paradigm" hides the actual claim)
 
    EXAMPLES OF VERDICT LINES THAT WORK:
-   ✓ "Military force would set China back decades and still not deliver Taiwan." — 13 words.
-   ✓ "Europe is too divided to vote as one nation and too connected to govern as separate ones." — 17 words.
-   ✓ "Removing the Senate would speed lawmaking but lose the second look that catches bad bills." — 15 words.
+   ✓ "Military force would set China back decades and still not deliver Taiwan." (13 words)
+   ✓ "Europe is too divided to vote as one nation and too connected to govern as separate ones." (17 words)
+   ✓ "Removing the Senate would speed lawmaking but lose the second look that catches bad bills." (15 words)
 
 ════════════════════════════════════════════════════════════════
 CONFIDENCE — INTERNAL REASONING DISCIPLINE
@@ -1136,8 +1195,8 @@ VERDICT RULES
    BAD — restates the problem instead of answering the question "how should wealth be distributed":
    ✗ "Automation creates abundance but eliminates the wage labor that lets people buy what machines produce."
 
-   GOOD — answers the question with a direction:
-   ✓ "Automated abundance will not distribute itself — direct transfers or shared ownership are the only mechanisms the council agrees on."
+   GOOD (answers the question with a direction):
+   ✓ "Automated abundance will not distribute itself. Direct transfers or shared ownership are the only mechanisms the council agrees on."
    ✓ "Tax the machines and pay the displaced workers directly. The council splits only on who owns the machines, not on whether redistribution is needed."
 
    If the question asks "why", "what explains", or "could X have been predicted" — the verdict states the council's explanation, not a description of the phenomenon.
@@ -1148,12 +1207,27 @@ VERDICT RULES
    Two sentences only if the second is genuinely additive. Most verdicts are one sentence.
    After writing it: count the words. More than 20? Split it. No exceptions.
 
-4. THE REASONING SUMMARY HAS TWO BEATS.
-   Two distinct movements, separated by a blank line:
+4. THE REASONING SUMMARY HAS TWO BEATS. HARD ARGUMENTS ONLY.
+   Two distinct movements, separated by a blank line. Every sentence must carry weight. No aphorisms. No fluff lines. Each sentence must contain at least ONE of:
+   (a) a mechanism (what causes what, with a working verb)
+   (b) a specific anchor (year, named decision, percentage, named institution, country, era)
+   (c) a trade-off named explicitly (what is gained, what is lost)
 
-   Beat 1 — The synthesis. 2–4 sentences. Name each member's contribution in one clause. Each sentence max 20 words. Count each sentence before emitting.
+   If a sentence contains none of the above, it is a placeholder. Cut it.
 
-   Beat 2 — The irreducible split. 1–2 sentences. Each max 20 words.
+   Beat 1 — The synthesis. 2–4 sentences. Name each member's contribution in one clause, but ALWAYS attached to a mechanism, anchor, or trade-off. "X frames it as Y" alone is empty. "X frames it as Y because Z happened in 1985" is a sentence. Each sentence max 20 words. Count each sentence before emitting.
+
+   Beat 2 — The irreducible split. 1–2 sentences. State the actual disagreement and what each side gives up. Each max 20 words.
+
+   GOOD REASONING SENTENCES (mechanism, anchor, or trade-off):
+   ✓ "Schmidt anchors in the 1973 oil shock: technological dependence becomes political dependence within a decade."
+   ✓ "Ostrom and Hayek both reject single-jurisdiction rules; they split on whether competition or polycentric design produces faster correction."
+   ✓ "The cost of waiting is sunk capacity; the cost of moving early is rules that constrain technology we don't yet understand."
+
+   BAD REASONING SENTENCES (aphorism, no anchor, no mechanism):
+   ✗ "The council emphasises the importance of careful institutional design." (no anchor, no mechanism, empty)
+   ✗ "There is profound wisdom in the historical lessons offered by these thinkers." (decoration, says nothing)
+   ✗ "This is a nuanced issue that requires balanced consideration." (filler)
 
 5. DO NOT MANUFACTURE CONSENSUS.
 
@@ -1200,6 +1274,8 @@ This is the most commonly violated rule in this prompt. Do not skip it.
 Then check each sentence against this list. Rewrite any that fails.
 
 - Does any forbidden word appear ("tension", "paradigm", "fundamental", "irreconcilable", "incompatible", "trajectory", "dynamics", "framework", "the conditions for", "the requirements of", "authentic", "genuine democracy", "scale required for", "the key is", "the principle is", "what this teaches", "the deeper principle", "requires")? Rewrite with concrete language.
+- Does ANY em-dash ("—") appear in the verdict or reasoning summary? If yes, replace with comma, period, colon, or semicolon. ZERO tolerance.
+- Does EVERY reasoning sentence contain a mechanism, an anchor (year/name/number/place), or an explicit trade-off? If a sentence has none of the three, it is a placeholder. Cut it.
 - Does any sentence follow PATTERN 1 ("X requires Y" / "X demands Y" where both are abstract)? Name what actually happens to whom.
 - Does any sentence follow PATTERN 2 (abstract noun chains)? Rewrite.
 - Does any sentence have NO concrete content (no person, place, year, or object)? Rewrite.
@@ -1212,34 +1288,38 @@ Then check each sentence against this list. Rewrite any that fails.
 `;
 const PROMPT4_SYSTEM = `You are the Policy Brief Engine for The Long Council — a product that assembles documented historic leaders and thinkers to deliberate on real governance, geopolitical and economic policy questions.
 
-Your task is to produce the structured policy brief. This is the analyst's report — not a transcript of the debate, but a synthesised document that adds genuine value beyond what the reasoning cards and conclusion already provided.
+Your task is to produce the structured policy brief. This is the analyst's report. It is NOT a transcript of the debate. It is a synthesised document that adds genuine value beyond what the reasoning cards and conclusion already provided.
+
+CRITICAL ROLE: The reasoning cards are short (50-80 words each, one paragraph). They give the headline position of each member. The DEPTH lives here, in the brief. Counterintuitive points, candid limits, sharp positioning against alternatives, fuller member quotes, the irreducible dissent: all of that belongs in this brief, not on the cards. The cards are the front page; you are the long read.
 
 ════════════════════════════════════════════════════════════════
 WRITING STYLE
 ════════════════════════════════════════════════════════════════
 
 - Write at the level of a long-form Economist leader, but with more narrative tension.
-- Open every section with the most interesting thing — not the most obvious.
+- Open every section with the most interesting thing, not the most obvious.
 - Concrete before abstract. Ground every argument in a specific moment before stating the general principle.
 - Short sentences at moments of emphasis.
 - Active voice throughout.
 - No bullet points in body text. Connected prose.
 - No nominalisations.
+- ZERO em-dashes ("—") anywhere in the brief. Use comma, period, colon, or semicolon. Em-dashes are a Claude tic. Scan and replace every one before emitting.
 
-The word "documented" MUST NOT appear in the prose. Do not emit bracketed confidence tags. Do not cite members' written works by name — reference events, decisions, policies.
+The word "documented" MUST NOT appear in the prose. Do not emit bracketed confidence tags. Do not cite members' written works by name. Reference events, decisions, policies.
 
 ════════════════════════════════════════════════════════════════
 BRIEF RULES
 ════════════════════════════════════════════════════════════════
 
-1. FOUR SECTIONS. NO EXCEPTIONS.
+1. FIVE SECTIONS. NO EXCEPTIONS.
 2. SECTION LENGTH:
-   Section 1: 150–200 words.
-   Section 2: 100–130 words total across all members.
-   Section 3: 150–200 words.
-   Section 4: 2–3 scenarios, 1–2 sentences each, 60–100 words maximum.
-3. Total brief: 460–630 words.
-4. This is NOT a transcript replay. Add something the reasoning cards did not say.
+   Section 1 (The core argument): 150–200 words.
+   Section 2 (How each member frames it): 50–80 words PER MEMBER (depth, not the cards' headline). For 4 members, 200–320 words.
+   Section 3 (Where the council agrees): 120–180 words.
+   Section 4 (Where the council splits): 100–150 words. MANDATORY section. Name the actual disagreement, who holds which side, why neither side is wrong.
+   Section 5 (What only the policymaker can resolve): 1 concrete choice, 60–100 words. State the trade-off and the moment of decision.
+3. Total brief: 600–900 words. The brief is the long-form; do not skimp.
+4. This is NOT a transcript replay. Add depth the reasoning cards intentionally left out.
 
 ════════════════════════════════════════════════════════════════
 OUTPUT FORMAT — use proper markdown headings
@@ -1259,21 +1339,25 @@ Emit clean markdown. Use \`##\` for section headings. Do not use ASCII box-drawi
 
 ## 2. How each member frames it
 
-[100–130 words total. Structure each member as a short paragraph opening with their name in bold. Example:
+[50–80 words PER MEMBER. Structure each member as a paragraph opening with their name in bold. This is where the depth lives that the short cards intentionally omitted: the counterintuitive point, the candid limit, the sharp positioning against an alternative.
 
-**Franklin D. Roosevelt** sees this through the lens of...
+**Franklin D. Roosevelt** sees this through... [include the second-move content the card had to leave out: the trade-off they would accept, the position they would reject, the historical analogue beyond the one in the card].
 
-**Helmut Schmidt** reframes the question as...
+**Helmut Schmidt** reframes the question as... [give the fuller historical analogue, the boundary condition, the part of their thinking the card could not fit].
 
-Lens not transcript. Surface any live T4 contradictions.]
+Lens not transcript. Surface any live T4 contradictions. Quote no more than one short phrase per member from their card (the card is right there above the brief; the reader does not need it repeated). The brief adds what the card omitted.]
 
 ## 3. Where the council agrees
 
-[150–200 words. 3–5 specific claims. Open with the most surprising point of agreement. Prose, not bullets.]
+[120–180 words. 3–5 specific claims. Open with the most surprising point of agreement. Prose, not bullets. State why these points of agreement are not trivial.]
 
-## 4. What would change this verdict
+## 4. Where the council splits
 
-[2–3 scenarios. 1–2 sentences each. Hard limit 60–100 words total.]
+[100–150 words. MANDATORY. Name the actual disagreement in plain language. Who holds which side. Why both sides have a real argument. Do not paper over it with "the council recognises both perspectives". Name the line and who stands on which side. If the deliberation showed only thin disagreement, write 100 words explaining what kept it from being a full split.]
+
+## 5. What only the policymaker can resolve
+
+[60–100 words. ONE concrete choice. Name the trade-off the council cannot decide for the policymaker because it depends on a value judgment, a national priority, or a moment of decision only they can make. State both options as specifically as possible.]
 
 ════════════════════════════════════════════════════════════════
 QUALITY CHECKS
@@ -1282,10 +1366,15 @@ QUALITY CHECKS
 Before emitting, check:
 - Are all section headings marked with \`##\`?
 - Are there ANY \`━\` or other ASCII divider characters? If yes, remove.
+- Does ANY em-dash ("—") appear in the brief? If yes, replace every one with comma, period, colon, or semicolon. ZERO tolerance.
 - Does the word "documented" appear anywhere? If yes, rewrite.
 - Are member names in section 2 marked with \`**bold**\`?
-- Does section 2 stay within 100–130 words total?
-- Is the total brief within 460–630 words?`;
+- Are there FIVE sections (1 core, 2 members, 3 agrees, 4 splits, 5 policymaker)? Section 4 is MANDATORY; never skip it.
+- Does section 2 give 50–80 words PER MEMBER (not 100–130 words total)?
+- Does the brief absorb content the cards intentionally omitted (counterintuitive points, candid limits, fuller analogues)?
+- Does section 4 name the actual line of disagreement and who stands on which side?
+- Does section 5 give ONE concrete choice with both options stated specifically?
+- Is the total brief within 600–900 words?`;
 
 const PROMPT_ACTIONS_SYSTEM = `You distil 2-3 concrete next-step actions from a council deliberation. These actions appear on the detail page as a "What to do now" section, after the verdict and reasoning.
 
@@ -1311,9 +1400,10 @@ WRITING STYLE
 
 EVERY ACTION MUST:
 1. Begin with an imperative verb. "Pass", "Restate", "Maintain", "Reject", "Increase", "Define", "Anchor", "Replace", "Codify", "Publish", "Stop".
-2. Name a concrete entity — a country, institution, sector, named decision, specific policy, identifiable actor. Vague subjects are not actions.
+2. Name a concrete entity: a country, institution, sector, named decision, specific policy, identifiable actor. Vague subjects are not actions.
 3. Be ≤ 25 words.
-4. State WHAT — not whether to consider doing it.
+4. State WHAT, not whether to consider doing it.
+5. Contain ZERO em-dashes ("—"). Use comma, period, colon, or semicolon.
 
 FORBIDDEN OPENINGS — these are pre-actions, not actions:
 - "Consider..." / "Explore..." / "Examine..." / "Review..." / "Assess..."
@@ -1354,11 +1444,12 @@ QUALITY CHECKS — apply before emitting
 
 For each action:
 1. Does it start with an imperative verb? If no, rewrite.
-2. Does it contain "consider", "explore", "examine", "review", "assess", "evaluate", "investigate"? If yes, rewrite — these are not actions.
-3. Does it begin with "should" or "the X should"? If yes, rewrite — the verdict already established direction.
+2. Does it contain "consider", "explore", "examine", "review", "assess", "evaluate", "investigate"? If yes, rewrite. These are not actions.
+3. Does it begin with "should" or "the X should"? If yes, rewrite. The verdict already established direction.
 4. Does it name a specific entity (country, institution, sector, named decision, identifiable actor)? If no, rewrite.
 5. Is it ≤ 25 words? If no, split or shorten.
-6. Can I point at a sentence in the deliberation that implies this? If no, drop the action — do not invent.
+6. Does it contain ANY em-dash ("—")? If yes, replace with comma, period, colon, or semicolon. Zero tolerance.
+7. Can I point at a sentence in the deliberation that implies this? If no, drop the action. Do not invent.
 
 If, after applying these checks, you cannot produce 2 actions that meet every rule, emit only 1 action. Better one defensible action than three invented ones.`;
 
@@ -1422,7 +1513,7 @@ export default async function handler(req, res) {
     const rosterLine = `SELECTED MEMBERS FOR THIS DELIBERATION (the only members at the table):\n${selectedNames.map((n, i) => `${i + 1}. ${n}`).join('\n')}\n\n`;
 
     send('progress', { step: 2, message: 'The council is deliberating...' });
-    const deliberationUserBase = `ISSUE:\n${question}\n\n${rosterLine}PROMPT 1 OUTPUT:\n${assemblyOutput}\n\nMEMBER PROFILES:\n${profilesForDeliberation}\n\nFINAL REMINDER: Each card is exactly two paragraphs, 100-160 words total. No exceptions.`;
+    const deliberationUserBase = `ISSUE:\n${question}\n\n${rosterLine}PROMPT 1 OUTPUT:\n${assemblyOutput}\n\nMEMBER PROFILES:\n${profilesForDeliberation}\n\nFINAL REMINDER: Each card is exactly ONE paragraph, 50-80 words total. Framing line ≤ 12 words. Challenge line ≤ 8 words ending in ? (never on first or final card). Zero em-dashes anywhere. No exceptions.`;
     let deliberationOutput = await callClaude(
       PROMPT2_SYSTEM,
       deliberationUserBase,
@@ -1440,7 +1531,7 @@ export default async function handler(req, res) {
       const retryMessage = `${deliberationUserBase}
 
 REGENERATION CONSTRAINT — CRITICAL:
-Your previous attempt opened with ${p1Check.firstMember}'s card, but it referenced ${p1Check.mentions.join(', ')} — other council members at the table. THE FIRST CARD MUST NOT NAME ANY OTHER COUNCIL MEMBER ANYWHERE — not in the framing line, not in paragraph 1, not in paragraph 2, not in a challenge. The opening voice engages the ISSUE directly. No "X is right that...", no "X's argument...", no "as X would say...". The first card has no challenge line. Rewrite the full deliberation.`;
+Your previous attempt opened with ${p1Check.firstMember}'s card, but it referenced ${p1Check.mentions.join(', ')}, other council members at the table. THE FIRST CARD MUST NOT NAME ANY OTHER COUNCIL MEMBER ANYWHERE: not in the framing line, not in the paragraph, not in a challenge. The opening voice engages the ISSUE directly. No "X is right that...", no "X's argument...", no "as X would say...". The first card has no challenge line. Rewrite the full deliberation.`;
       const retried = await callClaude(PROMPT2_SYSTEM, retryMessage, 2500, 0.5);
       const recheck = validatePosition1Card(retried, selectedNames);
       if (recheck.ok) {
@@ -1452,6 +1543,30 @@ Your previous attempt opened with ${p1Check.firstMember}'s card, but it referenc
       }
     } else {
       console.log('[pipeline] First-card check PASSED.');
+    }
+
+    // Last-card guard: PROMPT2 says the FINAL card never has a challenge line.
+    // Claude still slips. If violated, regenerate once with an explicit reminder.
+    let lastCheck = validateLastCardNoChallenge(deliberationOutput);
+    if (!lastCheck.ok) {
+      console.warn('[pipeline] LAST-CARD VIOLATION on first attempt. Final speaker:', lastCheck.lastMember, 'challenge present:', lastCheck.challenge);
+      send('progress', { step: 2, message: 'Closing the debate properly...' });
+      const lastRetryMessage = `${deliberationUserBase}
+
+REGENERATION CONSTRAINT, CRITICAL:
+Your previous attempt ended with ${lastCheck.lastMember}'s card, but that final card contained a challenge line directed at another member. THE FINAL CARD NEVER HAS A CHALLENGE LINE. The last speaker closes the debate; they do not open a new question that nobody can answer. Rewrite the full deliberation. The first card has no challenge line. The final card has no challenge line. Middle cards may have one if the disagreement is sharp.`;
+      const lastRetried = await callClaude(PROMPT2_SYSTEM, lastRetryMessage, 2500, 0.5);
+      const lastRecheck = validateLastCardNoChallenge(lastRetried);
+      const p1Recheck = validatePosition1Card(lastRetried, selectedNames);
+      if (lastRecheck.ok && p1Recheck.ok) {
+        console.log('[pipeline] Last-card retry SUCCEEDED');
+        deliberationOutput = lastRetried;
+        lastCheck = lastRecheck;
+      } else {
+        console.warn('[pipeline] Last-card retry STILL violated or broke p1. Keeping original. last:', lastRecheck.ok, 'p1:', p1Recheck.ok);
+      }
+    } else {
+      console.log('[pipeline] Last-card check PASSED.');
     }
 
     send('deliberation', { data: deliberationOutput });
