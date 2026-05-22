@@ -174,6 +174,12 @@ function validatePosition1Card(deliberationOutput, selectedNames) {
   const headingMatch = firstCard.match(/##\s*([^\n]+)/);
   const firstMember = headingMatch ? headingMatch[1].trim() : null;
 
+  // Strip the challenge line before scanning. The first card MAY contain a
+  // challenge to the card-2 speaker, but its body (framing line + paragraph)
+  // must not name any other member. Removing the challenge prevents a
+  // false-positive violation when the legitimate handoff names card-2's speaker.
+  const firstCardBody = firstCard.replace(/\*\*\s*Challenge to\b[\s\S]*$/i, '').trim();
+
   const mentions = [];
   for (const member of selectedNames) {
     const cleanMember = member.trim();
@@ -184,7 +190,7 @@ function validatePosition1Card(deliberationOutput, selectedNames) {
     if (lastName.length >= 4 && lastName !== cleanMember) candidates.push(lastName);
     for (const cand of candidates) {
       const escaped = cand.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      if (new RegExp(`\\b${escaped}\\b`, 'i').test(firstCard)) {
+      if (new RegExp(`\\b${escaped}\\b`, 'i').test(firstCardBody)) {
         mentions.push(cleanMember);
         break;
       }
@@ -192,7 +198,7 @@ function validatePosition1Card(deliberationOutput, selectedNames) {
   }
 
   if (mentions.length > 0) {
-    return { ok: false, firstMember, mentions, card1Preview: firstCard.slice(0, 300) };
+    return { ok: false, firstMember, mentions, card1Preview: firstCardBody.slice(0, 300) };
   }
   return { ok: true, firstMember };
 }
@@ -844,9 +850,11 @@ REASONING CARD RULES
 
    When card N+1 opens, its first sentence should ACKNOWLEDGE the challenge from card N (agreeing, refuting, reframing) before pivoting to its own position. If you would not want card N+1 to open by addressing this challenge, do not include the challenge line on card N.
 
-   The first card has no challenge line (no one has spoken yet AND it must engage the ISSUE, not the lineup). THE FINAL CARD ALSO HAS NO CHALLENGE LINE (no next speaker to chain to). Both are hard rules.
+   THE FIRST CARD MAY have a challenge line directed at the card-2 speaker (the chain starts there), BUT its body (framing line and paragraph) still must NOT name any other council member. The challenge line is a structurally separate handoff, not part of the body.
 
-   Challenge lines remain OPTIONAL on middle cards. If the disagreement with the next speaker is not sharp enough, omit the challenge. Better no challenge than a forced one.
+   THE FINAL CARD NEVER has a challenge line (no next speaker to chain to). Hard rule.
+
+   Challenge lines remain OPTIONAL on every card except the final one. If the disagreement with the next speaker is not sharp enough, omit the challenge. Better no challenge than a forced one.
 
 4. EVERY CARD IS FIRST-PERSON, IN CONTEMPORARY ENGLISH.
 
@@ -940,12 +948,12 @@ REASONING CARD RULES
       Governments today are asking about AI literacy, but this is the wrong question to be asking. The right question is: what does this country need that no one else can provide, and how do institutions deliver those capabilities by 2035?
       ---
 
-   c) CHALLENGE LINE (optional, on any card except the FIRST and the FINAL)
+   c) CHALLENGE LINE (optional, on every card EXCEPT the FINAL)
       MAXIMUM 8 WORDS. Must end in a question mark.
       MUST BE DIRECTED AT THE IMMEDIATELY NEXT SPEAKER. Not any member. Not a backward reference. The exact member whose card comes directly after this one.
       Zero em-dashes. No "framework". No "fundamental". No "genuine". No "authentic". No abstract noun chains.
       Include only when there is a sharp, focused disagreement with the next speaker worth surfacing. Some cards have one, some don't.
-      THE FIRST CARD never has a challenge line (no one to address yet AND must engage the ISSUE alone). THE FINAL CARD never has a challenge line (no next speaker to chain to). Both are hard rules.
+      THE FIRST CARD MAY have a challenge to the card-2 speaker (the chain starts there). Its body still names no other member. THE FINAL CARD NEVER has a challenge (no next speaker). Hard rule.
 
       The challenge must hit something specific the next member would actually have to answer in their opening sentence. Vague abstractions like "your framework" or "your system" fail because there is nothing to answer.
 
@@ -987,9 +995,9 @@ No header above the cards. Begin with the first \`---\`.
 
 *[Framing line, THIS member's position on THE ISSUE. No other council member's name. ≤ 12 words. Zero em-dashes.]*
 
-[ONE paragraph, 50–80 words. First sentence takes a position on the ISSUE. No other member named anywhere in this card. Grounded in ONE specific sourced moment. Zero em-dashes.]
+[ONE paragraph, 50–80 words. First sentence takes a position on the ISSUE. No other member named anywhere in this paragraph. Grounded in ONE specific sourced moment. Zero em-dashes.]
 
-(No challenge line on the first card. No one to address yet.)
+**Challenge to [the EXACT speaker of card 2]:** [Optional. ≤ 8 words, ending in ?. Zero em-dashes. The body above still names no member; only the challenge line may.]
 ---
 ## [Next member's name only]
 [Role, Country, Years]
@@ -1569,7 +1577,7 @@ export default async function handler(req, res) {
       const retryMessage = `${deliberationUserBase}
 
 REGENERATION CONSTRAINT — CRITICAL:
-Your previous attempt opened with ${p1Check.firstMember}'s card, but it referenced ${p1Check.mentions.join(', ')}, other council members at the table. THE FIRST CARD MUST NOT NAME ANY OTHER COUNCIL MEMBER ANYWHERE: not in the framing line, not in the paragraph, not in a challenge. The opening voice engages the ISSUE directly. No "X is right that...", no "X's argument...", no "as X would say...". The first card has no challenge line. Rewrite the full deliberation.`;
+Your previous attempt opened with ${p1Check.firstMember}'s card, but the BODY of that card (framing line and paragraph) referenced ${p1Check.mentions.join(', ')}, other council members at the table. THE FIRST CARD'S BODY MUST NOT NAME ANY OTHER COUNCIL MEMBER: not in the framing line, not in the paragraph. The opening voice engages the ISSUE directly. No "X is right that...", no "X's argument...", no "as X would say...". The first card MAY end with a "**Challenge to [card-2 speaker]:**" line if appropriate, but the body itself stands alone. Rewrite the full deliberation.`;
       const retried = await callClaude(PROMPT2_SYSTEM, retryMessage, 2500, 0.5);
       const recheck = validatePosition1Card(retried, selectedNames);
       if (recheck.ok) {
@@ -1607,10 +1615,10 @@ Violations found:
 ${violationList}
 
 Rewrite the full deliberation so that:
-1. The first card has NO challenge line.
-2. The final card has NO challenge line.
-3. Every middle card that includes a challenge addresses ONLY the speaker of the card that immediately follows it.
-4. The next card, when it follows a challenge, opens by engaging with that challenge before pivoting to its own position.`;
+1. The FINAL card has NO challenge line (no next speaker to chain to).
+2. Every other card MAY include a challenge, but it must address ONLY the speaker of the card that immediately follows it. This includes the FIRST card, whose challenge (if present) targets the card-2 speaker.
+3. The next card, when it follows a challenge, opens by engaging with that challenge before pivoting to its own position.
+4. The first card's BODY (framing line + paragraph) still names no other council member; only its challenge line may.`;
       const chainRetried = await callClaude(PROMPT2_SYSTEM, chainRetryMessage, 2500, 0.5);
       const chainRecheck = validateChallengeChain(chainRetried);
       const p1Recheck = validatePosition1Card(chainRetried, selectedNames);
