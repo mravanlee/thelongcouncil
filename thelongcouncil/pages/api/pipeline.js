@@ -197,12 +197,11 @@ function validatePosition1Card(deliberationOutput, selectedNames) {
   return { ok: true, firstMember };
 }
 
-// Post-generation guard: the FINAL member card must NEVER have a challenge
-// line. PROMPT2 says so explicitly but Claude still slips. The last speaker
-// closes the debate; opening a new question that nobody can answer breaks the
-// flow. This isolates the last card (the block before the convergence note)
-// and scans it for a "**Challenge to" prefix.
-function validateLastCardNoChallenge(deliberationOutput) {
+// Post-generation guard: every "Challenge to X" line must target the EXACT
+// speaker of the immediately next member card. The final card must not have
+// a challenge at all (no next speaker). This isolates each card block, reads
+// the heading and the challenge target, and verifies the chain.
+function validateChallengeChain(deliberationOutput) {
   if (!deliberationOutput) return { ok: true, reason: 'empty' };
 
   const blocks = deliberationOutput
@@ -211,30 +210,56 @@ function validateLastCardNoChallenge(deliberationOutput) {
     .filter(Boolean);
   if (blocks.length < 2) return { ok: true, reason: 'no_cards' };
 
-  // The convergence note is the very last block (heading "## The convergence note").
-  // The final MEMBER card is the block immediately before that.
-  let lastMemberCard = null;
-  for (let i = blocks.length - 1; i >= 0; i--) {
-    if (/##\s*The convergence note/i.test(blocks[i])) continue;
-    lastMemberCard = blocks[i];
-    break;
+  // Build list of (speaker, hasChallenge, challengeTarget) per MEMBER card,
+  // skipping the convergence note block.
+  const cards = [];
+  for (const b of blocks) {
+    if (/##\s*The convergence note/i.test(b)) continue;
+    const headingMatch = b.match(/##\s*([^\n]+)/);
+    const speaker = headingMatch ? headingMatch[1].trim() : null;
+    if (!speaker) continue;
+    const challengeMatch = b.match(/\*\*\s*Challenge to\s+([^:*]+?)\s*:\s*([^*\n]*)\*\*/i)
+      || b.match(/\*\*\s*Challenge to\s+([^:*]+?):\*\*\s*([^\n]+)/i);
+    const target = challengeMatch ? challengeMatch[1].trim() : null;
+    const question = challengeMatch ? (challengeMatch[2] || '').trim() : null;
+    cards.push({ speaker, hasChallenge: !!challengeMatch, target, question });
   }
-  if (!lastMemberCard) return { ok: true, reason: 'no_member_card_found' };
 
-  const headingMatch = lastMemberCard.match(/##\s*([^\n]+)/);
-  const lastMember = headingMatch ? headingMatch[1].trim() : null;
+  if (cards.length < 2) return { ok: true, reason: 'too_few_member_cards' };
 
-  // Detect the challenge line. Pattern: bold "Challenge to ...".
-  const hasChallenge = /\*\*\s*Challenge to\b/i.test(lastMemberCard);
-  if (hasChallenge) {
-    const challengeMatch = lastMemberCard.match(/\*\*\s*Challenge to[^*]*\*\*[^\n]*/i);
-    return {
-      ok: false,
-      lastMember,
-      challenge: challengeMatch ? challengeMatch[0].slice(0, 200) : '(challenge line found)',
-    };
+  // Helper: do two name strings refer to the same member? Match on last name
+  // or whole-string substring to be tolerant of "Sen" vs "Amartya Sen".
+  function sameMember(a, b) {
+    if (!a || !b) return false;
+    const na = a.toLowerCase().trim();
+    const nb = b.toLowerCase().trim();
+    if (na === nb) return true;
+    if (na.includes(nb) || nb.includes(na)) return true;
+    const lastA = na.split(/\s+/).slice(-1)[0];
+    const lastB = nb.split(/\s+/).slice(-1)[0];
+    return lastA === lastB && lastA.length >= 3;
   }
-  return { ok: true, lastMember };
+
+  const violations = [];
+  for (let i = 0; i < cards.length; i++) {
+    const c = cards[i];
+    const isFinal = i === cards.length - 1;
+    if (c.hasChallenge && isFinal) {
+      violations.push({ kind: 'final_has_challenge', speaker: c.speaker, target: c.target });
+      continue;
+    }
+    if (c.hasChallenge && !isFinal) {
+      const nextSpeaker = cards[i + 1].speaker;
+      if (!sameMember(c.target, nextSpeaker)) {
+        violations.push({ kind: 'wrong_target', speaker: c.speaker, target: c.target, expectedNext: nextSpeaker });
+      }
+    }
+  }
+
+  if (violations.length > 0) {
+    return { ok: false, violations, cards };
+  }
+  return { ok: true, cards };
 }
 
 function validateRoster(deliberationOutput, selectedNames) {
@@ -809,10 +834,19 @@ REASONING CARD RULES
 2. BACKWARD REFERENCES ONLY.
    A card may name only members who have ALREADY been written in your output. Never reference a member who appears later. The first card names no other member at all.
 
-3. CHALLENGE LINES ARE OPTIONAL, FLEXIBLE, AND NEVER ON THE FINAL CARD.
+3. CHALLENGE LINES CHAIN FORWARD TO THE IMMEDIATELY NEXT SPEAKER.
    A card MAY end with:
-     **Challenge to [any other member at the table]:** [≤ 8 words, ending in ?]
-   Include the challenge only when there is a sharp disagreement worth surfacing. It may be directed at any other participant, not necessarily the next speaker. Some cards have a challenge, some don't. The first card has no challenge line (no one to address yet). THE FINAL CARD ALSO HAS NO CHALLENGE LINE. The last speaker closes the debate; they do not open a new question that nobody can answer.
+     **Challenge to [the EXACT speaker of the very next card]:** [≤ 8 words, ending in ?]
+
+   THE CHALLENGE MAY ONLY BE DIRECTED AT THE MEMBER WHOSE CARD COMES IMMEDIATELY AFTER THIS ONE IN YOUR OUTPUT. Not two cards ahead. Not a backward reference. Not "any member at the table". The IMMEDIATELY NEXT speaker.
+
+   This creates a debate chain: card N challenges card N+1's speaker, and card N+1 opens by engaging with that challenge in its first sentence.
+
+   When card N+1 opens, its first sentence should ACKNOWLEDGE the challenge from card N (agreeing, refuting, reframing) before pivoting to its own position. If you would not want card N+1 to open by addressing this challenge, do not include the challenge line on card N.
+
+   The first card has no challenge line (no one has spoken yet AND it must engage the ISSUE, not the lineup). THE FINAL CARD ALSO HAS NO CHALLENGE LINE (no next speaker to chain to). Both are hard rules.
+
+   Challenge lines remain OPTIONAL on middle cards. If the disagreement with the next speaker is not sharp enough, omit the challenge. Better no challenge than a forced one.
 
 4. EVERY CARD IS FIRST-PERSON, IN CONTEMPORARY ENGLISH.
 
@@ -907,14 +941,17 @@ REASONING CARD RULES
       ---
 
    c) CHALLENGE LINE (optional, on any card except the FIRST and the FINAL)
-      MAXIMUM 8 WORDS. Must end in a question mark. Directed at any other member at the table, not necessarily the next speaker.
+      MAXIMUM 8 WORDS. Must end in a question mark.
+      MUST BE DIRECTED AT THE IMMEDIATELY NEXT SPEAKER. Not any member. Not a backward reference. The exact member whose card comes directly after this one.
       Zero em-dashes. No "framework". No "fundamental". No "genuine". No "authentic". No abstract noun chains.
-      Include only when there is a sharp, focused disagreement worth surfacing. Some cards have one, some don't.
-      THE FIRST CARD never has a challenge line (no one to address yet). THE FINAL CARD never has a challenge line (no one to respond). Both are hard rules.
+      Include only when there is a sharp, focused disagreement with the next speaker worth surfacing. Some cards have one, some don't.
+      THE FIRST CARD never has a challenge line (no one to address yet AND must engage the ISSUE alone). THE FINAL CARD never has a challenge line (no next speaker to chain to). Both are hard rules.
 
-      The challenge must hit something specific the other member would actually have to answer. Vague abstractions like "your framework" or "your system" fail because there is nothing to answer.
+      The challenge must hit something specific the next member would actually have to answer in their opening sentence. Vague abstractions like "your framework" or "your system" fail because there is nothing to answer.
 
-      GOOD CHALLENGE EXAMPLES (≤ 8 words, sharp, end in ?):
+      The next card, when it follows a challenge, opens by engaging with that challenge (agreeing, refuting, reframing) before pivoting to its own position.
+
+      GOOD CHALLENGE EXAMPLES (≤ 8 words, sharp, end in ?, directed at the next speaker):
       - "Schmidt, who pays when markets fail?"
       - "Hayek, what about the polluter?"
       - "Ostrom, can 27 states coordinate fast?"
@@ -926,6 +963,7 @@ REASONING CARD RULES
       - "How do you reconcile this with the structural framework of governance?" (abstract, too long)
       - "Your approach ignores deeper institutional dynamics." (not a question, abstract)
       - "But what about the trade-offs involved here?" (vague, no specific thing to answer)
+      - Challenging a member two cards ahead, or a member who already spoke (skips the chain)
 
 8. SURFACE LIVE CONTRADICTIONS.
    If a relevant contradiction exists in the member's record, surface it as a tension they acknowledge within their own argument — not as external criticism.
@@ -960,7 +998,7 @@ No header above the cards. Begin with the first \`---\`.
 
 [ONE paragraph, 50–80 words. Choose: either engage another already-written card by name in the first sentence, or respond purely to the issue. If engaging, anchor in your own experience after the engagement. Zero em-dashes.]
 
-**Challenge to [any other member at the table]:** [Optional, except: NEVER on the final card. ≤ 8 words, ending in ?. Zero em-dashes.]
+**Challenge to [the EXACT speaker of the very next card]:** [Optional. Never on the first or final card. ≤ 8 words, ending in ?. Zero em-dashes. Must address the next speaker, not any other member.]
 ---
 
 [Continue for each remaining member. Use the same structure. Majority of these cards should engage another voice; one may stand alone if its position is strong enough. Challenge lines are optional throughout, except: the FINAL card never has one.]
@@ -1545,28 +1583,46 @@ Your previous attempt opened with ${p1Check.firstMember}'s card, but it referenc
       console.log('[pipeline] First-card check PASSED.');
     }
 
-    // Last-card guard: PROMPT2 says the FINAL card never has a challenge line.
-    // Claude still slips. If violated, regenerate once with an explicit reminder.
-    let lastCheck = validateLastCardNoChallenge(deliberationOutput);
-    if (!lastCheck.ok) {
-      console.warn('[pipeline] LAST-CARD VIOLATION on first attempt. Final speaker:', lastCheck.lastMember, 'challenge present:', lastCheck.challenge);
-      send('progress', { step: 2, message: 'Closing the debate properly...' });
-      const lastRetryMessage = `${deliberationUserBase}
+    // Challenge-chain guard: every "Challenge to X" line must target the EXACT
+    // speaker of the immediately next card. The final card must have no challenge
+    // (no next speaker to chain to). Claude often slips: it challenges a member
+    // two cards ahead, or a member who already spoke. If violated, regenerate
+    // once with an explicit list of the bad targets and the expected next-speakers.
+    let chainCheck = validateChallengeChain(deliberationOutput);
+    if (!chainCheck.ok) {
+      const violationList = (chainCheck.violations || []).map(v => {
+        if (v.kind === 'final_has_challenge') {
+          return `- The FINAL card (${v.speaker}) had a challenge line ("to ${v.target}"). The final card must have NO challenge.`;
+        }
+        return `- ${v.speaker} challenged "${v.target}" but the IMMEDIATELY NEXT speaker is "${v.expectedNext}". The challenge must address ${v.expectedNext}, not ${v.target}.`;
+      }).join('\n');
+      console.warn('[pipeline] CHALLENGE-CHAIN VIOLATION on first attempt:\n' + violationList);
+      send('progress', { step: 2, message: 'Fixing the challenge chain...' });
+      const chainRetryMessage = `${deliberationUserBase}
 
 REGENERATION CONSTRAINT, CRITICAL:
-Your previous attempt ended with ${lastCheck.lastMember}'s card, but that final card contained a challenge line directed at another member. THE FINAL CARD NEVER HAS A CHALLENGE LINE. The last speaker closes the debate; they do not open a new question that nobody can answer. Rewrite the full deliberation. The first card has no challenge line. The final card has no challenge line. Middle cards may have one if the disagreement is sharp.`;
-      const lastRetried = await callClaude(PROMPT2_SYSTEM, lastRetryMessage, 2500, 0.5);
-      const lastRecheck = validateLastCardNoChallenge(lastRetried);
-      const p1Recheck = validatePosition1Card(lastRetried, selectedNames);
-      if (lastRecheck.ok && p1Recheck.ok) {
-        console.log('[pipeline] Last-card retry SUCCEEDED');
-        deliberationOutput = lastRetried;
-        lastCheck = lastRecheck;
+Your previous attempt had broken challenge chaining. Every "**Challenge to X**" line must target the EXACT speaker of the very next card. The final card must have NO challenge line.
+
+Violations found:
+${violationList}
+
+Rewrite the full deliberation so that:
+1. The first card has NO challenge line.
+2. The final card has NO challenge line.
+3. Every middle card that includes a challenge addresses ONLY the speaker of the card that immediately follows it.
+4. The next card, when it follows a challenge, opens by engaging with that challenge before pivoting to its own position.`;
+      const chainRetried = await callClaude(PROMPT2_SYSTEM, chainRetryMessage, 2500, 0.5);
+      const chainRecheck = validateChallengeChain(chainRetried);
+      const p1Recheck = validatePosition1Card(chainRetried, selectedNames);
+      if (chainRecheck.ok && p1Recheck.ok) {
+        console.log('[pipeline] Challenge-chain retry SUCCEEDED');
+        deliberationOutput = chainRetried;
+        chainCheck = chainRecheck;
       } else {
-        console.warn('[pipeline] Last-card retry STILL violated or broke p1. Keeping original. last:', lastRecheck.ok, 'p1:', p1Recheck.ok);
+        console.warn('[pipeline] Challenge-chain retry STILL invalid or broke p1. Keeping original. chain:', chainRecheck.ok, 'p1:', p1Recheck.ok);
       }
     } else {
-      console.log('[pipeline] Last-card check PASSED.');
+      console.log('[pipeline] Challenge-chain check PASSED.');
     }
 
     send('deliberation', { data: deliberationOutput });
