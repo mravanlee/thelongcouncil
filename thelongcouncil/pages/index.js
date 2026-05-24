@@ -861,13 +861,16 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
                 </div>
 
                 {recentSessions[0].member_names && recentSessions[0].member_names.length > 0 && (
-                  <ul className="mt-10 flex flex-wrap gap-x-6 gap-y-5">
+                  <ul className="mt-10 flex flex-wrap gap-x-3 gap-y-4 sm:gap-x-6 sm:gap-y-5">
                     {recentSessions[0].member_names.map((rawName) => {
                       const name = stripTier(rawName);
                       return (
-                        <li key={name} className="flex w-20 flex-col items-center text-center">
+                        <li
+                          key={name}
+                          className="flex w-16 flex-col items-center text-center sm:w-20"
+                        >
                           <RecentSessionAvatar name={name} />
-                          <div className="mt-2 text-[11px] leading-tight text-muted-foreground">
+                          <div className="mt-2 text-[10px] leading-tight text-muted-foreground sm:text-[11px]">
                             {name}
                           </div>
                         </li>
