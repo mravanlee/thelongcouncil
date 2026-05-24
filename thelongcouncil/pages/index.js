@@ -922,7 +922,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
                       }
                     }}
                     placeholder="Type your question here"
-                    className="w-full bg-transparent py-3 text-[18px] leading-[1.5] text-foreground placeholder:text-muted-foreground/70 focus:outline-none"
+                    className="w-full bg-transparent pt-3 pb-1 text-[18px] leading-tight text-foreground placeholder:text-muted-foreground/70 focus:outline-none"
                   />
                 </div>
                 <button
