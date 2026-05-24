@@ -810,29 +810,56 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
 
       {screen === 'landing' && (
         <>
-          <div className="landing">
-            <div className="landing-eyebrow">{formatSessionCount(sessionCount)} ISSUES DEBATED</div>
-            <p className="landing-lead">
-              This is The Long Council. For each question, the council assembles the most relevant leaders and thinkers from history, such as Mandela, Machiavelli, FDR, Sun Tzu and Thatcher. They debate <em>your question</em> and deliver a verdict.
-            </p>
-            <div className="landing-divider" />
-            <h1 className="landing-heading">What&apos;s on your mind? Ask the council.</h1>
-            <div className="issue-form">
-              <textarea
-                ref={textareaRef}
-                className="issue-input"
-                rows={3}
-                placeholder={"e.g. Should social media be regulated?\nShould the EU have its own army?\nShould we tax wealth, not income?"}
-                value={question}
-                onChange={e => setQuestion(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(); } }}
-              />
-              <button className="submit-btn" onClick={handleSubmit} disabled={!question.trim() || sharpenerLoading}>
-                {sharpenerLoading ? 'Considering...' : 'Ask the council →'}
-              </button>
-              <p className="landing-hint">Vague questions get returned for sharpening. Specific ones get debated.</p>
+          <section className="border-b border-border/70">
+            <div className="mx-auto max-w-3xl px-6 pt-16 pb-14">
+              <div className="text-[11px] tracking-[0.22em] uppercase text-primary">
+                {formatSessionCount(sessionCount)} issues debated
+              </div>
+              <h1
+                className="mt-6 text-[34px] leading-[1.15] tracking-tight text-foreground sm:text-[44px]"
+                style={SERIF}
+              >
+                History&apos;s greatest minds, on the questions you bring.
+              </h1>
+              <p className="mt-6 text-[16px] leading-[1.75] text-foreground/85">
+                For every question, the council assembles the most relevant
+                leaders and thinkers from history — Mandela, Machiavelli, FDR,
+                Sun Tzu, Thatcher — to debate <em className="italic">your
+                question</em> and deliver a verdict.
+              </p>
+
+              <div className="mt-10 flex flex-col gap-3">
+                <textarea
+                  ref={textareaRef}
+                  rows={3}
+                  placeholder={'e.g. Should social media be regulated?\nShould the EU have its own army?\nShould we tax wealth, not income?'}
+                  value={question}
+                  onChange={(e) => setQuestion(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSubmit();
+                    }
+                  }}
+                  className="w-full resize-none rounded-sm border border-border bg-card px-4 py-3 text-[16px] leading-[1.7] text-foreground placeholder:italic placeholder:text-muted-foreground/70 focus:border-primary focus:outline-none"
+                />
+                <div className="flex items-center gap-4">
+                  <button
+                    type="button"
+                    onClick={handleSubmit}
+                    disabled={!question.trim() || sharpenerLoading}
+                    className="inline-flex items-center gap-2 rounded-sm bg-primary px-5 py-2.5 text-[13px] font-medium tracking-wide text-primary-foreground transition hover:bg-primary/90 disabled:opacity-35 disabled:cursor-not-allowed"
+                    style={SERIF}
+                  >
+                    {sharpenerLoading ? 'Considering…' : 'Ask the council →'}
+                  </button>
+                  <p className="text-[12px] italic text-muted-foreground">
+                    Vague questions get sharpened. Specific ones get debated.
+                  </p>
+                </div>
+              </div>
             </div>
-          </div>
+          </section>
 
           {recentSessions.length > 0 && (
             <div className="recent-sessions">
