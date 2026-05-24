@@ -296,7 +296,7 @@ export default function ArchiveDetail({ session, memberQuery }) {
       <style jsx>{`
         .detail-wrap { max-width: 680px; margin: 0 auto; padding: 0 1.25rem; }
         .back-link, .back-link :global(*), .back-link:visited { text-decoration: none !important; color: #7a7a7a !important; }
-        .back-link { display: inline-block; font-family: 'Inter', sans-serif; font-size: 13px; margin-top: 2.5rem; margin-bottom: 3rem; transition: color 0.2s ease; }
+        .back-link { display: inline-block; font-family: 'Inter', sans-serif; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; margin-top: 1.25rem; margin-bottom: 1rem; transition: color 0.2s ease; }
         .back-link:hover, .back-link:hover :global(*) { color: #6b1a1a !important; }
         .detail-meta { font-family: 'Inter', sans-serif; font-size: 11px; color: #7a7a7a; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px; }
         .detail-title { font-family: 'Playfair Display', Georgia, serif; font-size: 26px; color: #0f0f0f; font-weight: 600; line-height: 1.3; margin: 0 0 2.25rem; max-width: 62ch; }
