@@ -91,7 +91,9 @@ const THEMES = [
   { label: 'China', keywords: ['china', 'chinese', 'asia', 'asian', 'beijing', 'taiwan', 'japan', 'korea', 'singapore', 'india', 'mahathir', 'lee kuan', 'deng', 'confucius', 'sun tzu'] },
   { label: 'War', keywords: ['military', 'conflict', 'security', 'defense', 'defence', 'ukraine', 'russia', 'israel', 'gaza', 'warfare', 'sun tzu', 'churchill'], acronyms: ['NATO'] },
   { label: 'Climate', keywords: ['climat', 'energy', 'oil', 'renewable', 'emission', 'carbon', 'fossil', 'groningen', 'sustainab', 'green', 'maathai'] },
-  { label: 'AI', keywords: ['artificial intelligence', 'technolog', 'semiconduct', 'algorithm', 'internet', 'social media', 'silicon'], acronyms: ['AI', 'ASML'] },
+  { label: 'AI', keywords: ['artificial intelligence', 'algorithm', 'machine learning', 'silicon'], acronyms: ['AI', 'ASML'] },
+  { label: 'Technology', keywords: ['technolog', 'semiconduct', 'internet', 'social media', 'platform', 'innovation'] },
+  { label: 'Governance', keywords: ['governance', 'institution', 'regulat', 'rule of law', 'bureaucra', 'public administration', 'oversight'] },
   { label: 'Netherlands', keywords: ['nederland', 'dutch', 'netherlands', 'jetten', 'groningen', 'curaçao', 'rutte', 'amsterdam', 'haag', 'wilders'], acronyms: ['ASML'] },
 ];
 
@@ -413,7 +415,7 @@ function ArchiveEntry({ session, themes, onMemberClick }) {
         )}
       </Link>
 
-      {(themes.length > 0 || session.member_names.length > 0) && (
+      {themes.length > 0 && (
         <div className="mt-5 flex flex-wrap gap-2">
           {themes.map((t) => (
             <span
@@ -423,23 +425,6 @@ function ArchiveEntry({ session, themes, onMemberClick }) {
               {t}
             </span>
           ))}
-          {session.member_names.map((name, i) => {
-            const clean = stripTierSuffix(name);
-            return (
-              <button
-                key={i}
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onMemberClick(clean);
-                }}
-                className="rounded-sm border border-border bg-secondary px-2 py-1 text-[11px] text-foreground/80 hover:border-primary hover:text-primary transition"
-              >
-                {clean}
-              </button>
-            );
-          })}
         </div>
       )}
     </li>
