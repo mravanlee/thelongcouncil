@@ -153,9 +153,9 @@ function memberMonogram(name) {
 export async function getServerSideProps() {
   const recentPromise = supabase
     .from('sessions')
-    .select('id, slug, original_issue, created_at, cards, featured_quote, featured_quote_member')
+    .select('id, slug, original_issue, created_at, cards, featured_quote, featured_quote_member, member_names, member_types')
     .order('created_at', { ascending: false })
-    .limit(3);
+    .limit(4);
 
   const countPromise = supabase
     .from('sessions')
@@ -179,10 +179,22 @@ export async function getServerSideProps() {
       teaser: extractTeaser(s.cards),
       featured_quote: s.featured_quote || null,
       featured_quote_member: s.featured_quote_member || null,
+      member_names: (s.member_names || []).slice(0, 5),
     }));
 
   return { props: { recentSessions: enriched, sessionCount } };
 }
+
+function stripTier(name) {
+  return (name || '').replace(/\s*[—–-]\s*(Practitioner|Framer|Leader|Thinker|Wildcard)(\/\w+)?\s*$/i, '').trim();
+}
+
+const EXAMPLE_QUESTIONS = [
+  'Should the EU build an army?',
+  'How can we protect democratic institutions?',
+  'Should AI be regulated?',
+  'How should wealth be redistributed?',
+];
 
 function extractTeaser(cards) {
   if (!cards || !cards.verdict) return '';
@@ -810,29 +822,96 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
 
       {screen === 'landing' && (
         <>
-          <section className="border-b border-border/70">
-            <div className="mx-auto max-w-3xl px-6 pt-16 pb-14">
-              <div className="text-[11px] tracking-[0.22em] uppercase text-primary">
-                {formatSessionCount(sessionCount)} issues debated
+          {/* [1] Featured: today's council session */}
+          {recentSessions.length > 0 && (
+            <section className="border-b border-border/70">
+              <div className="mx-auto max-w-5xl px-6 py-16 lg:py-20">
+                <div className="text-[11px] tracking-[0.22em] uppercase text-primary">
+                  Question for the council
+                </div>
+                <h1
+                  className="mt-5 max-w-4xl text-[28px] leading-[1.1] tracking-tight text-foreground sm:text-[36px] lg:text-[44px]"
+                  style={SERIF}
+                >
+                  {recentSessions[0].original_issue}
+                </h1>
+
+                <div className="my-10 flex items-center gap-3">
+                  <span className="h-px flex-1 bg-border/70" />
+                  <span className="text-[11px] tracking-[0.22em] uppercase text-primary">
+                    ↓ The council answered
+                  </span>
+                  <span className="h-px flex-1 bg-border/70" />
+                </div>
+
+                <div className="relative">
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute -top-4 -left-1 select-none text-[56px] leading-none text-primary/20 sm:-top-6 sm:-left-2 sm:text-[72px]"
+                    style={SERIF}
+                  >
+                    “
+                  </span>
+                  <p
+                    className="relative max-w-3xl pl-6 text-[22px] leading-[1.4] text-foreground sm:pl-10 sm:text-[24px]"
+                    style={SERIF}
+                  >
+                    {recentSessions[0].teaser}
+                  </p>
+                </div>
+
+                {recentSessions[0].member_names && recentSessions[0].member_names.length > 0 && (
+                  <ul className="mt-10 flex flex-wrap gap-x-6 gap-y-5">
+                    {recentSessions[0].member_names.map((rawName) => {
+                      const name = stripTier(rawName);
+                      return (
+                        <li key={name} className="flex w-20 flex-col items-center text-center">
+                          <RecentSessionAvatar name={name} />
+                          <div className="mt-2 text-[11px] leading-tight text-muted-foreground">
+                            {name}
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+
+                <div className="mt-10">
+                  <Link
+                    href={`/archive/${recentSessions[0].slug}`}
+                    className="inline-flex text-[12px] tracking-[0.2em] uppercase font-semibold text-primary hover:text-foreground transition"
+                  >
+                    Read the full response →
+                  </Link>
+                </div>
               </div>
-              <h1
-                className="mt-6 text-[34px] leading-[1.15] tracking-tight text-foreground sm:text-[44px]"
+            </section>
+          )}
+
+          {/* [2] Ask a question */}
+          <section
+            id="ask"
+            className="border-b border-border/70 bg-secondary"
+          >
+            <div className="mx-auto max-w-4xl px-6 py-16 sm:py-20">
+              <div className="text-[11px] tracking-[0.22em] uppercase text-muted-foreground">
+                Ask a question of your own
+              </div>
+              <h2
+                className="mt-3 text-[28px] leading-tight tracking-tight sm:text-[36px]"
                 style={SERIF}
               >
-                History&apos;s greatest minds, on the questions you bring.
-              </h1>
-              <p className="mt-6 text-[16px] leading-[1.75] text-foreground/85">
-                For every question, the council assembles the most relevant
-                leaders and thinkers from history — Mandela, Machiavelli, FDR,
-                Sun Tzu, Thatcher — to debate <em className="italic">your
-                question</em> and deliver a verdict.
+                Have a question of your own?
+              </h2>
+              <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-muted-foreground">
+                The council will bring together the right leaders and thinkers,
+                debate, and deliver a verdict.
               </p>
 
-              <div className="mt-10 flex flex-col gap-3">
-                <textarea
+              <div className="mt-10 flex w-full flex-col gap-3 border-b-2 border-foreground/40 pb-3 focus-within:border-foreground sm:flex-row sm:items-center">
+                <input
                   ref={textareaRef}
-                  rows={3}
-                  placeholder={'e.g. Should social media be regulated?\nShould the EU have its own army?\nShould we tax wealth, not income?'}
+                  type="text"
                   value={question}
                   onChange={(e) => setQuestion(e.target.value)}
                   onKeyDown={(e) => {
@@ -841,42 +920,100 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
                       handleSubmit();
                     }
                   }}
-                  className="w-full resize-none rounded-sm border border-border bg-card px-4 py-3 text-[16px] leading-[1.7] text-foreground placeholder:italic placeholder:text-muted-foreground/70 focus:border-primary focus:outline-none"
+                  placeholder="Type your question here"
+                  className="w-full flex-1 bg-transparent py-3 text-[18px] text-foreground placeholder:text-muted-foreground/70 focus:outline-none"
                 />
-                <div className="flex items-center gap-4">
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={!question.trim() || sharpenerLoading}
+                  className="inline-flex shrink-0 items-center justify-center gap-2 rounded-sm bg-primary px-5 py-2.5 text-[13px] font-medium tracking-wide text-primary-foreground transition hover:bg-primary/90 disabled:opacity-35 disabled:cursor-not-allowed"
+                  style={SERIF}
+                >
+                  {sharpenerLoading ? 'Considering…' : 'Ask the council'}
+                  <span aria-hidden>→</span>
+                </button>
+              </div>
+
+              <div className="mt-6 text-[11px] tracking-[0.18em] uppercase text-muted-foreground">
+                Or try one of these
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {EXAMPLE_QUESTIONS.map((q) => (
                   <button
+                    key={q}
                     type="button"
-                    onClick={handleSubmit}
-                    disabled={!question.trim() || sharpenerLoading}
-                    className="inline-flex items-center gap-2 rounded-sm bg-primary px-5 py-2.5 text-[13px] font-medium tracking-wide text-primary-foreground transition hover:bg-primary/90 disabled:opacity-35 disabled:cursor-not-allowed"
-                    style={SERIF}
+                    onClick={() => setQuestion(q)}
+                    className="max-w-full cursor-pointer rounded-sm border border-border bg-background px-3 py-2 text-left text-[13px] leading-snug text-foreground/80 transition hover:border-primary/60 hover:text-foreground"
                   >
-                    {sharpenerLoading ? 'Considering…' : 'Ask the council →'}
+                    {q}
                   </button>
-                  <p className="text-[12px] italic text-muted-foreground">
-                    Vague questions get sharpened. Specific ones get debated.
-                  </p>
-                </div>
+                ))}
               </div>
             </div>
           </section>
 
-          {recentSessions.length > 0 && (
-            <div className="recent-sessions">
-              <div className="recent-head">
-                <div className="recent-rule" />
-                <div className="recent-lbl">Recent sessions</div>
-                <div className="recent-rule" />
+          {/* [3] Recent council sessions */}
+          {recentSessions.length > 1 && (
+            <section id="sessions" className="border-b border-border/70">
+              <div className="mx-auto max-w-5xl px-6 py-14">
+                <h2
+                  className="text-[28px] tracking-tight"
+                  style={SERIF}
+                >
+                  Recent council sessions
+                </h2>
+
+                <ol className="mt-8 divide-y divide-border/70 border-y border-border/70">
+                  {recentSessions.slice(1).map((s) => (
+                    <li key={s.id} className="py-9 transition hover:bg-card/40">
+                      <Link href={`/archive/${s.slug}`} className="block">
+                        <div className="text-[11px] tracking-[0.2em] uppercase text-muted-foreground">
+                          {formatDate(s.created_at)}
+                        </div>
+                        <div className="mt-4 border-l border-border pl-5">
+                          <p className="text-[14px] leading-relaxed text-muted-foreground">
+                            {s.original_issue}
+                          </p>
+                          {s.featured_quote && (
+                            <blockquote
+                              className="mt-3 max-w-2xl text-[20px] leading-[1.35] tracking-tight text-foreground"
+                              style={SERIF}
+                            >
+                              “{s.featured_quote}”
+                            </blockquote>
+                          )}
+                          <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                            {s.featured_quote_member && (
+                              <div className="flex items-center gap-3">
+                                <RecentSessionAvatar name={stripTier(s.featured_quote_member)} />
+                                <div className="text-[12px] leading-tight">
+                                  <div className="font-medium text-foreground" style={SERIF}>
+                                    {stripTier(s.featured_quote_member)}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                            <span className="text-[11px] tracking-[0.2em] uppercase font-semibold text-primary">
+                              See council session →
+                            </span>
+                          </div>
+                        </div>
+                      </Link>
+                    </li>
+                  ))}
+                </ol>
+
+                <div className="mt-8">
+                  <Link
+                    href="/archive"
+                    className="inline-flex text-[12px] tracking-[0.2em] uppercase font-semibold text-primary hover:text-foreground transition"
+                  >
+                    Browse all sessions →
+                  </Link>
+                </div>
               </div>
-              <div className="recent-list">
-                {recentSessions.map((s) => (
-                  <RecentSessionCard key={s.id} session={s} />
-                ))}
-              </div>
-              <div className="recent-footer">
-                <Link href="/archive" className="recent-see-all">See all in The Archive →</Link>
-              </div>
-            </div>
+            </section>
           )}
         </>
       )}
