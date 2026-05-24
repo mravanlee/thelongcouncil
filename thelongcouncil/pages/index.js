@@ -826,11 +826,17 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
           {recentSessions.length > 0 && (
             <section className="border-b border-border/70">
               <div className="mx-auto max-w-5xl px-6 py-16 lg:py-20">
-                <div className="text-[11px] tracking-[0.22em] uppercase text-primary">
-                  Question for the council
-                </div>
+                {/* Tagline — explains what the product is + leads into the question */}
+                <p
+                  className="mb-10 max-w-2xl text-[19px] italic leading-snug text-foreground/75 sm:text-[22px]"
+                  style={SERIF}
+                >
+                  A council of history&apos;s greatest minds. The most recent
+                  question they debated:
+                </p>
+
                 <h1
-                  className="mt-5 max-w-4xl text-[28px] leading-[1.1] tracking-tight text-foreground sm:text-[36px] lg:text-[44px]"
+                  className="max-w-4xl text-[28px] leading-[1.1] tracking-tight text-foreground sm:text-[36px] lg:text-[44px]"
                   style={SERIF}
                 >
                   {recentSessions[0].original_issue}
@@ -839,7 +845,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
                 <div className="my-10 flex items-center gap-3">
                   <span className="h-px flex-1 bg-border/70" />
                   <span className="text-[11px] tracking-[0.22em] uppercase text-primary">
-                    ↓ The council answered
+                    The council answered
                   </span>
                   <span className="h-px flex-1 bg-border/70" />
                 </div>
@@ -958,65 +964,16 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
             </div>
           </section>
 
-          {/* [3] Recent council sessions */}
+          {/* [3] Link to the full archive (replaces previous recent-sessions list) */}
           {recentSessions.length > 1 && (
             <section id="sessions" className="border-b border-border/70">
-              <div className="mx-auto max-w-5xl px-6 py-14">
-                <h2
-                  className="text-[28px] tracking-tight"
-                  style={SERIF}
+              <div className="mx-auto max-w-5xl px-6 py-12 text-center">
+                <Link
+                  href="/archive"
+                  className="text-[12px] tracking-[0.22em] uppercase font-semibold text-primary hover:text-foreground transition"
                 >
-                  Recent council sessions
-                </h2>
-
-                <ol className="mt-8 divide-y divide-border/70 border-y border-border/70">
-                  {recentSessions.slice(1).map((s) => (
-                    <li key={s.id} className="py-9 transition hover:bg-card/40">
-                      <Link href={`/archive/${s.slug}`} className="block">
-                        <div className="text-[11px] tracking-[0.2em] uppercase text-muted-foreground">
-                          {formatDate(s.created_at)}
-                        </div>
-                        <div className="mt-4 border-l border-border pl-5">
-                          <p className="text-[14px] leading-relaxed text-muted-foreground">
-                            {s.original_issue}
-                          </p>
-                          {s.featured_quote && (
-                            <blockquote
-                              className="mt-3 max-w-2xl text-[20px] leading-[1.35] tracking-tight text-foreground"
-                              style={SERIF}
-                            >
-                              “{s.featured_quote}”
-                            </blockquote>
-                          )}
-                          <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                            {s.featured_quote_member && (
-                              <div className="flex items-center gap-3">
-                                <RecentSessionAvatar name={stripTier(s.featured_quote_member)} />
-                                <div className="text-[12px] leading-tight">
-                                  <div className="font-medium text-foreground" style={SERIF}>
-                                    {stripTier(s.featured_quote_member)}
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                            <span className="text-[11px] tracking-[0.2em] uppercase font-semibold text-primary">
-                              See council session →
-                            </span>
-                          </div>
-                        </div>
-                      </Link>
-                    </li>
-                  ))}
-                </ol>
-
-                <div className="mt-8">
-                  <Link
-                    href="/archive"
-                    className="inline-flex text-[12px] tracking-[0.2em] uppercase font-semibold text-primary hover:text-foreground transition"
-                  >
-                    Browse all sessions →
-                  </Link>
-                </div>
+                  View other sessions →
+                </Link>
               </div>
             </section>
           )}
