@@ -199,22 +199,17 @@ function ShareIcon({ name, sessionSlug }) {
   }
 
   return (
-    <button className="share-icon" onClick={handleClick} aria-label={`Share ${name}'s view`} title={copied ? 'Link copied' : `Share ${name}'s view`}>
+    <button
+      onClick={handleClick}
+      aria-label={`Share ${name}'s view`}
+      title={copied ? 'Link copied' : `Share ${name}'s view`}
+      className="group inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-primary bg-transparent text-primary transition hover:bg-primary"
+    >
       {copied ? (
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="transition group-hover:[stroke:var(--color-primary-foreground)]"><polyline points="20 6 9 17 4 12" /></svg>
       ) : (
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" /><polyline points="16 6 12 2 8 6" /><line x1="12" y1="2" x2="12" y2="15" /></svg>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition group-hover:[stroke:var(--color-primary-foreground)]"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" /><polyline points="16 6 12 2 8 6" /><line x1="12" y1="2" x2="12" y2="15" /></svg>
       )}
-      <style jsx>{`
-        .share-icon {
-          width: 24px; height: 24px; border-radius: 50%;
-          border: 1px solid #6b1a1a; background: transparent; color: #6b1a1a;
-          display: inline-flex; align-items: center; justify-content: center;
-          cursor: pointer; padding: 0; flex-shrink: 0;
-          transition: background 0.2s ease, color 0.2s ease;
-        }
-        .share-icon:hover { background: #6b1a1a; color: #f3eeea; }
-      `}</style>
     </button>
   )
 }
