@@ -180,8 +180,9 @@ export default function About() {
             {/* CTA */}
             <div className="mt-14 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-5">
               <Link
-                href="/"
-                className="inline-flex items-center gap-2 rounded-sm bg-primary px-5 py-2.5 text-[13px] font-medium tracking-wide text-primary-foreground hover:bg-primary/90 transition"
+                href="/#ask"
+                className="inline-flex items-center gap-2 rounded-sm bg-primary px-5 py-2.5 text-[13px] font-medium tracking-wide hover:bg-primary/90 transition"
+                style={{ color: 'var(--color-primary-foreground)' }}
               >
                 Ask the council a question
                 <ArrowRight className="h-3.5 w-3.5" />
