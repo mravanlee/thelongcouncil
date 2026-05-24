@@ -1,8 +1,10 @@
 import { useState, useMemo, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
+import { Search } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { resolveAvatarSlug } from '../lib/avatarSlugs';
+import { SERIF, SiteFooter, SiteHeader } from '../components/SiteChrome';
 
 export async function getServerSideProps() {
   try {
@@ -29,32 +31,38 @@ function slugify(name) {
   const base = name
     .replace(/\s*\([^)]*\)/g, '')
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[̀-ͯ]/g, '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '_')
     .replace(/^_+|_+$/g, '');
   return resolveAvatarSlug(base);
 }
 
+// Parse "* 1915 · † 2012" / "* 1933" / "* 551 BC · † 479 BC" → "1915–2012" / "b. 1933" / "551–479 BC"
+function formatLifespan(lifespan) {
+  const bc = lifespan.includes('BC');
+  const years = [...lifespan.matchAll(/(\d+)/g)].map((m) => m[1]);
+  if (years.length === 0) return lifespan;
+  if (years.length === 1) return `b. ${years[0]}${bc ? ' BC' : ''}`;
+  return `${years[0]}–${years[1]}${bc ? ' BC' : ''}`;
+}
+
 function MemberAvatar({ member }) {
   const [imgFailed, setImgFailed] = useState(false);
   const slug = slugify(member.name);
   return (
-    <div className="av">
-      <span className="av-init">{member.monogram}</span>
+    <div className="relative grid h-[78px] w-[78px] shrink-0 place-items-center overflow-hidden rounded-full border border-border bg-secondary">
+      <span className="text-[18px] font-semibold text-primary" style={SERIF}>
+        {member.monogram}
+      </span>
       {!imgFailed && slug && (
         <img
           src={`/avatars/avatar_${slug}.webp`}
           alt=""
-          className="av-img"
+          className="absolute inset-0 h-full w-full object-cover"
           onError={() => setImgFailed(true)}
         />
       )}
-      <style jsx>{`
-        .av { width: 88px; height: 88px; border-radius: 50%; background: #f3eeea; border: 0.5px solid #c8bdb3; flex-shrink: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; position: relative; }
-        .av-init { font-family: 'Playfair Display', Georgia, serif; font-size: 20px; font-weight: 600; color: #6b1a1a; }
-        .av-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-      `}</style>
     </div>
   );
 }
@@ -62,66 +70,65 @@ function MemberAvatar({ member }) {
 function MemberCard({ member: m, debates }) {
   const anchorId = `m-${slugify(m.name)}`;
   return (
-    <div className="card" id={anchorId}>
-      <div className="card-top">
+    <li
+      id={anchorId}
+      className="flex flex-col gap-4 border border-border border-t-[2px] border-t-primary bg-card p-6 transition-all duration-200 hover:-translate-y-0.5 hover:bg-secondary hover:border-foreground/30 hover:shadow-md scroll-mt-6"
+    >
+      <div className="flex items-start gap-4">
         <MemberAvatar member={m} />
-        <div className="card-meta">
-          <span className="badge">{m.type === 'leader' ? 'Leader' : 'Thinker'}</span>
-          <div className="card-name">{m.name}</div>
-          <div className="card-role">{m.role}</div>
-          <div className="card-dates">{m.lifespan} · {m.country}</div>
+        <div className="flex flex-col gap-1 pt-0.5">
+          <span className="inline-flex w-fit rounded-sm bg-muted px-2 py-0.5 text-[10px] tracking-[0.18em] uppercase text-muted-foreground">
+            {m.type === 'leader' ? 'Leader' : 'Thinker'}
+          </span>
+          <div className="text-[19px] leading-[1.2] font-medium text-foreground" style={SERIF}>
+            {m.name}
+          </div>
+          <div className="text-[13px] italic leading-[1.4] text-foreground/70">{m.role}</div>
+          <div className="text-[11px] text-muted-foreground">
+            {formatLifespan(m.lifespan)} · {m.country}
+          </div>
         </div>
       </div>
 
-      <div className="card-bio">{m.bio}</div>
+      <p className="text-[14px] leading-[1.7] text-foreground/85">{m.bio}</p>
 
-      <hr className="card-rule" />
+      <hr className="border-border/70" />
 
-      <ul className="card-positions">
+      <ul className="flex flex-col gap-2.5">
         {m.positions.map((pos, i) => {
           const colon = pos.indexOf(':');
-          const isThinker = m.type === 'thinker';
+          const hasLabel = m.type === 'thinker' && colon > -1;
           return (
-            <li key={i} className="card-pos">
-              {isThinker && colon > -1 ? (
-                <><strong>{pos.slice(0, colon)}</strong>{pos.slice(colon)}</>
-              ) : pos}
+            <li
+              key={i}
+              className="relative pl-5 text-[13.5px] leading-[1.6] text-foreground/85 before:absolute before:left-0 before:text-primary before:content-['—']"
+            >
+              {hasLabel ? (
+                <>
+                  <strong className="font-medium text-primary">{pos.slice(0, colon)}</strong>
+                  {pos.slice(colon)}
+                </>
+              ) : (
+                pos
+              )}
             </li>
           );
         })}
       </ul>
 
-      <div className="card-core">
-        <span className="card-core-label">Core belief</span>
-        <span className="card-core-text">{m.corebelief}</span>
+      <div className="mt-auto flex flex-col gap-1.5 rounded-sm bg-secondary px-4 py-3.5">
+        <span className="text-[10px] tracking-[0.18em] uppercase text-primary">Core belief</span>
+        <span className="text-[13.5px] italic leading-[1.6] text-foreground/85" style={SERIF}>
+          {m.corebelief}
+        </span>
       </div>
 
       {debates > 0 && (
-        <div className="card-debates">{debates} debate{debates !== 1 ? 's' : ''}</div>
+        <div className="text-[11px] text-muted-foreground">
+          {debates} {debates === 1 ? 'debate' : 'debates'}
+        </div>
       )}
-
-      <style jsx>{`
-        .card { background: #fdfbf6; border: 0.5px solid #d4cfc8; border-top: 2px solid #6b1a1a; border-radius: 2px; padding: 22px; display: flex; flex-direction: column; gap: 14px; transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.4s ease; scroll-margin-top: 24px; }
-        .card:hover { background: #f5f1e8; border-color: #b8ad9c; border-top-color: #6b1a1a; }
-        .card.deep-link-highlight { box-shadow: 0 0 0 2px rgba(107, 26, 26, 0.5), 0 0 24px rgba(107, 26, 26, 0.15); background: #f5f1e8; }
-        .card-top { display: flex; gap: 16px; align-items: flex-start; }
-        .card-meta { flex: 1; display: flex; flex-direction: column; gap: 4px; padding-top: 2px; }
-        .badge { display: inline-block; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #7a7a7a; background: #ede9e2; padding: 2px 8px; border-radius: 2px; width: fit-content; }
-        .card-name { font-family: 'Playfair Display', Georgia, serif; font-size: 18px; font-weight: 600; color: #0f0f0f; line-height: 1.2; }
-        .card-role { font-size: 12px; color: #4a4a4a; font-style: italic; line-height: 1.4; }
-        .card-dates { font-size: 11px; color: #9a9a9a; }
-        .card-bio { font-size: 13px; color: #2a2a2a; line-height: 1.65; }
-        .card-rule { border: none; border-top: 0.5px solid #e8e3d8; margin: 0; }
-        .card-positions { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; flex: 1; }
-        .card-pos { font-size: 12.5px; color: #2a2a2a; line-height: 1.55; padding-left: 16px; position: relative; }
-        .card-pos::before { content: '—'; position: absolute; left: 0; color: #6b1a1a; }
-        .card-pos strong { font-weight: 500; color: #6b1a1a; }
-        .card-core { background: #f0ede3; border-radius: 2px; padding: 10px 13px; min-height: 110px; display: flex; flex-direction: column; gap: 4px; }
-        .card-core-label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #6b1a1a; }
-        .card-core-text { font-size: 12.5px; color: #2a2a2a; line-height: 1.6; font-style: italic; }
-        .card-debates { font-size: 11px; color: #9a9a9a; }
-      `}</style>
-    </div>
+    </li>
   );
 }
 
@@ -318,9 +325,7 @@ export default function Council({ debateCounts = {} }) {
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
 
-  // Deep-link support: when arriving at /council#m-<slug> (e.g. from an
-  // archive member chip), reset filters so the target is visible, scroll
-  // to that member's card and briefly highlight it.
+  // Deep-link support: arriving at /council#m-<slug> resets filters and scrolls.
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const scrollToHash = () => {
@@ -343,15 +348,18 @@ export default function Council({ debateCounts = {} }) {
     return () => window.removeEventListener('hashchange', scrollToHash);
   }, []);
 
-  const counts = useMemo(() => ({
-    all: COUNCIL_MEMBERS.length,
-    leader: COUNCIL_MEMBERS.filter(m => m.type === 'leader').length,
-    thinker: COUNCIL_MEMBERS.filter(m => m.type === 'thinker').length,
-  }), []);
+  const counts = useMemo(
+    () => ({
+      all: COUNCIL_MEMBERS.length,
+      leader: COUNCIL_MEMBERS.filter((m) => m.type === 'leader').length,
+      thinker: COUNCIL_MEMBERS.filter((m) => m.type === 'thinker').length,
+    }),
+    [],
+  );
 
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return COUNCIL_MEMBERS.filter(m => {
+    return COUNCIL_MEMBERS.filter((m) => {
       if (filter !== 'all' && m.type !== filter) return false;
       if (!q) return true;
       return `${m.name} ${m.role} ${m.country}`.toLowerCase().includes(q);
@@ -381,51 +389,98 @@ export default function Council({ debateCounts = {} }) {
         <meta name="twitter:image" content="https://www.thelongcouncil.com/og-default.png" />
       </Head>
 
-      <Link href="/" className="mast mast-link">
-        <div className="mast-name">The Long Council</div>
-        <div className="mast-tag">History&apos;s counsel on today&apos;s questions</div>
-      </Link>
+      <div className="min-h-screen bg-background text-foreground antialiased">
+        <SiteHeader />
 
-      <nav className="nav">
-        <Link href="/council" className="nav-link nav-active">The Council</Link>
-        <Link href="/archive" className="nav-link">The Archive</Link>
-        <Link href="/about" className="nav-link">About</Link>
-        <Link href="/" className="nav-raise">Ask a question</Link>
-      </nav>
+        <article className="border-b border-border/70">
+          <div className="mx-auto max-w-6xl px-6 pt-16 pb-20">
+            <div className="mx-auto max-w-3xl">
+              <div className="text-[11px] tracking-[0.22em] uppercase text-primary">
+                The Council
+              </div>
+              <h1
+                className="mt-5 text-[36px] leading-[1.1] tracking-tight text-foreground sm:text-[44px]"
+                style={SERIF}
+              >
+                Meet the council
+              </h1>
+              <p className="mt-6 text-[16px] leading-[1.75] text-foreground/85">
+                An assembly of historic leaders and thinkers, coming from
+                different centuries, continents and traditions. Each one earned
+                their place through real decisions and lasting work.
+              </p>
+            </div>
 
-      <div className="council-hd">
-        <h2>The Council</h2>
-        <p>37 leaders and thinkers, selected for the depth and specificity of their documented record. Together they form the deliberative body — drawn from different centuries, continents and traditions.</p>
-        <div className="council-filters">
-          <button className={`cf ${filter === 'all' ? 'on' : ''}`} onClick={() => setFilter('all')}>All — {counts.all}</button>
-          <button className={`cf ${filter === 'leader' ? 'on' : ''}`} onClick={() => setFilter('leader')}>Leaders — {counts.leader}</button>
-          <button className={`cf ${filter === 'thinker' ? 'on' : ''}`} onClick={() => setFilter('thinker')}>Thinkers — {counts.thinker}</button>
-          <input className="council-search" type="text" placeholder="Search members..." value={search} onChange={e => setSearch(e.target.value)} />
-        </div>
+            <div className="mt-10 flex flex-wrap items-center gap-3">
+              <FilterButton
+                active={filter === 'all'}
+                onClick={() => setFilter('all')}
+                label="All"
+              />
+              <FilterButton
+                active={filter === 'leader'}
+                onClick={() => setFilter('leader')}
+                label={`Leaders — ${counts.leader}`}
+              />
+              <FilterButton
+                active={filter === 'thinker'}
+                onClick={() => setFilter('thinker')}
+                label={`Thinkers — ${counts.thinker}`}
+              />
+              <div className="relative ml-auto">
+                <Search
+                  className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
+                  strokeWidth={2}
+                />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search members..."
+                  className="w-56 rounded-sm border border-border bg-card pl-9 pr-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+                />
+              </div>
+            </div>
+
+            {visible.length === 0 ? (
+              <p className="mt-16 text-center text-[14px] text-muted-foreground">
+                No members match your search.
+              </p>
+            ) : (
+              <ul className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {visible.map((m) => (
+                  <MemberCard key={m.name} member={m} debates={debateCounts[m.name] || 0} />
+                ))}
+              </ul>
+            )}
+          </div>
+        </article>
+
+        <SiteFooter />
       </div>
 
-      <div className="council-grid">
-        {visible.map(m => <MemberCard key={m.name} member={m} debates={debateCounts[m.name] || 0} />)}
-      </div>
-
-      {visible.length === 0 && <div className="council-empty">No members match your search.</div>}
-
-      <footer>The Long Council · Counsel from history&apos;s greatest minds</footer>
-
-      <style jsx>{`
-        .council-hd { max-width: 680px; margin: 2.5rem auto 0; padding: 0 1.25rem; }
-        .council-hd h2 { font-family: 'Playfair Display', Georgia, serif; font-size: 28px; font-weight: 600; color: #0f0f0f; margin: 0 0 0.75rem; }
-        .council-hd p { font-family: 'Inter', sans-serif; font-size: 15px; color: #4a4a4a; line-height: 1.65; margin: 0 0 1.5rem; }
-        .council-filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-        .cf { font-family: 'Inter', sans-serif; font-size: 12px; padding: 6px 14px; border-radius: 2px; border: 0.5px solid #c8bdb3; background: transparent; color: #4a4a4a; cursor: pointer; letter-spacing: 0.02em; transition: background 0.15s, color 0.15s; }
-        .cf:hover { border-color: #9a8f86; }
-        .cf.on { background: #0f0f0f; color: #f8f6f2; border-color: #0f0f0f; }
-        .council-search { font-family: 'Inter', sans-serif; font-size: 13px; padding: 6px 12px; border: 0.5px solid #c8bdb3; background: #f3eeea; border-radius: 2px; color: #1a1a1a; outline: none; margin-left: auto; width: 180px; }
-        .council-search:focus { border-color: #6b1a1a; }
-        .council-grid { max-width: 1160px; margin: 2rem auto 0; padding: 0 1.25rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
-        .council-empty { max-width: 680px; margin: 3rem auto; padding: 0 1.25rem; font-family: 'Inter', sans-serif; font-size: 14px; color: #9a9a9a; text-align: center; }
-        @media (max-width: 480px) { .council-search { width: 100%; margin-left: 0; } }
+      <style jsx global>{`
+        .deep-link-highlight {
+          background: var(--secondary) !important;
+          box-shadow: 0 0 0 2px rgba(107, 26, 26, 0.5), 0 0 24px rgba(107, 26, 26, 0.15) !important;
+        }
       `}</style>
     </>
+  );
+}
+
+function FilterButton({ active, onClick, label }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-sm border px-4 py-1.5 text-[12px] tracking-wide transition ${
+        active
+          ? 'border-primary bg-primary text-primary-foreground'
+          : 'border-border bg-transparent text-muted-foreground hover:border-foreground/40 hover:text-foreground'
+      }`}
+    >
+      {label}
+    </button>
   );
 }

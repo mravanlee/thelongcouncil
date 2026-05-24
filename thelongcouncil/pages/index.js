@@ -4,6 +4,33 @@ import Head from 'next/head';
 import Link from 'next/link';
 import Procession from '../components/Procession';
 import { supabase } from '../lib/supabase';
+import { SiteFooter, SiteHeader, SERIF } from '../components/SiteChrome';
+import { Check, FileText, MessagesSquare, Scale, Users } from 'lucide-react';
+
+function StepDot({ state, Icon }) {
+  if (state === 'done') {
+    return (
+      <span className="relative z-10 grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground">
+        <Check className="h-4 w-4" strokeWidth={3} />
+      </span>
+    );
+  }
+  if (state === 'active') {
+    return (
+      <span className="relative z-10 grid h-10 w-10 shrink-0 place-items-center">
+        <span className="absolute inset-0 rounded-full bg-primary/25 animate-ping" />
+        <span className="relative grid h-10 w-10 place-items-center rounded-full bg-primary text-primary-foreground shadow-sm">
+          <Icon className="h-4 w-4" strokeWidth={2} />
+        </span>
+      </span>
+    );
+  }
+  return (
+    <span className="relative z-10 grid h-10 w-10 shrink-0 place-items-center rounded-full border border-border bg-background text-muted-foreground/60">
+      <Icon className="h-4 w-4" strokeWidth={1.75} />
+    </span>
+  );
+}
 
 // ── Recovery polling constants ──────────────────────────────────────────
 const FINALIZE_POLL_INTERVAL_MS = 5000;
@@ -730,10 +757,30 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
   }
 
   const STEPS = [
-    { label: 'Assembling the council', step: 1 },
-    { label: 'The council is in session', step: 2 },
-    { label: 'Forming the verdict', step: 3 },
-    { label: 'Writing the policy brief', step: 4 },
+    {
+      label: 'Assembling the council',
+      description: 'Selecting the members whose work speaks most directly to the question.',
+      icon: Users,
+      step: 1,
+    },
+    {
+      label: 'The council is in session',
+      description: 'Each speaks in turn, building on, pushing back, grounding every claim in what they did or wrote.',
+      icon: MessagesSquare,
+      step: 2,
+    },
+    {
+      label: 'Forming the verdict',
+      description: 'Synthesising the strongest threads into a single, defensible position.',
+      icon: Scale,
+      step: 3,
+    },
+    {
+      label: 'Writing the policy brief',
+      description: 'Three concrete actions you can take from here.',
+      icon: FileText,
+      step: 4,
+    },
   ];
 
   return (
@@ -759,17 +806,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
         <meta name="twitter:image" content="https://www.thelongcouncil.com/og-default.png" />
       </Head>
 
-      <div className="mast mast-link" onClick={reset}>
-        <div className="mast-name">The Long Council</div>
-        <div className="mast-tag">History&apos;s counsel on today&apos;s questions</div>
-      </div>
-
-      <nav className="nav">
-        <Link href="/council" className="nav-link">The Council</Link>
-        <Link href="/archive" className="nav-link">The Archive</Link>
-        <Link href="/about" className="nav-link">About</Link>
-        <a className="nav-raise nav-raise-hide-mobile" onClick={reset}>Ask a question</a>
-      </nav>
+      <SiteHeader />
 
       {screen === 'landing' && (
         <>
@@ -874,18 +911,64 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
       )}
 
       {screen === 'loading' && (
-        <div className="loading">
-          <div className="loading-question">&quot;{confirmedQuestion}&quot;</div>
-          <div className="loading-steps">
-            {STEPS.map(({ label, step }) => (
-              <div key={step} className={`loading-step ${loadingStep === step ? 'active' : loadingStep > step ? 'done' : ''}`}>
-                <div className="step-dot" />
-                <span>{label}</span>
-              </div>
-            ))}
+        <main className="flex-1 flex items-center justify-center px-6 py-16">
+          <div className="w-full max-w-xl">
+            <div className="text-center text-[11px] tracking-[0.22em] uppercase text-primary">
+              Council in session
+            </div>
+            <h1
+              className="mt-6 text-center text-[26px] leading-[1.3] tracking-tight text-foreground sm:text-[30px]"
+              style={{ ...SERIF, fontStyle: 'italic' }}
+            >
+              &ldquo;{confirmedQuestion}&rdquo;
+            </h1>
+
+            <ol className="mt-14 relative">
+              <div className="pointer-events-none absolute left-[19px] top-2 bottom-2 w-px bg-border" aria-hidden />
+              <div
+                className="pointer-events-none absolute left-[19px] top-2 w-px bg-primary transition-all duration-500"
+                style={{ height: `calc(${(Math.max(0, loadingStep - 1) / (STEPS.length - 1)) * 100}% - 16px)` }}
+                aria-hidden
+              />
+
+              {STEPS.map(({ label, description, icon: Icon, step }) => {
+                const state = step < loadingStep ? 'done' : step === loadingStep ? 'active' : 'upcoming';
+                return (
+                  <li key={step} className="relative flex gap-5 pb-7 last:pb-0">
+                    <StepDot state={state} Icon={Icon} />
+                    <div className="flex-1 pt-1">
+                      <div
+                        className={
+                          state === 'active'
+                            ? 'text-[17px] font-medium text-foreground'
+                            : state === 'done'
+                              ? 'text-[16px] text-foreground/70'
+                              : 'text-[16px] text-muted-foreground/70'
+                        }
+                      >
+                        {label}
+                      </div>
+                      <div
+                        className={`mt-1 text-[13px] leading-[1.55] ${
+                          state === 'active' ? 'text-foreground/70' : 'text-muted-foreground/60'
+                        }`}
+                      >
+                        {description}
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+
+            <p
+              className="mt-12 text-center text-[14px] italic text-muted-foreground"
+              style={SERIF}
+            >
+              This takes 1–2 minutes. The council does not rush.
+            </p>
           </div>
-          <p className="loading-note">This takes 1–2 minutes. The council does not rush.</p>
-        </div>
+        </main>
       )}
 
       {screen === 'finalizing' && (
@@ -1003,7 +1086,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
         </div>
       )}
 
-      <footer>The Long Council · Counsel from history&apos;s greatest minds</footer>
+      <SiteFooter />
 
       <style jsx global>{`
         .issue-input {

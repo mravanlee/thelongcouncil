@@ -5,6 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import { supabase } from '../../lib/supabase';
 import Procession from '../../components/Procession';
 import { resolveAvatarSlug } from '../../lib/avatarSlugs';
+import { SiteFooter, SiteHeader } from '../../components/SiteChrome';
 
 export async function getServerSideProps(context) {
   const { slug } = context.params;
@@ -226,17 +227,7 @@ export default function ArchiveDetail({ session, memberQuery }) {
         <meta name="twitter:image" content={ogImageUrl} />
       </Head>
 
-      <Link href="/" className="mast mast-link">
-        <div className="mast-name">The Long Council</div>
-        <div className="mast-tag">History&apos;s counsel on today&apos;s questions</div>
-      </Link>
-
-      <nav className="nav">
-        <Link href="/council" className="nav-link">The Council</Link>
-        <Link href="/archive" className="nav-link nav-active">The Archive</Link>
-        <Link href="/about" className="nav-link">About</Link>
-        <Link href="/" className="nav-raise">Ask a question</Link>
-      </nav>
+      <SiteHeader />
 
       <div className="detail-wrap">
         <Link href="/archive" className="back-link">← The Archive</Link>
@@ -300,7 +291,7 @@ export default function ArchiveDetail({ session, memberQuery }) {
         </div>
       </div>
 
-      <footer>The Long Council · Counsel from history&apos;s greatest minds</footer>
+      <SiteFooter />
 
       <style jsx>{`
         .detail-wrap { max-width: 680px; margin: 0 auto; padding: 0 1.25rem; }

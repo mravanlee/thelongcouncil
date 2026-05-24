@@ -2,8 +2,10 @@ import { useState, useEffect, useMemo } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { Search } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { resolveAvatarSlug } from '../../lib/avatarSlugs';
+import { SERIF, SiteFooter, SiteHeader } from '../../components/SiteChrome';
 
 const PAGE_SIZE = 25;
 const SCROLL_KEY = 'archive_scroll_y';
@@ -11,15 +13,19 @@ const SCROLL_KEY = 'archive_scroll_y';
 export async function getServerSideProps(ctx) {
   const { data: sessions, error } = await supabase
     .from('sessions')
-    .select('id, slug, original_issue, sharpened_issue, member_names, member_types, created_at, cards, featured_quote, featured_quote_member')
+    .select(
+      'id, slug, original_issue, sharpened_issue, member_names, member_types, created_at, cards, featured_quote, featured_quote_member',
+    )
     .order('created_at', { ascending: false });
 
   if (error) {
     console.error('[archive] Failed to load sessions:', error);
-    return { props: { sessions: [], error: error.message, initialFilters: { q: '', theme: null } } };
+    return {
+      props: { sessions: [], error: error.message, initialFilters: { q: '', theme: null } },
+    };
   }
 
-  const enriched = (sessions || []).map(s => ({
+  const enriched = (sessions || []).map((s) => ({
     id: s.id,
     slug: s.slug,
     original_issue: s.original_issue,
@@ -77,8 +83,6 @@ function memberToCouncilSlug(name) {
 
 // Theme → keywords for the tag-chip filter. Each keyword is matched at word-start
 // (\b<kw>) so "democra" hits "democracy"/"democratic" but not "epidemic".
-// Acronyms with `acronyms` require word boundaries on both sides to avoid
-// false positives (e.g. "AI" should not match "Britain", "Maathai").
 const THEMES = [
   { label: 'Democracy', keywords: ['democra', 'polaris', 'polariser', 'election', 'electie', 'verkiezing', 'parlement', 'citizen', 'voter', 'vote', 'debate', 'civic', 'rechtsstaat', 'jetten'] },
   { label: 'Geopolitics', keywords: ['geopoli', 'foreign policy', 'sanction', 'alliance', 'autonom', 'sovereign', 'diplomacy', 'kissinger', 'henry kissinger'], acronyms: ['NATO', 'UN'] },
@@ -96,13 +100,19 @@ function escapeRegex(s) {
 }
 
 const THEME_REGEX = Object.fromEntries(
-  THEMES.map(t => {
+  THEMES.map((t) => {
     const parts = [];
-    (t.keywords || []).forEach(k => parts.push('\\b' + escapeRegex(k.toLowerCase())));
-    (t.acronyms || []).forEach(a => parts.push('\\b' + escapeRegex(a.toLowerCase()) + '\\b'));
+    (t.keywords || []).forEach((k) => parts.push('\\b' + escapeRegex(k.toLowerCase())));
+    (t.acronyms || []).forEach((a) => parts.push('\\b' + escapeRegex(a.toLowerCase()) + '\\b'));
     return [t.label, new RegExp('(' + parts.join('|') + ')', 'i')];
-  })
+  }),
 );
+
+function matchingThemes(session) {
+  const hay = [session.original_issue, session.sharpened_issue, session.teaser, session.featured_quote]
+    .filter(Boolean).join(' ').toLowerCase();
+  return THEMES.filter((t) => THEME_REGEX[t.label].test(hay)).map((t) => t.label);
+}
 
 export default function Archive({ sessions, error, initialFilters }) {
   const router = useRouter();
@@ -110,7 +120,7 @@ export default function Archive({ sessions, error, initialFilters }) {
   const [activeTheme, setActiveTheme] = useState(initialFilters?.theme || null);
   const [page, setPage] = useState(1);
 
-  // Sync state → URL (debounced for search to avoid history spam while typing)
+  // Sync state → URL (debounced)
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const t = setTimeout(() => {
@@ -119,7 +129,7 @@ export default function Archive({ sessions, error, initialFilters }) {
       if (activeTheme) newQuery.theme = activeTheme;
 
       const currentRelevant = {};
-      ['q', 'theme'].forEach(k => {
+      ['q', 'theme'].forEach((k) => {
         if (router.query[k]) currentRelevant[k] = router.query[k];
       });
       if (JSON.stringify(currentRelevant) === JSON.stringify(newQuery)) return;
@@ -137,20 +147,18 @@ export default function Archive({ sessions, error, initialFilters }) {
       const params = new URLSearchParams(qs);
       const nextQ = params.get('q') || '';
       const nextTheme = params.get('theme') || null;
-      setSearch(prev => prev !== nextQ ? nextQ : prev);
-      setActiveTheme(prev => prev !== nextTheme ? nextTheme : prev);
+      setSearch((prev) => (prev !== nextQ ? nextQ : prev));
+      setActiveTheme((prev) => (prev !== nextTheme ? nextTheme : prev));
     };
     router.events.on('routeChangeComplete', handleRouteChange);
     return () => router.events.off('routeChangeComplete', handleRouteChange);
   }, [router.events]);
 
-  // Reset pagination when filters change
-  useEffect(() => { setPage(1); }, [search, activeTheme]);
+  useEffect(() => {
+    setPage(1);
+  }, [search, activeTheme]);
 
-  // Scroll position memory: when leaving the archive, remember scrollY in
-  // sessionStorage. When mounting (page reload OR returning via back button),
-  // restore it. Skips restoring if a filter was applied via URL — in that case
-  // the user is navigating to a fresh view and should start at the top.
+  // Scroll position memory
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const hasUrlFilter = !!(router.query.q || router.query.theme);
@@ -158,7 +166,9 @@ export default function Archive({ sessions, error, initialFilters }) {
       const saved = sessionStorage.getItem(SCROLL_KEY);
       if (saved) {
         requestAnimationFrame(() => {
-          requestAnimationFrame(() => window.scrollTo({ top: parseInt(saved, 10), behavior: 'instant' in document.documentElement.style ? 'instant' : 'auto' }));
+          requestAnimationFrame(() =>
+            window.scrollTo({ top: parseInt(saved, 10), behavior: 'instant' in document.documentElement.style ? 'instant' : 'auto' }),
+          );
         });
       }
     }
@@ -175,7 +185,7 @@ export default function Archive({ sessions, error, initialFilters }) {
 
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return sessions.filter(s => {
+    return sessions.filter((s) => {
       const haystack = [s.original_issue, s.sharpened_issue, s.teaser, s.featured_quote, ...(s.member_names || [])]
         .filter(Boolean).join(' ').toLowerCase();
       if (q && !haystack.includes(q)) return false;
@@ -189,8 +199,8 @@ export default function Archive({ sessions, error, initialFilters }) {
 
   const hasActiveFilter = !!(search.trim() || activeTheme);
   const countLabel = hasActiveFilter
-    ? `${visible.length} of ${sessions.length} issues`
-    : `${sessions.length} issues`;
+    ? `${visible.length} of ${sessions.length} sessions`
+    : `${sessions.length} sessions`;
 
   function onSearchChange(value) {
     setSearch(value);
@@ -216,186 +226,215 @@ export default function Archive({ sessions, error, initialFilters }) {
     <>
       <Head>
         <title>The Archive — The Long Council</title>
-        <meta name="description" content="Every issue the council has considered — past debates from history's greatest minds." />
+        <meta
+          name="description"
+          content="Every issue the council has considered — past debates from history's greatest minds."
+        />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
         <meta property="og:type" content="website" />
         <meta property="og:title" content="The Archive — The Long Council" />
-        <meta property="og:description" content="Every issue the council has considered — past debates from history's greatest minds." />
+        <meta
+          property="og:description"
+          content="Every issue the council has considered — past debates from history's greatest minds."
+        />
         <meta property="og:url" content="https://www.thelongcouncil.com/archive" />
         <meta property="og:image" content="https://www.thelongcouncil.com/og-default.png" />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
-        <meta property="og:image:alt" content="The Long Council — History's counsel on today's questions" />
+        <meta
+          property="og:image:alt"
+          content="The Long Council — History's counsel on today's questions"
+        />
         <meta property="og:site_name" content="The Long Council" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="The Archive — The Long Council" />
-        <meta name="twitter:description" content="Every issue the council has considered — past debates from history's greatest minds." />
+        <meta
+          name="twitter:description"
+          content="Every issue the council has considered — past debates from history's greatest minds."
+        />
         <meta name="twitter:image" content="https://www.thelongcouncil.com/og-default.png" />
       </Head>
 
-      <Link href="/" className="mast mast-link">
-        <div className="mast-name">The Long Council</div>
-        <div className="mast-tag">History&apos;s counsel on today&apos;s questions</div>
-      </Link>
+      <div className="min-h-screen bg-background text-foreground antialiased">
+        <SiteHeader />
 
-      <nav className="nav">
-        <Link href="/council" className="nav-link">The Council</Link>
-        <Link href="/archive" className="nav-link nav-active">The Archive</Link>
-        <Link href="/about" className="nav-link">About</Link>
-        <Link href="/" className="nav-raise">Ask a question</Link>
-      </nav>
-
-      <div className="archive-hd">
-        <h2>The Archive</h2>
-        <p>Every issue the council has considered. Before raising a new question, you may find it has already been addressed here.</p>
-      </div>
-
-      <div className="archive-toolbar">
-        <div className="toolbar-inner">
-          <div className="search-row">
-            <div className="search-wrap">
-              <svg className="search-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.25"/>
-                <line x1="10.6" y1="10.6" x2="14" y2="14" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round"/>
-              </svg>
-              <input
-                className="archive-search"
-                type="text"
-                placeholder="Search past issues..."
-                value={search}
-                onChange={e => onSearchChange(e.target.value)}
-                aria-label="Search archive"
-              />
+        {/* Page title */}
+        <section className="border-b border-border/70">
+          <div className="mx-auto max-w-5xl px-6 pt-16 pb-10 lg:pt-20">
+            <div className="text-[11px] tracking-[0.22em] uppercase text-primary">
+              The Archive
             </div>
-            <div className="archive-count">{countLabel}</div>
+            <h1
+              className="mt-4 text-4xl leading-[1.1] tracking-tight text-foreground sm:text-5xl"
+              style={SERIF}
+            >
+              Every session of the council.
+            </h1>
+            <p className="mt-5 max-w-2xl text-[15px] leading-relaxed text-muted-foreground">
+              Browse the questions history's sharpest minds have debated. Filter
+              by theme or search for a topic.
+            </p>
           </div>
-          <div className="tag-block">
-            {THEMES.map(t => (
-              <button
-                key={t.label}
-                className={`tag-chip${activeTheme === t.label ? ' active' : ''}`}
-                onClick={() => onThemeClick(t.label)}
-                aria-pressed={activeTheme === t.label}
-                type="button"
-              >
-                {t.label}
-              </button>
-            ))}
+        </section>
+
+        {/* Filters */}
+        <section className="border-b border-border/70 bg-background/95 sticky top-0 z-10 backdrop-blur">
+          <div className="mx-auto max-w-5xl px-6 py-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="relative flex-1">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => onSearchChange(e.target.value)}
+                  placeholder="Search sessions"
+                  className="h-10 w-full rounded-sm border border-border bg-card pl-9 pr-3 text-[14px] text-foreground placeholder:text-muted-foreground/70 focus:border-primary focus:outline-none"
+                  aria-label="Search archive"
+                />
+              </div>
+              <div className="text-[11px] tracking-[0.22em] uppercase text-muted-foreground whitespace-nowrap">
+                {countLabel}
+              </div>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {THEMES.map((t) => {
+                const active = activeTheme === t.label;
+                return (
+                  <button
+                    key={t.label}
+                    type="button"
+                    onClick={() => onThemeClick(t.label)}
+                    aria-pressed={active}
+                    className={`rounded-sm border px-2.5 py-1 text-[10px] tracking-[0.18em] uppercase transition ${
+                      active
+                        ? 'border-primary bg-primary text-primary-foreground'
+                        : 'border-border bg-card text-muted-foreground hover:text-foreground hover:border-foreground/40'
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        </section>
+
+        {/* Results */}
+        <section>
+          <div className="mx-auto max-w-5xl px-6 py-12">
+            {error && (
+              <p className="py-20 text-center text-[14px] text-muted-foreground">
+                Something went wrong loading the archive. Please try again in a
+                moment.
+              </p>
+            )}
+
+            {!error && sessions.length === 0 && (
+              <div className="py-20 text-center text-[14px] text-muted-foreground">
+                <p>The archive is empty.</p>
+                <p className="mt-2">
+                  <Link href="/" className="text-primary hover:text-foreground">
+                    Ask the first question →
+                  </Link>
+                </p>
+              </div>
+            )}
+
+            {!error && sessions.length > 0 && visible.length === 0 && (
+              <div className="py-20 text-center text-[14px] text-muted-foreground">
+                <p>No sessions match your filter.</p>
+                <p className="mt-2">
+                  <Link href="/" className="text-primary hover:text-foreground">
+                    Ask this question yourself →
+                  </Link>
+                </p>
+              </div>
+            )}
+
+            {paginated.length > 0 && (
+              <>
+                <ol className="divide-y divide-border/70 border-y border-border/70">
+                  {paginated.map((session) => (
+                    <ArchiveEntry
+                      key={session.id}
+                      session={session}
+                      themes={matchingThemes(session)}
+                      onMemberClick={onMemberClick}
+                    />
+                  ))}
+                </ol>
+                {hasMore && (
+                  <button
+                    type="button"
+                    onClick={() => setPage((p) => p + 1)}
+                    className="mt-10 mx-auto block rounded-sm border border-border bg-card px-5 py-2 text-[11px] tracking-[0.18em] uppercase text-muted-foreground hover:border-primary hover:text-primary transition"
+                  >
+                    Load older sessions ({visible.length - paginated.length} remaining)
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        </section>
+
+        <SiteFooter />
       </div>
-
-      {error && (
-        <div className="archive-error">Something went wrong loading the archive. Please try again in a moment.</div>
-      )}
-
-      {!error && sessions.length === 0 && (
-        <div className="archive-empty">
-          <p>The archive is empty.</p>
-          <p className="archive-empty-sub"><Link href="/">Ask the first question →</Link></p>
-        </div>
-      )}
-
-      {!error && sessions.length > 0 && visible.length === 0 && (
-        <div className="archive-empty">
-          <p>No issues match your filter.</p>
-          <p className="archive-empty-sub"><Link href="/">Ask this question yourself →</Link></p>
-        </div>
-      )}
-
-      {paginated.length > 0 && (
-        <div className="archive-list">
-          {paginated.map((session) => (
-            <ArchiveEntry
-              key={session.id}
-              session={session}
-              onMemberClick={onMemberClick}
-            />
-          ))}
-          {hasMore && (
-            <button className="load-more" onClick={() => setPage(p => p + 1)} type="button">
-              Load older issues  ({visible.length - paginated.length} remaining)
-            </button>
-          )}
-        </div>
-      )}
-
-      <footer>The Long Council · Counsel from history&apos;s greatest minds</footer>
-
-      <style jsx>{`
-        .archive-hd { max-width: 680px; margin: 0 auto 1.25rem; padding: 0 1.25rem; }
-        .archive-hd h2 { font-family: 'Playfair Display', Georgia, serif; font-size: 28px; font-weight: 600; color: #0f0f0f; margin: 0 0 0.5rem; line-height: 1.2; }
-        .archive-hd p { font-family: 'Crimson Pro', Georgia, serif; font-size: 16px; line-height: 1.6; color: #2a2a2a; margin: 0; max-width: 62ch; }
-
-        /* Toolbar: matches body bg exactly, no border, no backdrop-filter. */
-        .archive-toolbar { padding: 0.5rem 1.25rem 0.5rem; margin-bottom: 2.5rem; background: #f8f6f2; }
-        .toolbar-inner { max-width: 680px; margin: 0 auto; }
-        @media (min-width: 641px) {
-          .archive-toolbar { position: sticky; top: 0; z-index: 10; }
-        }
-        @media (max-width: 640px) {
-          /* On mobile, only the search row sticks — themes scroll away with the rest of the header */
-          .search-row { position: sticky; top: 0; z-index: 10; background: #f8f6f2; padding: 0.6rem 0; margin: -0.6rem 0 0.6rem; }
-        }
-        .search-row { display: flex; align-items: center; gap: 0.75rem; }
-        .search-wrap { position: relative; flex: 1; min-width: 0; }
-        .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: #9a9388; pointer-events: none; }
-        .archive-search { width: 100%; box-sizing: border-box; font-family: 'Crimson Pro', Georgia, serif; font-size: 14px; padding: 9px 14px 9px 38px; background: #fdfbf6; border: 0.5px solid #c4bfb6; border-radius: 2px; color: #2a2a2a; outline: none; transition: border-color 0.2s ease; }
-        .archive-search:focus { border-color: #6b1a1a; }
-        .archive-search::placeholder { color: #9a9388; font-style: italic; }
-        .archive-count { font-family: 'Crimson Pro', Georgia, serif; font-size: 12px; color: #7a7a7a; letter-spacing: 0.04em; white-space: nowrap; }
-
-        .tag-block { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 0.75rem; }
-        .tag-chip { font-family: 'Crimson Pro', Georgia, serif; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; padding: 8px 14px; background: transparent; border: 0.5px solid #c4bfb6; color: #2a2a2a; border-radius: 2px; cursor: pointer; transition: all 0.15s ease; white-space: nowrap; }
-        .tag-chip:hover { border-color: #6b1a1a; color: #6b1a1a; }
-        .tag-chip.active { background: #6b1a1a; color: #faf7f0; border-color: #6b1a1a; }
-
-        .archive-error, .archive-empty { max-width: 680px; margin: 3rem auto; padding: 0 1.25rem; text-align: center; font-family: 'Crimson Pro', Georgia, serif; color: #7a7a7a; font-size: 15px; }
-        .archive-empty p { margin: 0.25rem 0; }
-        .archive-empty-sub :global(a) { color: #6b1a1a; text-decoration: none; }
-        .archive-empty-sub :global(a:hover) { text-decoration: underline; }
-
-        .archive-list { max-width: 680px; margin: 0 auto; padding: 0 1.25rem 4rem; }
-
-        .load-more { display: block; margin: 2rem auto 0; font-family: 'Crimson Pro', Georgia, serif; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; padding: 11px 22px; background: transparent; border: 0.5px solid #c4bfb6; color: #2a2a2a; border-radius: 2px; cursor: pointer; transition: all 0.15s ease; }
-        .load-more:hover { border-color: #6b1a1a; color: #6b1a1a; }
-
-        @media (max-width: 640px) {
-          .archive-hd h2 { font-size: 24px; }
-          .archive-hd p { font-size: 15px; }
-          .search-row { flex-direction: column; align-items: stretch; gap: 6px; }
-          .archive-count { text-align: right; }
-          .tag-block { gap: 6px; }
-          .tag-chip { font-size: 10px; padding: 6px 10px; letter-spacing: 0.08em; }
-        }
-      `}</style>
     </>
   );
 }
 
-function ArchiveEntry({ session, onMemberClick }) {
+function ArchiveEntry({ session, themes, onMemberClick }) {
   return (
-    <article className="archive-entry">
-      <Link href={`/archive/${session.slug}`} className="entry-link">
-        <div className="entry-meta">{formatDate(session.created_at)}</div>
-        <h3 className="entry-title">{session.original_issue}</h3>
+    <li className="group py-9 transition hover:bg-card/40">
+      <Link href={`/archive/${session.slug}`} className="block">
+        <div className="text-[11px] tracking-[0.2em] uppercase text-muted-foreground">
+          {formatDate(session.created_at)}
+        </div>
+        <h2
+          className="mt-3 max-w-3xl text-[22px] leading-[1.3] tracking-tight text-foreground transition group-hover:text-primary sm:text-[26px]"
+          style={SERIF}
+        >
+          {session.original_issue}
+        </h2>
         {session.teaser && (
-          <p className="entry-teaser"><span className="verdict-label">Verdict —</span> {session.teaser}</p>
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-baseline sm:gap-4">
+            <span className="shrink-0 text-[11px] tracking-[0.22em] uppercase text-primary">
+              Verdict
+            </span>
+            <p
+              className="max-w-3xl text-[16px] leading-[1.5] text-foreground/85"
+              style={SERIF}
+            >
+              {session.teaser}
+            </p>
+          </div>
         )}
       </Link>
-      {session.member_names.length > 0 && (
-        <div className="entry-members">
+
+      {(themes.length > 0 || session.member_names.length > 0) && (
+        <div className="mt-5 flex flex-wrap gap-2">
+          {themes.map((t) => (
+            <span
+              key={t}
+              className="rounded-sm border border-border bg-card px-2 py-1 text-[10px] tracking-[0.18em] uppercase text-muted-foreground"
+            >
+              {t}
+            </span>
+          ))}
           {session.member_names.map((name, i) => {
             const clean = stripTierSuffix(name);
             return (
               <button
                 key={i}
-                className="member-chip"
-                onClick={() => onMemberClick(clean)}
-                aria-label={`View ${clean} on the council page`}
                 type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onMemberClick(clean);
+                }}
+                className="rounded-sm border border-border bg-secondary px-2 py-1 text-[11px] text-foreground/80 hover:border-primary hover:text-primary transition"
               >
                 {clean}
               </button>
@@ -403,30 +442,6 @@ function ArchiveEntry({ session, onMemberClick }) {
           })}
         </div>
       )}
-
-      <style jsx>{`
-        .archive-entry { display: block; padding: 0.5rem 0.75rem 2rem; margin: 0 -0.75rem 3rem; border-bottom: 0.5px solid #dcd5c5; border-radius: 2px; transition: background-color 0.2s ease; }
-        .archive-entry:hover { background-color: rgba(180, 160, 120, 0.07); }
-        .archive-entry:last-child { padding-bottom: 0.5rem; margin-bottom: 1rem; border-bottom: none; }
-        .entry-link { display: block; text-decoration: none; color: inherit; padding: 0.25rem 0 0; margin-bottom: 14px; transition: color 0.15s ease; }
-        .entry-meta { font-family: 'Crimson Pro', Georgia, serif; font-size: 11px; color: #4a4a4a; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px; }
-        .entry-title { font-family: 'Playfair Display', Georgia, serif; font-size: 20px; color: #0f0f0f; font-weight: 600; line-height: 1.35; margin: 0 0 10px 0; max-width: 62ch; text-decoration: underline; text-decoration-color: transparent; text-decoration-thickness: 1.5px; text-underline-offset: 4px; transition: text-decoration-color 0.18s ease, color 0.18s ease; }
-        .entry-link:hover .entry-title { color: #6b1a1a; text-decoration-color: #6b1a1a; }
-        .entry-teaser { font-family: 'Crimson Pro', Georgia, serif; font-size: 16px; color: #1a1a1a; line-height: 1.55; margin: 0; }
-        .verdict-label { color: #6b1a1a; letter-spacing: 0.12em; text-transform: uppercase; font-size: 13px; margin-right: 4px; }
-        .entry-members { display: flex; flex-wrap: wrap; gap: 6px; }
-        .member-chip { font-family: 'Crimson Pro', Georgia, serif; font-size: 11px; padding: 2px 8px; border-radius: 2px; white-space: nowrap; background: #f5f1e8; color: #4a4a4a; border: 0.5px solid #d4cfc8; cursor: pointer; transition: all 0.15s ease; }
-        .member-chip:hover { background: rgba(107, 26, 26, 0.08); border-color: #6b1a1a; color: #6b1a1a; }
-
-        @media (max-width: 640px) {
-          .archive-entry { padding: 0.4rem 0.5rem 1.25rem; margin: 0 -0.5rem 2rem; }
-          .entry-title { font-size: 18px; }
-          .entry-teaser { font-size: 15px; }
-          .entry-meta { font-size: 11px; }
-          .verdict-label { font-size: 12px; letter-spacing: 0.1em; }
-          .member-chip { font-size: 10.5px; padding: 2px 7px; }
-        }
-      `}</style>
-    </article>
+    </li>
   );
 }
