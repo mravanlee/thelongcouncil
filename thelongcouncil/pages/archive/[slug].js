@@ -236,24 +236,55 @@ export default function ArchiveDetail({ session, memberQuery }) {
         <VerdictCast names={session.member_names} />
 
         {verdict && (
-          <div className="verdict-block">
-            <div className="verdict-label">Verdict</div>
-            <div className="verdict-text"><ReactMarkdown>{verdict}</ReactMarkdown></div>
+          <div className="bg-secondary border border-border p-6 sm:p-8 mb-8">
+            <div className="text-[10px] tracking-[0.22em] uppercase text-primary">
+              Verdict
+            </div>
+            <div className="relative mt-4">
+              <span
+                aria-hidden
+                className="pointer-events-none absolute -top-4 -left-1 select-none text-[56px] leading-none text-primary/20 sm:-top-6 sm:-left-2 sm:text-[72px]"
+                style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+              >
+                &ldquo;
+              </span>
+              <div
+                className="verdict-md relative pl-6 text-[22px] font-medium leading-[1.3] tracking-tight text-foreground sm:pl-10 sm:text-[26px]"
+                style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+              >
+                <ReactMarkdown>{verdict}</ReactMarkdown>
+              </div>
+            </div>
             {reasoning && (
               <>
-                <div className="verdict-label verdict-label-second">Reasoning</div>
-                <div className="verdict-reasoning"><ReactMarkdown>{reasoning}</ReactMarkdown></div>
+                <div className="mt-8 text-[10px] tracking-[0.22em] uppercase text-primary">
+                  Reasoning
+                </div>
+                <div className="reasoning-md mt-3 text-[15px] leading-[1.7] text-foreground/85">
+                  <ReactMarkdown>{reasoning}</ReactMarkdown>
+                </div>
               </>
             )}
           </div>
         )}
 
         {actions.length > 0 && (
-          <div className="actions-block">
-            <div className="actions-label">What to do now</div>
-            <ol className="actions-list">
+          <div className="bg-secondary border border-border p-6 mb-8">
+            <div className="text-[10px] tracking-[0.22em] uppercase text-primary">
+              What to do now
+            </div>
+            <ol className="mt-4 space-y-3">
               {actions.map((action, i) => (
-                <li key={i}>{action}</li>
+                <li
+                  key={i}
+                  className="flex gap-3 text-[14px] leading-[1.55] text-foreground/90"
+                >
+                  <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-primary text-[11px]"
+                    style={{ color: 'var(--color-primary-foreground)' }}>
+                    {i + 1}
+                  </span>
+                  <span>{action}</span>
+                </li>
               ))}
             </ol>
           </div>
@@ -300,20 +331,12 @@ export default function ArchiveDetail({ session, memberQuery }) {
         .back-link:hover, .back-link:hover :global(*) { color: #6b1a1a !important; }
         .detail-meta { font-family: 'Inter', sans-serif; font-size: 11px; color: #7a7a7a; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px; }
         .detail-title { font-family: 'Playfair Display', Georgia, serif; font-size: 26px; color: #0f0f0f; font-weight: 600; line-height: 1.3; margin: 0 0 2.25rem; max-width: 62ch; }
-        .verdict-block { background: #f0ede3; border-left: 3px solid #6b1a1a; padding: 1.5rem 1.75rem; border-radius: 0 2px 2px 0; margin-bottom: 2rem; }
-        .verdict-label { font-family: 'Inter', sans-serif; font-size: 11px; color: #6b1a1a; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 10px; }
-        .verdict-label-second { margin-top: 1.25rem; margin-bottom: 10px; }
-        .verdict-text :global(p) { font-family: 'Playfair Display', Georgia, serif; font-size: 18px; color: #0f0f0f; font-weight: 500; line-height: 1.5; margin: 0 0 10px; }
-        .verdict-text :global(p:last-child) { margin-bottom: 0; }
-        .verdict-reasoning :global(p) { font-family: 'Inter', sans-serif; font-size: 15px; color: #2a2a2a; line-height: 1.7; margin: 0 0 12px; }
-        .verdict-reasoning :global(p:last-child) { margin-bottom: 0; }
-
-        .actions-block { background: #efece4; border-left: 3px solid #6b1a1a; padding: 1.25rem 1.5rem 1.4rem; border-radius: 0 2px 2px 0; margin-bottom: 2rem; }
-        .actions-label { font-family: 'Inter', sans-serif; font-size: 11px; color: #6b1a1a; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 0.85rem; }
-        .actions-list { list-style: none; padding: 0; margin: 0; counter-reset: act; }
-        .actions-list li { font-family: 'Inter', sans-serif; font-size: 15px; color: #1a1a1a; line-height: 1.55; padding-left: 32px; position: relative; margin-bottom: 0.7rem; }
-        .actions-list li:last-child { margin-bottom: 0; }
-        .actions-list li::before { counter-increment: act; content: counter(act); position: absolute; left: 0; top: 1px; width: 22px; height: 22px; background: #6b1a1a; color: #faf7f0; border-radius: 50%; font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600; line-height: 22px; text-align: center; }
+        /* Verdict + actions now use Tailwind tokens — see JSX above.
+           Markdown inner paragraph margins still need a global hook: */
+        .verdict-md :global(p) { margin: 0 0 10px; }
+        .verdict-md :global(p:last-child) { margin: 0; }
+        .reasoning-md :global(p) { margin: 0 0 12px; }
+        .reasoning-md :global(p:last-child) { margin: 0; }
 
         .debate-section { margin: 0 0 2.5rem; }
         .debate-label { font-family: 'Inter', sans-serif; font-size: 11px; color: #7a7a7a; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 0.5px solid #d4cfc8; }
