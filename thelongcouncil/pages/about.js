@@ -1,7 +1,41 @@
 import Head from 'next/head';
 import Link from 'next/link';
+import { useState } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { SERIF, SiteFooter, SiteHeader } from '../components/SiteChrome';
+import { resolveAvatarSlug } from '../lib/avatarSlugs';
+
+function slugify(name) {
+  if (!name) return '';
+  const base = name
+    .replace(/\s*\([^)]*\)/g, '')
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+  return resolveAvatarSlug(base);
+}
+
+function PreviewAvatar({ initial, name }) {
+  const [failed, setFailed] = useState(false);
+  const slug = slugify(name);
+  return (
+    <div className="relative grid h-14 w-14 place-items-center overflow-hidden rounded-full border border-border bg-card">
+      <span className="text-[17px] text-foreground" style={SERIF}>
+        {initial}
+      </span>
+      {!failed && slug && (
+        <img
+          src={`/avatars/avatar_${slug}.webp`}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover"
+          onError={() => setFailed(true)}
+        />
+      )}
+    </div>
+  );
+}
 
 const ROSTER = [
   { initial: 'C', name: 'Confucius' },
@@ -85,12 +119,7 @@ export default function About() {
               <ul className="mt-5 flex flex-wrap gap-x-6 gap-y-5">
                 {ROSTER.map((m) => (
                   <li key={m.name} className="flex flex-col items-center text-center">
-                    <div
-                      className="grid h-14 w-14 place-items-center rounded-full border border-border bg-card text-[17px] text-foreground"
-                      style={SERIF}
-                    >
-                      {m.initial}
-                    </div>
+                    <PreviewAvatar initial={m.initial} name={m.name} />
                     <div className="mt-2.5 max-w-[72px] text-[11px] leading-tight text-muted-foreground">
                       {m.name.split(' ').slice(0, -1).join(' ')}
                       <br />

@@ -30,7 +30,8 @@ export function SiteHeader() {
           </Link>
           <Link
             href="/"
-            className="rounded-sm bg-primary px-3 py-1.5 text-primary-foreground hover:bg-primary/90"
+            className="rounded-sm bg-primary px-3 py-1.5 hover:bg-primary/90"
+            style={{ color: 'var(--color-primary-foreground)' }}
           >
             Ask a question
           </Link>
