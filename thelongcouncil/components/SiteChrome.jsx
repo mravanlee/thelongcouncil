@@ -4,23 +4,42 @@ import { Compass, Menu, X } from 'lucide-react';
 
 export const SERIF = { fontFamily: "'Playfair Display', Georgia, serif" };
 
+function formatToday() {
+  if (typeof Date === 'undefined') return '';
+  const d = new Date();
+  return d
+    .toLocaleDateString('en-GB', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    })
+    .toUpperCase();
+}
+
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
+  const today = formatToday();
 
   return (
     <header className="border-b border-border/70 relative">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
         <Link
           href="/"
-          className="flex items-center gap-2"
+          className="flex items-center gap-4"
           onClick={() => setOpen(false)}
         >
-          <Compass className="h-5 w-5 text-primary" strokeWidth={2} />
-          <span
-            className="text-lg tracking-[0.1em] uppercase text-foreground"
-            style={SERIF}
-          >
-            The Long Council
+          <span className="flex items-center gap-2">
+            <Compass className="h-5 w-5 text-primary" strokeWidth={2} />
+            <span
+              className="text-lg tracking-[0.1em] uppercase text-foreground"
+              style={SERIF}
+            >
+              The Long Council
+            </span>
+          </span>
+          <span className="hidden border-l border-border/70 pl-4 text-[11px] tracking-[0.22em] uppercase text-muted-foreground sm:inline">
+            {today}
           </span>
         </Link>
 
