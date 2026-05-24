@@ -1,5 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:ital,wght@0,400;0,500;0,600;1,400&display=swap');
 @import "tailwindcss";
+@source "../pages";
+@source "../components";
 
 /* ─── Design tokens (oklch palette) ─────────────────────────────────────
  * Tokens for the new editorial design system, mirrored from the Lovable
@@ -50,7 +52,10 @@
 
 /* ─── Legacy CSS (existing pages still use these) ────────────────────── */
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
+/* NOTE: zeroing margin/padding on `*` was removed because it killed all
+ * Tailwind spacing utilities. box-sizing remains because some legacy
+ * styles assume it. Tailwind's preflight handles modern resets. */
+* { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body { background: #f8f6f2; font-family: 'Inter', sans-serif; color: #0f0f0f; min-height: 100vh; }
 
