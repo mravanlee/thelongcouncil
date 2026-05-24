@@ -110,9 +110,16 @@ const THEME_REGEX = Object.fromEntries(
   }),
 );
 
-function matchingThemes(session) {
-  const hay = [session.original_issue, session.sharpened_issue, session.teaser, session.featured_quote]
+// Topic-only haystack: question + verdict + quote. Excludes member_names so
+// that a session debated by Lee Kuan Yew does not auto-match the China theme
+// just because his name is on the panel.
+function topicHaystack(session) {
+  return [session.original_issue, session.sharpened_issue, session.teaser, session.featured_quote]
     .filter(Boolean).join(' ').toLowerCase();
+}
+
+function matchingThemes(session) {
+  const hay = topicHaystack(session);
   return THEMES.filter((t) => THEME_REGEX[t.label].test(hay)).map((t) => t.label);
 }
 
@@ -188,10 +195,12 @@ export default function Archive({ sessions, error, initialFilters }) {
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
     return sessions.filter((s) => {
-      const haystack = [s.original_issue, s.sharpened_issue, s.teaser, s.featured_quote, ...(s.member_names || [])]
+      // Search still includes member names so users can find sessions by speaker.
+      const searchHay = [s.original_issue, s.sharpened_issue, s.teaser, s.featured_quote, ...(s.member_names || [])]
         .filter(Boolean).join(' ').toLowerCase();
-      if (q && !haystack.includes(q)) return false;
-      if (activeTheme && !THEME_REGEX[activeTheme]?.test(haystack)) return false;
+      if (q && !searchHay.includes(q)) return false;
+      // Theme filter only matches against topic content (no member names).
+      if (activeTheme && !THEME_REGEX[activeTheme]?.test(topicHaystack(s))) return false;
       return true;
     });
   }, [sessions, search, activeTheme]);
