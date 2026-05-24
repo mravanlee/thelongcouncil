@@ -101,16 +101,19 @@ function MemberCard({ member: m, debates }) {
           return (
             <li
               key={i}
-              className="relative pl-5 text-[13.5px] leading-[1.6] text-foreground/85 before:absolute before:left-0 before:text-primary before:content-['—']"
+              className="flex gap-2 text-[13.5px] leading-[1.6] text-foreground/85"
             >
-              {hasLabel ? (
-                <>
-                  <strong className="font-medium text-primary">{pos.slice(0, colon)}</strong>
-                  {pos.slice(colon)}
-                </>
-              ) : (
-                pos
-              )}
+              <span aria-hidden className="shrink-0 text-primary select-none">—</span>
+              <span>
+                {hasLabel ? (
+                  <>
+                    <strong className="font-medium text-primary">{pos.slice(0, colon)}</strong>
+                    {pos.slice(colon)}
+                  </>
+                ) : (
+                  pos
+                )}
+              </span>
             </li>
           );
         })}
