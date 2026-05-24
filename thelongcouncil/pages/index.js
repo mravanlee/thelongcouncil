@@ -908,27 +908,29 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
                 debate, and deliver a verdict.
               </p>
 
-              <div className="mt-10 flex w-full flex-col gap-3 border-b-2 border-foreground/40 pb-3 focus-within:border-foreground sm:flex-row sm:items-center">
-                <input
-                  ref={textareaRef}
-                  type="text"
-                  value={question}
-                  onChange={(e) => setQuestion(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSubmit();
-                    }
-                  }}
-                  placeholder="Type your question here"
-                  className="w-full flex-1 bg-transparent py-3 text-[18px] text-foreground placeholder:text-muted-foreground/70 focus:outline-none"
-                />
+              <div className="mt-10 flex w-full flex-col gap-3 sm:flex-row sm:items-end">
+                <div className="flex-1 border-b-2 border-foreground/40 focus-within:border-foreground transition-colors">
+                  <input
+                    ref={textareaRef}
+                    type="text"
+                    value={question}
+                    onChange={(e) => setQuestion(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSubmit();
+                      }
+                    }}
+                    placeholder="Type your question here"
+                    className="w-full bg-transparent py-3 text-[18px] leading-[1.5] text-foreground placeholder:text-muted-foreground/70 focus:outline-none"
+                  />
+                </div>
                 <button
                   type="button"
                   onClick={handleSubmit}
                   disabled={!question.trim() || sharpenerLoading}
-                  className="inline-flex shrink-0 items-center justify-center gap-2 rounded-sm bg-primary px-5 py-2.5 text-[13px] font-medium tracking-wide text-primary-foreground transition hover:bg-primary/90 disabled:opacity-35 disabled:cursor-not-allowed"
-                  style={SERIF}
+                  className="inline-flex shrink-0 items-center justify-center gap-2 rounded-sm bg-primary px-5 py-2.5 text-[13px] font-medium tracking-wide transition hover:bg-primary/90 disabled:opacity-35 disabled:cursor-not-allowed"
+                  style={{ ...SERIF, color: 'var(--color-primary-foreground)' }}
                 >
                   {sharpenerLoading ? 'Considering…' : 'Ask the council'}
                   <span aria-hidden>→</span>
