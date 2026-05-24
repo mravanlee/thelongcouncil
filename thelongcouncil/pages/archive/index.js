@@ -291,7 +291,7 @@ export default function Archive({ sessions, error, initialFilters }) {
         </section>
 
         {/* Filters */}
-        <section className="border-b border-border/70 bg-background/95 sticky top-0 z-10 backdrop-blur">
+        <section className="border-b border-border/70 bg-background/95 backdrop-blur sm:sticky sm:top-0 sm:z-10">
           <div className="mx-auto max-w-5xl px-6 py-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <div className="relative flex-1">
