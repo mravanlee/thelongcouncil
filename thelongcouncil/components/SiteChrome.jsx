@@ -29,7 +29,7 @@ export function SiteHeader() {
             About
           </Link>
           <Link
-            href="/"
+            href="/#ask"
             className="rounded-sm bg-primary px-3 py-1.5 hover:bg-primary/90"
             style={{ color: 'var(--color-primary-foreground)' }}
           >
