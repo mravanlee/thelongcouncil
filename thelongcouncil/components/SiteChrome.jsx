@@ -59,32 +59,32 @@ export function SiteHeader() {
       {/* Mobile drawer */}
       {open && (
         <div className="sm:hidden absolute top-full left-0 right-0 bg-background border-b border-border/70 shadow-md z-50">
-          <nav className="mx-auto flex max-w-6xl flex-col px-6 py-3">
+          <nav className="mx-auto flex max-w-6xl flex-col px-6 pt-3 pb-5">
             <Link
               href="/archive"
               onClick={() => setOpen(false)}
-              className="py-3 text-[15px] text-foreground border-b border-border/40 last:border-0"
+              className="py-3 text-[15px] text-foreground border-b border-border/40"
             >
               Sessions
             </Link>
             <Link
               href="/council"
               onClick={() => setOpen(false)}
-              className="py-3 text-[15px] text-foreground border-b border-border/40 last:border-0"
+              className="py-3 text-[15px] text-foreground border-b border-border/40"
             >
               The Council
             </Link>
             <Link
               href="/about"
               onClick={() => setOpen(false)}
-              className="py-3 text-[15px] text-foreground border-b border-border/40 last:border-0"
+              className="py-3 text-[15px] text-foreground"
             >
               About
             </Link>
             <Link
               href="/#ask"
               onClick={() => setOpen(false)}
-              className="mt-3 mb-2 inline-flex items-center justify-center rounded-sm bg-primary px-4 py-2.5 text-[14px] font-medium hover:bg-primary/90"
+              className="mt-5 flex items-center justify-center rounded-sm bg-primary px-4 py-3 text-[15px] font-medium hover:bg-primary/90"
               style={{ color: 'var(--color-primary-foreground)' }}
             >
               Ask a question
