@@ -75,36 +75,44 @@ function getInitials(name) {
 function VerdictCast({ names }) {
   if (!names || names.length === 0) return null;
   return (
-    <div className="cast-row">
+    <ul className="mb-10 mt-2 flex flex-wrap gap-x-3 gap-y-4 sm:gap-x-4">
       {names.map((name) => {
         const [line1, line2] = splitNameForCast(name);
         const slug = nameToAvatarSlug(name);
         return (
-          <div key={name} className="cast-col">
-            <div className="cast-avatar">
-              <span className="cast-initials">{getInitials(name)}</span>
-              <img src={`/avatars/avatar_${slug}.webp`} alt="" className="cast-img" onError={(e) => { e.target.style.display = 'none'; }}/>
+          <li
+            key={name}
+            className="flex w-14 flex-col items-center text-center sm:w-16"
+          >
+            <div className="relative grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-full border border-border bg-secondary sm:h-14 sm:w-14">
+              <span
+                className="text-[12px] font-semibold text-primary sm:text-[13px]"
+                style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+              >
+                {getInitials(name)}
+              </span>
+              <img
+                src={`/avatars/avatar_${slug}.webp`}
+                alt=""
+                className="absolute inset-0 h-full w-full object-cover"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                }}
+              />
             </div>
-            <div className="cast-name">{line1}{line2 ? <><br />{line2}</> : null}</div>
-          </div>
+            <div className="mt-2 text-[10px] leading-tight text-muted-foreground sm:text-[11px]">
+              {line1}
+              {line2 ? (
+                <>
+                  <br />
+                  {line2}
+                </>
+              ) : null}
+            </div>
+          </li>
         );
       })}
-      <style jsx>{`
-        .cast-row { display: flex; gap: 18px; padding: 4px 0 6px; margin: 0 0 2.5rem; flex-wrap: wrap; }
-        .cast-col { display: flex; flex-direction: column; align-items: center; min-width: 64px; }
-        .cast-avatar { width: 56px; height: 56px; border-radius: 50%; background: #f3eeea; border: 0.5px solid #c8bdb3; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; }
-        .cast-initials { font-family: 'Playfair Display', Georgia, serif; font-size: 14px; font-weight: 600; color: #6b1a1a; letter-spacing: 0.02em; }
-        .cast-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-        .cast-name { font-family: 'Inter', sans-serif; font-size: 11px; color: #4a4a4a; text-align: center; margin-top: 8px; line-height: 1.35; letter-spacing: 0.01em; }
-        @media (max-width: 480px) {
-          .cast-row { gap: 12px; }
-          .cast-col { min-width: 56px; }
-          .cast-avatar { width: 48px; height: 48px; }
-          .cast-initials { font-size: 12px; }
-          .cast-name { font-size: 10.5px; }
-        }
-      `}</style>
-    </div>
+    </ul>
   );
 }
 
@@ -132,26 +140,24 @@ function ShareButton({ url, question }) {
   }
 
   return (
-    <div className="share-row">
-      <button className="share-btn" onClick={handleClick} aria-label="Share this session">
+    <div className="flex justify-center my-8">
+      <button
+        onClick={handleClick}
+        aria-label="Share this session"
+        className="group inline-flex min-w-[200px] items-center justify-center gap-2 rounded-sm border border-primary px-6 py-3 text-[13px] tracking-wide text-primary transition hover:bg-primary"
+      >
         {copied ? (
-          <span className="share-btn-content">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-            Link copied
-          </span>
+          <>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="transition group-hover:[stroke:var(--color-primary-foreground)]"><polyline points="20 6 9 17 4 12" /></svg>
+            <span className="transition group-hover:[color:var(--color-primary-foreground)]">Link copied</span>
+          </>
         ) : (
-          <span className="share-btn-content">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" /><polyline points="16 6 12 2 8 6" /><line x1="12" y1="2" x2="12" y2="15" /></svg>
-            Share this session
-          </span>
+          <>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition group-hover:[stroke:var(--color-primary-foreground)]"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" /><polyline points="16 6 12 2 8 6" /><line x1="12" y1="2" x2="12" y2="15" /></svg>
+            <span className="transition group-hover:[color:var(--color-primary-foreground)]">Share this session</span>
+          </>
         )}
       </button>
-      <style jsx>{`
-        .share-row { display: flex; justify-content: center; margin: 2rem 0; }
-        .share-btn { display: inline-flex; align-items: center; padding: 12px 24px; background: transparent; border: 1px solid #6b1a1a; color: #6b1a1a; border-radius: 2px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 14px; letter-spacing: 0.02em; transition: background 0.2s ease, color 0.2s ease; min-width: 200px; justify-content: center; }
-        .share-btn:hover { background: #6b1a1a; color: #f8f0e8; }
-        .share-btn-content { display: inline-flex; align-items: center; gap: 8px; }
-      `}</style>
     </div>
   );
 }
@@ -159,24 +165,32 @@ function ShareButton({ url, question }) {
 function CollapsibleSection({ title, subtitle, children, defaultOpen = false }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="collapsible">
-      <button className="collapsible-header" onClick={() => setOpen(!open)} aria-expanded={open}>
-        <div className="collapsible-text">
-          <div className="collapsible-title">{title}</div>
-          {subtitle && <div className="collapsible-subtitle">{subtitle}</div>}
+    <div className="mb-4 overflow-hidden rounded-sm border border-border bg-card">
+      <button
+        onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between px-5 py-4 text-left transition hover:bg-secondary"
+      >
+        <div className="flex flex-col">
+          <div
+            className="text-[16px] font-medium leading-tight text-foreground"
+            style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+          >
+            {title}
+          </div>
+          {subtitle && (
+            <div className="mt-1 text-[13px] text-muted-foreground">
+              {subtitle}
+            </div>
+          )}
         </div>
-        <span className="collapsible-toggle">{open ? 'Close ↑' : 'Open ↓'}</span>
+        <span className="ml-3 whitespace-nowrap text-[13px] text-primary">
+          {open ? 'Close ↑' : 'Open ↓'}
+        </span>
       </button>
-      {open && <div className="collapsible-body">{children}</div>}
-      <style jsx>{`
-        .collapsible { margin-bottom: 1rem; background: #fdfbf6; border: 0.5px solid #d4cfc8; border-radius: 2px; overflow: hidden; }
-        .collapsible-header { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.25rem; background: transparent; border: none; cursor: pointer; font-family: inherit; text-align: left; color: inherit; }
-        .collapsible-header:hover { background: #f5f1e8; }
-        .collapsible-title { font-family: 'Playfair Display', Georgia, serif; font-size: 16px; font-weight: 500; color: #0f0f0f; }
-        .collapsible-subtitle { font-family: 'Inter', sans-serif; font-size: 13px; color: #7a7a7a; margin-top: 2px; }
-        .collapsible-toggle { font-family: 'Inter', sans-serif; font-size: 13px; color: #6b1a1a; white-space: nowrap; margin-left: 12px; }
-        .collapsible-body { padding: 0 1.25rem 1.5rem; border-top: 0.5px solid #e8e3d8; }
-      `}</style>
+      {open && (
+        <div className="border-t border-border/70 px-5 pb-6">{children}</div>
+      )}
     </div>
   );
 }
