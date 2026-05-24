@@ -94,7 +94,7 @@ export default function About() {
             </div>
 
             <p
-              className="mt-6 text-[22px] leading-[1.45] tracking-tight text-foreground sm:text-[26px]"
+              className="mt-6 text-[18px] leading-[1.5] tracking-tight text-foreground sm:text-[26px] sm:leading-[1.45]"
               style={SERIF}
             >
               The Long Council brings together leaders and thinkers from the

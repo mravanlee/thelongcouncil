@@ -828,7 +828,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
               <div className="mx-auto max-w-5xl px-6 py-16 lg:py-20">
                 {/* Tagline — explains what the product is + leads into the question */}
                 <p
-                  className="mb-10 max-w-2xl text-[19px] italic leading-snug text-foreground/75 sm:text-[22px]"
+                  className="mb-8 max-w-2xl text-[17px] italic leading-snug text-foreground/75 sm:mb-10 sm:text-[22px]"
                   style={SERIF}
                 >
                   A council of history&apos;s greatest minds. The most recent
@@ -836,7 +836,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
                 </p>
 
                 <h1
-                  className="max-w-4xl text-[28px] leading-[1.1] tracking-tight text-foreground sm:text-[36px] lg:text-[44px]"
+                  className="max-w-4xl text-[24px] leading-[1.15] tracking-tight text-foreground sm:text-[36px] lg:text-[44px]"
                   style={SERIF}
                 >
                   {recentSessions[0].original_issue}
@@ -867,13 +867,13 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
                 </div>
 
                 {recentSessions[0].member_names && recentSessions[0].member_names.length > 0 && (
-                  <ul className="mt-10 flex flex-wrap gap-x-3 gap-y-4 sm:gap-x-6 sm:gap-y-5">
+                  <ul className="mt-10 flex flex-wrap gap-x-2 gap-y-4 sm:gap-x-6 sm:gap-y-5">
                     {recentSessions[0].member_names.map((rawName) => {
                       const name = stripTier(rawName);
                       return (
                         <li
                           key={name}
-                          className="flex w-16 flex-col items-center text-center sm:w-20"
+                          className="flex w-14 flex-col items-center text-center sm:w-20"
                         >
                           <RecentSessionAvatar name={name} />
                           <div className="mt-2 text-[10px] leading-tight text-muted-foreground sm:text-[11px]">
@@ -902,7 +902,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
             id="ask"
             className="border-b border-border/70 bg-secondary"
           >
-            <div className="mx-auto max-w-4xl px-6 py-16 sm:py-20">
+            <div className="mx-auto max-w-4xl px-6 py-10 sm:py-20">
               <div className="text-[11px] tracking-[0.22em] uppercase text-muted-foreground">
                 Ask a question of your own
               </div>
