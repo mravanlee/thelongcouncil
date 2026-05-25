@@ -120,7 +120,7 @@ export default function Procession({ cards = [], onComplete, instant = false, se
           top: 18px;
           bottom: 18px;
           width: 1px;
-          background: #b8ad9c;
+          background: var(--border);
           z-index: 0;
         }
       `}</style>
@@ -151,18 +151,18 @@ function SectionMarker({ label, visible }) {
           top: 50%;
           width: 14px;
           height: 1px;
-          background: #b8ad9c;
+          background: var(--border);
         }
         .marker-label {
           font-family: 'Inter', sans-serif;
           font-size: 10px;
           font-weight: 500;
           letter-spacing: 0.12em;
-          color: #8a8a8a;
+          color: var(--muted-foreground);
           text-transform: uppercase;
           white-space: nowrap;
         }
-        .marker-rule { flex: 1; height: 0.5px; background: #d4cfc8; }
+        .marker-rule { flex: 1; height: 0.5px; background: var(--border); }
       `}</style>
     </div>
   )
@@ -203,7 +203,7 @@ function ShareIcon({ name, sessionSlug }) {
       onClick={handleClick}
       aria-label={`Share ${name}'s view`}
       title={copied ? 'Link copied' : `Share ${name}'s view`}
-      className="group inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-primary bg-transparent text-primary transition hover:bg-primary"
+      className="group inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-sm border border-primary bg-transparent text-primary transition hover:bg-primary"
     >
       {copied ? (
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="transition group-hover:[stroke:var(--color-primary-foreground)]"><polyline points="20 6 9 17 4 12" /></svg>
@@ -305,26 +305,26 @@ function Seat({ card, tier, state, sessionSlug, scrollReveal = false }) {
           font-family: 'Playfair Display', serif;
           font-size: 9.5px; font-weight: 600;
           z-index: 2;
-          background: #fdf5ec; color: #6b1a1a;
-          border: 1px solid #c4897a;
+          background: var(--secondary); color: var(--primary);
+          border: 1px solid var(--border);
           transition: box-shadow 0.4s ease;
-          box-shadow: 0 0 0 2px #f8f6f2;
+          box-shadow: 0 0 0 2px var(--background);
         }
         .avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
         .avatar .initials { display: inline-flex; align-items: center; justify-content: center; }
-        .seat.state-speaking .avatar { box-shadow: 0 0 0 2px #f8f6f2, 0 0 0 5px rgba(107, 26, 26, 0.18); }
+        .seat.state-speaking .avatar { box-shadow: 0 0 0 2px var(--background), 0 0 0 5px color-mix(in oklab, var(--primary) 18%, transparent); }
 
         .content { padding-top: 1px; }
 
         .head { display: flex; align-items: center; gap: 12px; margin-bottom: 3px; }
         .head-meta { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-        .name { font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 600; color: #0f0f0f; line-height: 1.3; }
-        .role { font-family: 'Inter', sans-serif; font-size: 11px; color: #7a7a7a; font-style: italic; }
+        .name { font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 600; color: var(--foreground); line-height: 1.3; }
+        .role { font-family: 'Inter', sans-serif; font-size: 11px; color: var(--muted-foreground); font-style: italic; }
 
         .framing {
           font-family: 'Playfair Display', serif;
           font-size: 17.5px; font-weight: 500;
-          color: #0f0f0f; line-height: 1.4;
+          color: var(--foreground); line-height: 1.4;
           letter-spacing: -0.005em;
           margin-top: 10px; margin-bottom: 0;
           max-width: 62ch;
@@ -335,7 +335,7 @@ function Seat({ card, tier, state, sessionSlug, scrollReveal = false }) {
 
         .body {
           font-family: 'Inter', sans-serif;
-          font-size: 14.5px; line-height: 1.7; color: #1a1a1a;
+          font-size: 14.5px; line-height: 1.7; color: var(--foreground);
           max-width: 62ch; max-height: 0; overflow: hidden; opacity: 0;
           transition: max-height 0.9s ease-in-out, opacity 0.5s ease;
         }
@@ -346,14 +346,14 @@ function Seat({ card, tier, state, sessionSlug, scrollReveal = false }) {
         .body :global(.sig) {
           display: inline-block;
           font-family: 'Inter', sans-serif; font-size: 10px;
-          color: #7a7a7a; background: #f0ede8;
+          color: var(--muted-foreground); background: var(--secondary);
           padding: 1px 6px; border-radius: 2px; margin: 0 1px;
           font-style: normal; letter-spacing: 0.02em; vertical-align: baseline;
         }
 
         .challenge {
           font-family: 'Inter', sans-serif;
-          font-size: 13.5px; color: #6b1a1a; font-style: italic;
+          font-size: 13.5px; color: var(--primary); font-style: italic;
           line-height: 1.65; max-width: 62ch;
           max-height: 0; overflow: hidden; opacity: 0;
           margin-top: 0; padding: 0 14px;
@@ -371,8 +371,8 @@ function Seat({ card, tier, state, sessionSlug, scrollReveal = false }) {
         .seat.state-past .challenge {
           max-height: 200px; opacity: 1;
           margin-top: 18px; padding: 12px 14px;
-          border-left-color: #c4897a;
-          background: rgba(107, 26, 26, 0.03);
+          border-left-color: var(--primary);
+          background: color-mix(in oklab, var(--primary) 3%, transparent);
         }
         .challenge :global(strong) { font-weight: 600; font-style: normal; }
 

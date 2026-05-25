@@ -340,11 +340,11 @@ export default function ArchiveDetail({ session, memberQuery }) {
 
       <style jsx>{`
         .detail-wrap { max-width: 680px; margin: 0 auto; padding: 0 1.25rem; }
-        .back-link, .back-link :global(*), .back-link:visited { text-decoration: none !important; color: #7a7a7a !important; }
+        .back-link, .back-link :global(*), .back-link:visited { text-decoration: none !important; color: var(--muted-foreground) !important; }
         .back-link { display: inline-block; font-family: 'Inter', sans-serif; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; margin-top: 1.25rem; margin-bottom: 1rem; transition: color 0.2s ease; }
-        .back-link:hover, .back-link:hover :global(*) { color: #6b1a1a !important; }
-        .detail-meta { font-family: 'Inter', sans-serif; font-size: 11px; color: #7a7a7a; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px; }
-        .detail-title { font-family: 'Playfair Display', Georgia, serif; font-size: 26px; color: #0f0f0f; font-weight: 600; line-height: 1.3; margin: 0 0 2.25rem; max-width: 62ch; }
+        .back-link:hover, .back-link:hover :global(*) { color: var(--primary) !important; }
+        .detail-meta { font-family: 'Inter', sans-serif; font-size: 11px; color: var(--muted-foreground); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px; }
+        .detail-title { font-family: 'Playfair Display', Georgia, serif; font-size: 26px; color: var(--foreground); font-weight: 600; line-height: 1.3; margin: 0 0 2.25rem; max-width: 62ch; }
         /* Verdict + actions now use Tailwind tokens — see JSX above.
            Markdown inner paragraph margins still need a global hook: */
         .verdict-md :global(p) { margin: 0 0 10px; }
@@ -353,21 +353,21 @@ export default function ArchiveDetail({ session, memberQuery }) {
         .reasoning-md :global(p:last-child) { margin: 0; }
 
         .debate-section { margin: 0 0 2.5rem; }
-        .debate-label { font-family: 'Inter', sans-serif; font-size: 11px; color: #7a7a7a; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 0.5px solid #d4cfc8; }
-        .convergence-block { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 0.5px solid #d4cfc8; }
-        .md-body { padding-top: 1rem; font-family: 'Inter', sans-serif; color: #1a1a1a; line-height: 1.7; }
-        .md-body :global(h2) { font-family: 'Playfair Display', Georgia, serif; font-size: 20px; color: #0f0f0f; font-weight: 600; margin: 1.75rem 0 0.5rem; line-height: 1.3; }
+        .debate-label { font-family: 'Inter', sans-serif; font-size: 11px; color: var(--muted-foreground); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 0.5px solid var(--border); }
+        .convergence-block { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border); }
+        .md-body { padding-top: 1rem; font-family: 'Inter', sans-serif; color: var(--foreground); line-height: 1.7; }
+        .md-body :global(h2) { font-family: 'Playfair Display', Georgia, serif; font-size: 20px; color: var(--foreground); font-weight: 600; margin: 1.75rem 0 0.5rem; line-height: 1.3; }
         .md-body :global(h2:first-child) { margin-top: 0; }
-        .md-body :global(h3) { font-family: 'Playfair Display', Georgia, serif; font-size: 17px; color: #0f0f0f; font-weight: 600; margin: 1.25rem 0 0.5rem; }
+        .md-body :global(h3) { font-family: 'Playfair Display', Georgia, serif; font-size: 17px; color: var(--foreground); font-weight: 600; margin: 1.25rem 0 0.5rem; }
         .md-body :global(p) { font-size: 15px; margin: 0 0 12px; max-width: 62ch; }
-        .md-body :global(em) { font-style: italic; color: #2a2a2a; }
-        .md-body :global(strong) { font-weight: 600; color: #0f0f0f; }
-        .md-body :global(hr) { border: none; border-top: 0.5px solid #d4cfc8; margin: 1.5rem 0; }
+        .md-body :global(em) { font-style: italic; color: var(--foreground); opacity: 0.85; }
+        .md-body :global(strong) { font-weight: 600; color: var(--foreground); }
+        .md-body :global(hr) { border: none; border-top: 0.5px solid var(--border); margin: 1.5rem 0; }
         .md-body :global(ul), .md-body :global(ol) { padding-left: 1.25rem; margin: 0 0 12px; }
         .md-body :global(li) { font-size: 15px; margin-bottom: 4px; }
-        .detail-nudge { margin-top: 3rem; padding-top: 1.5rem; border-top: 0.5px solid #d4cfc8; font-family: 'Inter', sans-serif; font-size: 13px; color: #7a7a7a; text-align: center; }
+        .detail-nudge { margin-top: 3rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border); font-family: 'Inter', sans-serif; font-size: 13px; color: var(--muted-foreground); text-align: center; }
         .detail-nudge > div { margin-bottom: 0.5rem; }
-        .nudge-link, .nudge-link :global(*), .nudge-link:hover, .nudge-link:visited { color: #6b1a1a !important; text-decoration: none !important; }
+        .nudge-link, .nudge-link :global(*), .nudge-link:hover, .nudge-link:visited { color: var(--primary) !important; text-decoration: none !important; }
         .nudge-link:hover { opacity: 0.75; }
         @media (min-width: 768px) {
           .detail-title { font-size: 28px; }
