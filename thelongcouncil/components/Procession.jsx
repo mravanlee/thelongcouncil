@@ -203,7 +203,7 @@ function ShareQuoteLink({ name, sessionSlug }) {
       type="button"
       onClick={handleClick}
       aria-label={`Share ${name}'s quote`}
-      className="share-quote"
+      className="ml-7 mt-3.5 inline-flex cursor-pointer items-center gap-2 border-0 bg-transparent p-0 text-[10.5px] uppercase tracking-[0.2em] text-primary transition-colors hover:text-foreground sm:ml-8"
     >
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <circle cx="18" cy="5" r="3" />
@@ -373,25 +373,6 @@ function Seat({ card, tier, state, sessionSlug, scrollReveal = false }) {
           margin: 0;
           max-width: 62ch;
         }
-        .share-quote {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          margin-top: 14px;
-          margin-left: 28px;
-          padding: 2px 0;
-          background: transparent;
-          border: none;
-          cursor: pointer;
-          font-family: 'Inter', sans-serif;
-          font-size: 10.5px;
-          letter-spacing: 0.2em;
-          text-transform: uppercase;
-          color: var(--primary);
-          transition: color 0.2s ease;
-        }
-        .share-quote:hover { color: var(--foreground); }
-
         .body {
           font-family: 'Inter', sans-serif;
           font-size: 14.5px; line-height: 1.7; color: var(--foreground);
@@ -439,7 +420,6 @@ function Seat({ card, tier, state, sessionSlug, scrollReveal = false }) {
           .name { font-size: 17px; }
           .framing { font-size: 22px; padding-left: 32px; }
           .quote-glyph { font-size: 60px; top: -16px; }
-          .share-quote { margin-left: 32px; }
           .body { font-size: 15px; }
           .challenge { font-size: 14px; }
         }
