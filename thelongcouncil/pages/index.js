@@ -831,8 +831,11 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
                   className="mb-8 max-w-2xl text-[17px] italic leading-snug text-foreground/75 sm:mb-10 sm:text-[22px]"
                   style={SERIF}
                 >
-                  A council of history&apos;s greatest minds. The most recent
-                  question they debated:
+                  A council of history&apos;s greatest minds.
+                  <br />
+                  Ask them your own question, on politics, society or the future.
+                  <br />
+                  The most recent question they debated:
                 </p>
 
                 <h1
