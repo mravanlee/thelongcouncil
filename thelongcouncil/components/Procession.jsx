@@ -227,9 +227,27 @@ function Seat({ card, tier, state, sessionSlug, scrollReveal = false }) {
   const showImage = !imgFailed && slug
 
   useEffect(() => {
-    if (!scrollReveal || typeof IntersectionObserver === 'undefined') return
+    if (!scrollReveal) return
+
+    // No IntersectionObserver support → reveal so content is never stuck hidden
+    if (typeof IntersectionObserver === 'undefined') {
+      setRevealed(true)
+      return
+    }
+
     const el = seatRef.current
     if (!el) return
+
+    // Within ~2× viewport from current scroll position → reveal immediately so
+    // page-load (and full-page screenshot tools that don't fire scroll events)
+    // never leave below-the-fold cards stuck at opacity 0.
+    const rect = el.getBoundingClientRect()
+    const vh = window.innerHeight || document.documentElement.clientHeight
+    if (rect.top < vh * 2) {
+      setRevealed(true)
+      return
+    }
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
