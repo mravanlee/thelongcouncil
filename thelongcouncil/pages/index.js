@@ -833,7 +833,10 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
                 >
                   A council of history&apos;s greatest minds.
                   <br />
-                  Ask them your own question, on politics, society or the future.
+                  <span className="sm:hidden">Ask them your own question.</span>
+                  <span className="hidden sm:inline">
+                    Ask them your own question, on politics, society or the future.
+                  </span>
                   <br />
                   The most recent question they debated:
                 </p>
