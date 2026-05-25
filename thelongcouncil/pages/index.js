@@ -845,7 +845,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
                 <div className="my-10 flex items-center gap-3">
                   <span className="h-px flex-1 bg-border/70" />
                   <span className="text-[11px] tracking-[0.22em] uppercase text-primary">
-                    The council answered
+                    ↓ The council answered
                   </span>
                   <span className="h-px flex-1 bg-border/70" />
                 </div>
