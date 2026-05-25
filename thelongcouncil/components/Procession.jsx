@@ -168,7 +168,7 @@ function SectionMarker({ label, visible }) {
   )
 }
 
-function ShareIcon({ name, sessionSlug }) {
+function ShareQuoteLink({ name, sessionSlug }) {
   const [copied, setCopied] = useState(false)
 
   async function handleClick(e) {
@@ -200,16 +200,19 @@ function ShareIcon({ name, sessionSlug }) {
 
   return (
     <button
+      type="button"
       onClick={handleClick}
-      aria-label={`Share ${name}'s view`}
-      title={copied ? 'Link copied' : `Share ${name}'s view`}
-      className="group inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-sm border border-primary bg-transparent text-primary transition hover:bg-primary"
+      aria-label={`Share ${name}'s quote`}
+      className="share-quote"
     >
-      {copied ? (
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="transition group-hover:[stroke:var(--color-primary-foreground)]"><polyline points="20 6 9 17 4 12" /></svg>
-      ) : (
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition group-hover:[stroke:var(--color-primary-foreground)]"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" /><polyline points="16 6 12 2 8 6" /><line x1="12" y1="2" x2="12" y2="15" /></svg>
-      )}
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <circle cx="18" cy="5" r="3" />
+        <circle cx="6" cy="12" r="3" />
+        <circle cx="18" cy="19" r="3" />
+        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+      </svg>
+      <span>{copied ? 'Quote copied' : 'Share this quote'}</span>
     </button>
   )
 }
@@ -256,10 +259,15 @@ function Seat({ card, tier, state, sessionSlug, scrollReveal = false }) {
             <span className="name">{name}</span>
             {role && <span className="role">{role}</span>}
           </div>
-          {sessionSlug && <ShareIcon name={name} sessionSlug={sessionSlug} />}
         </div>
 
-        {framing && <div className="framing">{framing}</div>}
+        {framing && (
+          <figure className="quote-block">
+            <span aria-hidden="true" className="quote-glyph">&ldquo;</span>
+            <blockquote className="framing">{framing}</blockquote>
+            {sessionSlug && <ShareQuoteLink name={name} sessionSlug={sessionSlug} />}
+          </figure>
+        )}
 
         {body && body.length > 0 && (
           <div className="body">
@@ -321,17 +329,50 @@ function Seat({ card, tier, state, sessionSlug, scrollReveal = false }) {
         .name { font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 600; color: var(--foreground); line-height: 1.3; }
         .role { font-family: 'Inter', sans-serif; font-size: 11px; color: var(--muted-foreground); font-style: italic; }
 
-        .framing {
-          font-family: 'Playfair Display', serif;
-          font-size: 17.5px; font-weight: 500;
-          color: var(--foreground); line-height: 1.4;
-          letter-spacing: -0.005em;
-          margin-top: 10px; margin-bottom: 0;
-          max-width: 62ch;
+        .quote-block {
+          position: relative;
+          margin: 14px 0 0;
           transition: margin-bottom 0.5s ease;
         }
-        .seat.state-speaking .framing,
-        .seat.state-past .framing { margin-bottom: 16px; }
+        .seat.state-speaking .quote-block,
+        .seat.state-past .quote-block { margin-bottom: 18px; }
+
+        .quote-glyph {
+          position: absolute;
+          top: -14px; left: -2px;
+          font-family: 'Playfair Display', serif;
+          font-size: 52px; line-height: 1; font-weight: 500;
+          color: color-mix(in oklab, var(--primary) 28%, transparent);
+          user-select: none;
+          pointer-events: none;
+        }
+        .framing {
+          font-family: 'Playfair Display', serif;
+          font-size: 20px; font-weight: 500;
+          color: var(--foreground); line-height: 1.35;
+          letter-spacing: -0.005em;
+          padding-left: 28px;
+          margin: 0;
+          max-width: 62ch;
+        }
+        .share-quote {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          margin-top: 14px;
+          margin-left: 28px;
+          padding: 2px 0;
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          font-family: 'Inter', sans-serif;
+          font-size: 10.5px;
+          letter-spacing: 0.2em;
+          text-transform: uppercase;
+          color: var(--primary);
+          transition: color 0.2s ease;
+        }
+        .share-quote:hover { color: var(--foreground); }
 
         .body {
           font-family: 'Inter', sans-serif;
@@ -378,7 +419,9 @@ function Seat({ card, tier, state, sessionSlug, scrollReveal = false }) {
 
         @media (min-width: 768px) {
           .name { font-size: 17px; }
-          .framing { font-size: 18px; }
+          .framing { font-size: 22px; padding-left: 32px; }
+          .quote-glyph { font-size: 60px; top: -16px; }
+          .share-quote { margin-left: 32px; }
           .body { font-size: 15px; }
           .challenge { font-size: 14px; }
         }
