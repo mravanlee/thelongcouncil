@@ -2,6 +2,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import { ArrowLeft } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import Procession from '../../components/Procession';
 import { resolveAvatarSlug } from '../../lib/avatarSlugs';
@@ -75,7 +76,7 @@ function getInitials(name) {
 function VerdictCast({ names }) {
   if (!names || names.length === 0) return null;
   return (
-    <ul className="mb-10 mt-2 flex flex-wrap gap-x-3 gap-y-4 sm:gap-x-4">
+    <ul className="mb-10 mt-10 flex flex-wrap gap-x-3 gap-y-4 sm:gap-x-4">
       {names.map((name) => {
         const [line1, line2] = splitNameForCast(name);
         const slug = nameToAvatarSlug(name);
@@ -243,10 +244,28 @@ export default function ArchiveDetail({ session, memberQuery }) {
 
       <SiteHeader />
 
+      <section className="border-b border-border/70">
+        <div className="mx-auto max-w-[680px] px-5 pt-10 pb-10">
+          <Link
+            href="/archive"
+            className="inline-flex items-center gap-2 text-[11px] tracking-[0.22em] uppercase text-muted-foreground transition hover:text-foreground"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            The Archive
+          </Link>
+          <div className="mt-4 text-[11px] tracking-[0.22em] uppercase text-muted-foreground">
+            {formatDate(session.created_at)} · {memberCount} member{memberCount !== 1 ? 's' : ''}
+          </div>
+          <h1
+            className="mt-4 max-w-[62ch] text-[28px] font-semibold leading-[1.18] tracking-tight text-foreground sm:text-[36px]"
+            style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+          >
+            {session.original_issue}
+          </h1>
+        </div>
+      </section>
+
       <div className="detail-wrap">
-        <Link href="/archive" className="back-link">← The Archive</Link>
-        <div className="detail-meta">{formatDate(session.created_at)} · {memberCount} member{memberCount !== 1 ? 's' : ''}</div>
-        <h1 className="detail-title">{session.original_issue}</h1>
         <VerdictCast names={session.member_names} />
 
         {verdict && (
@@ -340,12 +359,7 @@ export default function ArchiveDetail({ session, memberQuery }) {
 
       <style jsx>{`
         .detail-wrap { max-width: 680px; margin: 0 auto; padding: 0 1.25rem; }
-        .back-link, .back-link :global(*), .back-link:visited { text-decoration: none !important; color: var(--muted-foreground) !important; }
-        .back-link { display: inline-block; font-family: 'Inter', sans-serif; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; margin-top: 1.25rem; margin-bottom: 1rem; transition: color 0.2s ease; }
-        .back-link:hover, .back-link:hover :global(*) { color: var(--primary) !important; }
-        .detail-meta { font-family: 'Inter', sans-serif; font-size: 11px; color: var(--muted-foreground); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px; }
-        .detail-title { font-family: 'Playfair Display', Georgia, serif; font-size: 26px; color: var(--foreground); font-weight: 600; line-height: 1.3; margin: 0 0 2.25rem; max-width: 62ch; }
-        /* Verdict + actions now use Tailwind tokens — see JSX above.
+        /* Verdict + actions + header now use Tailwind tokens — see JSX above.
            Markdown inner paragraph margins still need a global hook: */
         .verdict-md :global(p) { margin: 0 0 10px; }
         .verdict-md :global(p:last-child) { margin: 0; }
@@ -370,7 +384,6 @@ export default function ArchiveDetail({ session, memberQuery }) {
         .nudge-link, .nudge-link :global(*), .nudge-link:hover, .nudge-link:visited { color: var(--primary) !important; text-decoration: none !important; }
         .nudge-link:hover { opacity: 0.75; }
         @media (min-width: 768px) {
-          .detail-title { font-size: 28px; }
           .md-body :global(p), .md-body :global(li) { font-size: 15.5px; }
         }
       `}</style>
