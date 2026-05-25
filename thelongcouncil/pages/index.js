@@ -4,6 +4,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import Procession from '../components/Procession';
 import { supabase } from '../lib/supabase';
+import { resolveAvatarSlug } from '../lib/avatarSlugs';
 import { SiteFooter, SiteHeader, SERIF } from '../components/SiteChrome';
 import { Check, FileText, MessagesSquare, Scale, Users } from 'lucide-react';
 
@@ -59,23 +60,6 @@ function formatSessionCount(n) {
 // ── Council member metadata ─────────────────────────────────────────────
 // SYNC: also defined in pages/council.js, Procession.jsx, archive/[slug].js.
 // Keep these aligned when adding new members. See CLAUDE.md sync rules.
-const AVATAR_NAME_EXPANSIONS = {
-  'machiavelli': 'niccolo_machiavelli',
-  'keynes': 'john_maynard_keynes',
-  'hayek': 'friedrich_hayek',
-  'friedman': 'milton_friedman',
-  'locke': 'john_locke',
-  'rousseau': 'jean_jacques_rousseau',
-  'rawls': 'john_rawls',
-  'arendt': 'hannah_arendt',
-  'sen': 'amartya_sen',
-  'hirschman': 'albert_hirschman',
-  'fanon': 'frantz_fanon',
-  'prebisch': 'raul_prebisch',
-  'ostrom': 'elinor_ostrom',
-  'bolivar': 'simon_bolivar',
-};
-
 const MEMBER_ROLES = {
   'Albert Hirschman': 'Economist · Exit, Voice and Loyalty',
   'Ali ibn Abi Talib': 'Fourth Caliph of Islam',
@@ -122,12 +106,12 @@ function normalizeAccents(s) {
 
 function memberSlug(name) {
   if (!name) return '';
-  const base = normalizeAccents(name)
+  const naive = normalizeAccents(name)
     .replace(/\s*\([^)]*\)/g, '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '_')
     .replace(/^_+|_+$/g, '');
-  return AVATAR_NAME_EXPANSIONS[base] || base;
+  return resolveAvatarSlug(naive);
 }
 
 function memberRole(name) {
