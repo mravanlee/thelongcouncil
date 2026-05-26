@@ -286,6 +286,7 @@ export default function ArchiveDetail({ session, memberQuery }) {
                 '@type': 'Person',
                 name: cleanName,
                 ...(s.role ? { description: s.role } : {}),
+                url: wikipediaUrl,
                 sameAs: [wikipediaUrl],
               },
             };
