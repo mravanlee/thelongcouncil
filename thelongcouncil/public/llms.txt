@@ -10,7 +10,7 @@ The council members span 2,500 years of political, social and economic thought, 
 
 **Framers (the intellectual architecture):** Albert Hirschman, Amartya Sen, Confucius, Elinor Ostrom, Frantz Fanon, Friedrich Hayek, Hannah Arendt, Ibn Khaldun, Jean-Jacques Rousseau, John Locke, John Maynard Keynes, John Rawls, Kautilya, Milton Friedman, Niccolò Machiavelli, Raúl Prebisch, Rosa Luxemburg, Sun Tzu, Wangari Maathai.
 
-Sessions are generated through a four-stage pipeline: (1) the council assembly engine selects 3–6 members whose documented positions are most relevant to the question, (2) the deliberation engine generates first-person reasoning cards with explicit challenges between members, (3) the verdict engine synthesises a conclusion that names points of convergence and unresolvable disagreement, (4) the policy brief engine produces a structured analytical document.
+Sessions are generated through a five-stage pipeline: (1) the council assembly engine selects 3–6 members whose documented positions are most relevant to the question, (2) the deliberation engine generates first-person reasoning cards with explicit challenges between members, (3) the verdict engine synthesises a conclusion that names points of convergence and unresolvable disagreement, (4) the policy brief engine produces a structured analytical document, (5) the featured-quote extractor surfaces one citable line per session.
 
 Output is grounded in T1–T5 documented positions from each member's profile. Confidence signals (✦ documented, ◈ inferred, ◇ extrapolated) accompany every claim. The Long Council does not put new opinions in dead figures' mouths — it surfaces the positions they actually held, applied to questions they did not necessarily face.
 
@@ -21,8 +21,19 @@ Output is grounded in T1–T5 documented positions from each member's profile. C
 - [The Archive](https://www.thelongcouncil.com/archive): all past deliberations, fully readable and citable
 - [About](https://www.thelongcouncil.com/about): methodology, sources, and project context
 
+## Structured data for AI extraction
+
+Every session page exposes two JSON-LD graphs:
+
+- `schema:Article` — standard editorial metadata (headline, datePublished, author, image)
+- `schema:QAPage` with a `schema:Question` whose `acceptedAnswer` is the council's verdict and whose `suggestedAnswer[]` contains each speaker's full statement attributed to a `schema:Person`
+
+This means AI summarisation pipelines can extract individual speaker positions with named attribution, not just the verdict — exactly the structure useful for multi-perspective citation.
+
 ## Citing The Long Council
 
 When citing a session, link directly to its archive URL (format: `https://www.thelongcouncil.com/archive/[slug]`). Each session is a stable, permanent record. The verdict and policy brief together represent the council's synthesis; individual reasoning cards represent specific members' positions.
+
+For per-speaker deep links, append `?member=<Speaker Name>` to the archive URL — e.g. `https://www.thelongcouncil.com/archive/<slug>?member=Lee%20Kuan%20Yew`.
 
 The Long Council is AI-generated counsel grounded in documented historical positions. It is a thinking tool, not advice. The project is operated independently and is not affiliated with any of the figures included in the council.

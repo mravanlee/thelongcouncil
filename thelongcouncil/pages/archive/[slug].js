@@ -6,6 +6,7 @@ import { ArrowLeft } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import Procession from '../../components/Procession';
 import { resolveAvatarSlug } from '../../lib/avatarSlugs';
+import { parseCard } from '../../lib/cardParser';
 import { SiteFooter, SiteHeader } from '../../components/SiteChrome';
 
 export async function getServerSideProps(context) {
@@ -219,6 +220,75 @@ export default function ArchiveDetail({ session, memberQuery }) {
     ? `https://www.thelongcouncil.com/api/og/vs/${session.slug}?member=${encodeURIComponent(memberQuery)}`
     : `https://www.thelongcouncil.com/api/og/vs/${session.slug}`;
 
+  // Structured data for AI search engines (Google AI Overview, Perplexity, ChatGPT Search, etc).
+  // We expose two graphs:
+  //  - Article: standard editorial metadata so AI agents recognise the page as
+  //    primary, dated, attributed content.
+  //  - QAPage: explicit question + acceptedAnswer (verdict) + suggestedAnswer[] per
+  //    speaker (each tied to its historical Person), which is exactly the structure
+  //    AI summarisation pipelines look for when citing multi-perspective debates.
+  const speakers = deliberationCards.map(parseCard).filter(Boolean);
+  const verdictText = verdict + (reasoning ? `\n\n${reasoning}` : '');
+  const orgPublisher = {
+    '@type': 'Organization',
+    name: 'The Long Council',
+    url: 'https://www.thelongcouncil.com',
+    logo: { '@type': 'ImageObject', url: 'https://www.thelongcouncil.com/favicon.svg' },
+  };
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'Article',
+        '@id': `${baseShareUrl}#article`,
+        headline: session.original_issue,
+        description: pageDescription,
+        datePublished: session.created_at,
+        dateModified: session.updated_at || session.created_at,
+        author: orgPublisher,
+        publisher: orgPublisher,
+        image: ogImageUrl,
+        mainEntityOfPage: { '@type': 'WebPage', '@id': baseShareUrl },
+        inLanguage: 'en',
+      },
+      {
+        '@type': 'QAPage',
+        '@id': `${baseShareUrl}#qa`,
+        mainEntity: {
+          '@type': 'Question',
+          name: session.original_issue,
+          text: session.original_issue,
+          answerCount: 1 + speakers.length,
+          dateCreated: session.created_at,
+          author: orgPublisher,
+          acceptedAnswer: verdict ? {
+            '@type': 'Answer',
+            text: verdictText,
+            dateCreated: session.created_at,
+            url: baseShareUrl,
+            author: orgPublisher,
+          } : undefined,
+          suggestedAnswer: speakers.map((s) => {
+            const cleanName = stripTierSuffix(s.name);
+            const bodyParts = Array.isArray(s.body) ? s.body : (s.body ? [s.body] : []);
+            const fullText = [s.framing, ...bodyParts, s.challenge].filter(Boolean).join('\n\n');
+            return {
+              '@type': 'Answer',
+              text: fullText,
+              dateCreated: session.created_at,
+              url: `${baseShareUrl}?member=${encodeURIComponent(cleanName)}`,
+              author: {
+                '@type': 'Person',
+                name: cleanName,
+                ...(s.role ? { description: s.role } : {}),
+              },
+            };
+          }),
+        },
+      },
+    ],
+  };
+
   return (
     <>
       <Head>
@@ -240,6 +310,11 @@ export default function ArchiveDetail({ session, memberQuery }) {
         <meta name="twitter:title" content={session.original_issue || 'The Long Council'} />
         <meta name="twitter:description" content={pageDescription} />
         <meta name="twitter:image" content={ogImageUrl} />
+        <link rel="canonical" href={canonicalUrl} />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
       </Head>
 
       <SiteHeader />
