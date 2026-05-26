@@ -267,20 +267,26 @@ export default function ArchiveDetail({ session, memberQuery }) {
             dateCreated: session.created_at,
             url: baseShareUrl,
             author: orgPublisher,
+            upvoteCount: 0,
           } : undefined,
           suggestedAnswer: speakers.map((s) => {
             const cleanName = stripTierSuffix(s.name);
             const bodyParts = Array.isArray(s.body) ? s.body : (s.body ? [s.body] : []);
             const fullText = [s.framing, ...bodyParts, s.challenge].filter(Boolean).join('\n\n');
+            // Wikipedia URL by name slug. Works for the vast majority of council
+            // members; AI agents use this for entity-matching to Wikidata.
+            const wikipediaUrl = `https://en.wikipedia.org/wiki/${encodeURIComponent(cleanName.replace(/ /g, '_'))}`;
             return {
               '@type': 'Answer',
               text: fullText,
               dateCreated: session.created_at,
               url: `${baseShareUrl}?member=${encodeURIComponent(cleanName)}`,
+              upvoteCount: 0,
               author: {
                 '@type': 'Person',
                 name: cleanName,
                 ...(s.role ? { description: s.role } : {}),
+                sameAs: [wikipediaUrl],
               },
             };
           }),
