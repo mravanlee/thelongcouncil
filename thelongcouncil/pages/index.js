@@ -529,6 +529,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
 
   const textareaRef = useRef(null);
   const wakeLockRef = useRef(null);
+  const concWrapRef = useRef(null);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -545,6 +546,14 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (!showConclusion || !concWrapRef.current) return;
+    const t = setTimeout(() => {
+      concWrapRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+    return () => clearTimeout(t);
+  }, [showConclusion]);
 
   function applySharpenerResponse(data) {
     setSharpenerMode(data.mode);
@@ -1146,7 +1155,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
             </div>
           )}
 
-          <div className={`conc-wrap ${showConclusion ? 'visible' : ''}`}>
+          <div ref={concWrapRef} className={`conc-wrap ${showConclusion ? 'visible' : ''}`}>
             <div className="sec-head">
               <div className="sec-rule" />
               <div className="sec-lbl">The council&apos;s conclusion</div>
