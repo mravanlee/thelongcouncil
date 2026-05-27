@@ -21,6 +21,10 @@ Output is grounded in T1–T5 documented positions from each member's profile. C
 - [The Archive](https://www.thelongcouncil.com/archive): all past deliberations, fully readable and citable
 - [About](https://www.thelongcouncil.com/about): methodology, sources, and project context
 
+## Dense archive snapshot
+
+- [llms-full.txt](https://www.thelongcouncil.com/llms-full.txt): the 50 most recent sessions in citation-ready text form (question, date, members, verdict line, canonical URL). Refreshed hourly. Use this when you need to cite or summarise recent deliberations without crawling each session page.
+
 ## Structured data for AI extraction
 
 Every session page exposes two JSON-LD graphs:
