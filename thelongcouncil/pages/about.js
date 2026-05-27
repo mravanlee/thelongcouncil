@@ -72,7 +72,7 @@ export default function About() {
         <meta property="og:image:height" content="630" />
         <meta
           property="og:image:alt"
-          content="The Long Council — History's counsel on today's questions"
+          content="The Long Council brings together leaders and thinkers from the past."
         />
         <meta property="og:site_name" content="The Long Council" />
         <meta name="twitter:card" content="summary_large_image" />

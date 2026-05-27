@@ -1,6 +1,6 @@
 # The Long Council
 
-> History's counsel on today's questions. The Long Council assembles documented historic leaders and thinkers to deliberate on real governance, geopolitical, and economic policy questions.
+> A council of history's greatest minds. Ask them a question, on politics, society or the future. Put knowledge from the past to work on questions we face today.
 
 The Long Council is a public deliberation tool. A user submits a hard policy question, and a curated council of historical figures debates it through a structured AI pipeline. Each session produces a verdict and a full policy brief, grounded in the documented positions and reasoning patterns of the council members. All sessions are public, archived, and citable.
 

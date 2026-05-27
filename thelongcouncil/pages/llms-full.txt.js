@@ -32,7 +32,7 @@ function buildLlmsFull(sessions) {
   const today = new Date().toISOString().slice(0, 10);
   const header = `# The Long Council — Full archive snapshot
 
-> Generated ${today}. The Long Council assembles documented historic leaders and thinkers to deliberate on real governance, geopolitical, and economic policy questions.
+> Generated ${today}. A council of history's greatest minds. Ask them a question, on politics, society or the future. Put knowledge from the past to work on questions we face today.
 
 This file is the dense, citation-ready dump of recent council deliberations. For the site overview, methodology, and the council roster, see ${SITE_URL}/llms.txt.
 
