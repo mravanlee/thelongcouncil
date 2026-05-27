@@ -465,6 +465,44 @@ MEMBER: Member Name`;
 // Distils 2-3 imperative next-step actions from the deliberation + verdict.
 // Each action is required to derive from a specific member's argument
 // (the D-rule) so we don't invent policy mechanisms no one proposed.
+// IndexNow active submission. The matching keyfile lives at
+// /public/244f321a88504f727ee835b30b86531d.txt and proves ownership to
+// Bing/Yandex/Naver. This ping notifies them within seconds of a new
+// session URL so the archive page can appear in those indexes (and in
+// ChatGPT search, which queries Bing) without waiting for a crawl.
+const INDEXNOW_KEY = '244f321a88504f727ee835b30b86531d';
+const INDEXNOW_HOST = 'www.thelongcouncil.com';
+
+async function notifyIndexNow(slug) {
+  if (!slug) return;
+  if (process.env.VERCEL_ENV && process.env.VERCEL_ENV !== 'production') {
+    console.log('[indexnow] skipped (non-production env)');
+    return;
+  }
+  try {
+    const sessionUrl = `https://${INDEXNOW_HOST}/archive/${slug}`;
+    const body = {
+      host: INDEXNOW_HOST,
+      key: INDEXNOW_KEY,
+      keyLocation: `https://${INDEXNOW_HOST}/${INDEXNOW_KEY}.txt`,
+      urlList: [sessionUrl],
+    };
+    const res = await fetch('https://api.indexnow.org/IndexNow', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json; charset=utf-8' },
+      body: JSON.stringify(body),
+    });
+    if (res.ok || res.status === 202) {
+      console.log(`[indexnow] submitted ${sessionUrl} (HTTP ${res.status})`);
+    } else {
+      const txt = await res.text().catch(() => '');
+      console.warn(`[indexnow] non-ok HTTP ${res.status}: ${txt.slice(0, 200)}`);
+    }
+  } catch (err) {
+    console.warn('[indexnow] ping failed:', err.message);
+  }
+}
+
 async function generateFactualAnchors(question) {
   try {
     const output = await callClaude(PROMPT_FACTUAL_ANCHORS_SYSTEM, `SHARPENED QUESTION:\n${question}`, 400, 0.3);
@@ -1826,9 +1864,16 @@ Rewrite the full deliberation so that:
       });
     }
 
+    const finalSlug = saved ? saved.slug : (preSlug || null);
+
+    // Best-effort IndexNow ping. Awaited because Vercel serverless cuts off
+    // execution after the response is sent, so fire-and-forget would die.
+    // ~100-300ms typical; never blocks save or breaks the session.
+    if (saved) await notifyIndexNow(finalSlug);
+
     send('complete', {
       message: 'Session complete',
-      slug: saved ? saved.slug : (preSlug || null),
+      slug: finalSlug,
       saved: !!saved,
     });
   } catch (err) {
