@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import { useState } from 'react';
 import { Compass, Menu, X } from 'lucide-react';
 
@@ -20,6 +21,16 @@ function formatToday() {
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const today = formatToday();
+  const router = useRouter();
+
+  function handleLogoClick(e) {
+    setOpen(false);
+    if (router.pathname === '/') {
+      e.preventDefault();
+      window.dispatchEvent(new CustomEvent('longcouncil:home-reset'));
+      if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
 
   return (
     <header className="border-b border-border/70 relative">
@@ -27,7 +38,7 @@ export function SiteHeader() {
         <Link
           href="/"
           className="flex items-center gap-4"
-          onClick={() => setOpen(false)}
+          onClick={handleLogoClick}
         >
           <span className="flex items-center gap-2">
             <Compass className="h-5 w-5 text-primary" strokeWidth={2} />

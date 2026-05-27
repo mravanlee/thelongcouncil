@@ -555,6 +555,14 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
     return () => clearTimeout(t);
   }, [showConclusion]);
 
+  const resetRef = useRef(null);
+  useEffect(() => { resetRef.current = reset; });
+  useEffect(() => {
+    const handler = () => resetRef.current?.();
+    window.addEventListener('longcouncil:home-reset', handler);
+    return () => window.removeEventListener('longcouncil:home-reset', handler);
+  }, []);
+
   function applySharpenerResponse(data) {
     setSharpenerMode(data.mode);
     setSharpenerExplanation(data.explanation || '');
