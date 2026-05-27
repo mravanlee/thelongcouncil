@@ -146,8 +146,7 @@ export default function About() {
               You bring a question. The council selects the members whose work
               speaks most directly to it. They debate one by one, building on
               each other, pushing back, grounding every claim in what they
-              actually did or wrote. The best sessions sometimes end without a
-              verdict. That is often the honest answer.
+              actually did or wrote.
             </p>
 
             <h2
