@@ -290,7 +290,7 @@ export default function Archive({ sessions, error, initialFilters }) {
         <meta property="og:image:height" content="630" />
         <meta
           property="og:image:alt"
-          content="The Long Council — every session of the council"
+          content="The Long Council: every session of the council"
         />
         <meta property="og:site_name" content="The Long Council" />
         <meta name="twitter:card" content="summary_large_image" />

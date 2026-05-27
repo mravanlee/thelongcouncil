@@ -55,7 +55,7 @@ export default function About() {
         <title>About — The Long Council</title>
         <meta
           name="description"
-          content="About The Long Council — a project bringing the reasoning of historical leaders and thinkers to bear on present-day questions."
+          content="The Long Council brings together leaders and thinkers from the past. They built states, governed through crises, left ideas that still shape how we think."
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
@@ -64,7 +64,7 @@ export default function About() {
         <meta property="og:title" content="About — The Long Council" />
         <meta
           property="og:description"
-          content="About The Long Council — a project bringing the reasoning of historical leaders and thinkers to bear on present-day questions."
+          content="The Long Council brings together leaders and thinkers from the past. They built states, governed through crises, left ideas that still shape how we think."
         />
         <meta property="og:url" content="https://www.thelongcouncil.com/about" />
         <meta property="og:image" content="https://www.thelongcouncil.com/og-default.png" />
@@ -79,7 +79,7 @@ export default function About() {
         <meta name="twitter:title" content="About — The Long Council" />
         <meta
           name="twitter:description"
-          content="About The Long Council — a project bringing the reasoning of historical leaders and thinkers to bear on present-day questions."
+          content="The Long Council brings together leaders and thinkers from the past. They built states, governed through crises, left ideas that still shape how we think."
         />
         <meta name="twitter:image" content="https://www.thelongcouncil.com/og-default.png" />
       </Head>
