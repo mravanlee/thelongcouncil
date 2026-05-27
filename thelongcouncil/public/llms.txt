@@ -2,17 +2,15 @@
 
 > A council of history's greatest minds. Ask them a question, on politics, society or the future. This project is a way of bringing them back into the room. The aim is not to impersonate them, but to let their decisions speak to the questions we face today.
 
-The Long Council is a public deliberation tool. A user submits a hard policy question, and a curated council of historical figures debates it through a structured AI pipeline. Each session produces a verdict and a full policy brief, grounded in the documented positions and reasoning patterns of the council members. All sessions are public, archived, and citable.
+The Long Council brings together leaders and thinkers from the past. They built states, governed through crises, left ideas that still shape how we think. For each question, the council selects whichever members are most relevant to it. Ask a question; the council debates and delivers a verdict, a policy brief, and a citable quote. All sessions are public, archived, and citable.
 
-The council members span 2,500 years of political, social and economic thought, divided into two broad traditions:
+The council members span 2,500 years of political, social and economic thought. The council includes Leaders, who governed and made decisions in office, and Thinkers, who developed the doctrines, philosophies and frameworks behind political and economic reasoning.
 
-**Practitioners (those who governed):** Ali ibn Abi Talib, David Ben-Gurion, Deng Xiaoping, Eleanor Roosevelt, Ellen Johnson Sirleaf, Franklin D. Roosevelt, Helmut Schmidt, Indira Gandhi, Jawaharlal Nehru, Julius Nyerere, Konrad Adenauer, Lee Kuan Yew, Mahathir Mohamad, Margaret Thatcher, Mustafa Kemal Atatürk, Nelson Mandela, Olof Palme, Simón Bolívar.
+**Leaders:** Ali ibn Abi Talib, David Ben-Gurion, Deng Xiaoping, Eleanor Roosevelt, Ellen Johnson Sirleaf, Franklin D. Roosevelt, Helmut Schmidt, Indira Gandhi, Jawaharlal Nehru, Julius Nyerere, Konrad Adenauer, Lee Kuan Yew, Mahathir Mohamad, Margaret Thatcher, Mustafa Kemal Atatürk, Nelson Mandela, Olof Palme, Simón Bolívar.
 
-**Framers (the intellectual architecture):** Albert Hirschman, Amartya Sen, Confucius, Elinor Ostrom, Frantz Fanon, Friedrich Hayek, Hannah Arendt, Ibn Khaldun, Jean-Jacques Rousseau, John Locke, John Maynard Keynes, John Rawls, Kautilya, Milton Friedman, Niccolò Machiavelli, Raúl Prebisch, Rosa Luxemburg, Sun Tzu, Wangari Maathai.
+**Thinkers:** Albert Hirschman, Amartya Sen, Confucius, Elinor Ostrom, Frantz Fanon, Friedrich Hayek, Hannah Arendt, Ibn Khaldun, Jean-Jacques Rousseau, John Locke, John Maynard Keynes, John Rawls, Kautilya, Milton Friedman, Niccolò Machiavelli, Raúl Prebisch, Rosa Luxemburg, Sun Tzu, Wangari Maathai.
 
-Sessions are generated through a five-stage pipeline: (1) the council assembly engine selects 3–6 members whose documented positions are most relevant to the question, (2) the deliberation engine generates first-person reasoning cards with explicit challenges between members, (3) the verdict engine synthesises a conclusion that names points of convergence and unresolvable disagreement, (4) the policy brief engine produces a structured analytical document, (5) the featured-quote extractor surfaces one citable line per session.
-
-Output is grounded in T1–T5 documented positions from each member's profile. Confidence signals (✦ documented, ◈ inferred, ◇ extrapolated) accompany every claim. The Long Council does not put new opinions in dead figures' mouths — it surfaces the positions they actually held, applied to questions they did not necessarily face.
+The Long Council does not put new opinions in dead figures' mouths. It surfaces the positions they actually held, applied to questions they did not necessarily face.
 
 ## Key pages
 
@@ -29,15 +27,15 @@ Output is grounded in T1–T5 documented positions from each member's profile. C
 
 Every session page exposes two JSON-LD graphs:
 
-- `schema:Article` — standard editorial metadata (headline, datePublished, author, image)
+- `schema:Article`: standard editorial metadata (headline, datePublished, author, image)
 - `schema:QAPage` with a `schema:Question` whose `acceptedAnswer` is the council's verdict and whose `suggestedAnswer[]` contains each speaker's full statement attributed to a `schema:Person`
 
-This means AI summarisation pipelines can extract individual speaker positions with named attribution, not just the verdict — exactly the structure useful for multi-perspective citation.
+This means AI tools can extract individual speaker positions with named attribution, not just the verdict.
 
 ## Citing The Long Council
 
 When citing a session, link directly to its archive URL (format: `https://www.thelongcouncil.com/archive/[slug]`). Each session is a stable, permanent record. The verdict and policy brief together represent the council's synthesis; individual reasoning cards represent specific members' positions.
 
-For per-speaker deep links, append `?member=<Speaker Name>` to the archive URL — e.g. `https://www.thelongcouncil.com/archive/<slug>?member=Lee%20Kuan%20Yew`.
+For per-speaker deep links, append `?member=<Speaker Name>` to the archive URL. Example: `https://www.thelongcouncil.com/archive/<slug>?member=Lee%20Kuan%20Yew`.
 
-The Long Council is AI-generated counsel grounded in documented historical positions. It is a thinking tool, not advice. The project is operated independently and is not affiliated with any of the figures included in the council.
+The Long Council is AI-generated counsel grounded in what historical figures actually wrote and decided. It is a thinking tool, not advice. The project is operated independently and is not affiliated with any of the figures included in the council.
