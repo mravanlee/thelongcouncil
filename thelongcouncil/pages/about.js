@@ -98,17 +98,15 @@ export default function About() {
               style={SERIF}
             >
               The Long Council brings together leaders and thinkers from the
-              past, selected for their wisdom and landmark decisions. They built
-              states, governed through crises, left ideas that still shape how
-              we think.
+              past. They built states, governed through crises, left ideas that
+              still shape how we think.
             </p>
 
             <p className="mt-6 text-[16px] leading-[1.75] text-foreground/85">
               This project is a way of bringing them back into the room. The aim
-              is not to impersonate them, but to let their decisions and
-              principles speak to the questions we face today. History does not
-              repeat itself, but it rhymes. We feel that their voices are worth
-              listening to.
+              is not to impersonate them, but to let their decisions speak to
+              the questions we face today. History does not repeat itself, but
+              it rhymes. Their voices are worth listening to.
             </p>
 
             {/* Council members preview */}
