@@ -34,7 +34,7 @@ function buildLlmsFull(sessions) {
 
 > Generated ${today}. The Long Council assembles documented historic leaders and thinkers to deliberate on real governance, geopolitical, and economic policy questions.
 
-This file is the dense, citation-ready dump of recent council deliberations. For the site overview, methodology, and the full 37-member roster, see ${SITE_URL}/llms.txt.
+This file is the dense, citation-ready dump of recent council deliberations. For the site overview, methodology, and the council roster, see ${SITE_URL}/llms.txt.
 
 Each session below includes the question asked, the date, the members who deliberated, the council's verdict line, and the canonical URL. Each session URL is a stable, permanent record. The full reasoning, per-speaker cards, and policy brief live at the session URL.
 

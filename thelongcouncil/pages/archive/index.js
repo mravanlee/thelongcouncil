@@ -136,7 +136,7 @@ export default function Archive({ sessions, error, initialFilters }) {
     '@type': 'CollectionPage',
     '@id': 'https://www.thelongcouncil.com/archive#collection',
     name: 'The Archive',
-    description: 'Every deliberation the council has considered.',
+    description: 'Browse the questions history\'s sharpest minds have debated. Filter by theme or search for a topic.',
     url: 'https://www.thelongcouncil.com/archive',
     inLanguage: 'en',
     isPartOf: {
@@ -273,7 +273,7 @@ export default function Archive({ sessions, error, initialFilters }) {
         <title>The Archive — The Long Council</title>
         <meta
           name="description"
-          content="Every issue the council has considered — past debates from history's greatest minds."
+          content="Browse the questions history's sharpest minds have debated. Filter by theme or search for a topic."
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
@@ -282,7 +282,7 @@ export default function Archive({ sessions, error, initialFilters }) {
         <meta property="og:title" content="The Archive — The Long Council" />
         <meta
           property="og:description"
-          content="Every issue the council has considered — past debates from history's greatest minds."
+          content="Browse the questions history's sharpest minds have debated. Filter by theme or search for a topic."
         />
         <meta property="og:url" content="https://www.thelongcouncil.com/archive" />
         <meta property="og:image" content="https://www.thelongcouncil.com/og-default.png" />
@@ -290,14 +290,14 @@ export default function Archive({ sessions, error, initialFilters }) {
         <meta property="og:image:height" content="630" />
         <meta
           property="og:image:alt"
-          content="The Long Council — History's counsel on today's questions"
+          content="The Long Council — every session of the council"
         />
         <meta property="og:site_name" content="The Long Council" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="The Archive — The Long Council" />
         <meta
           name="twitter:description"
-          content="Every issue the council has considered — past debates from history's greatest minds."
+          content="Browse the questions history's sharpest minds have debated. Filter by theme or search for a topic."
         />
         <meta name="twitter:image" content="https://www.thelongcouncil.com/og-default.png" />
         <link rel="canonical" href="https://www.thelongcouncil.com/archive" />

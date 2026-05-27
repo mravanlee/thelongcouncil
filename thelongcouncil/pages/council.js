@@ -324,7 +324,7 @@ const COUNCIL_MEMBERS = [
 
 ];
 
-// JSON-LD CollectionPage exposing the 37-member roster as a schema:ItemList
+// JSON-LD CollectionPage exposing the curated roster as a schema:ItemList
 // of schema:Person items. AI agents that ask "who is in The Long Council"
 // or "what historical thinkers does site X cover" can extract the roster
 // directly from this graph without parsing the rendered HTML. Each Person
@@ -357,7 +357,7 @@ function buildCouncilJsonLd() {
     '@type': 'CollectionPage',
     '@id': 'https://www.thelongcouncil.com/council#collection',
     name: 'The Council',
-    description: '37 documented historic leaders and thinkers who form The Long Council.',
+    description: 'An assembly of historic leaders and thinkers, coming from different centuries, continents and traditions. Each one earned their place through real decisions and lasting work.',
     url: 'https://www.thelongcouncil.com/council',
     inLanguage: 'en',
     isPartOf: {
@@ -425,13 +425,13 @@ export default function Council({ debateCounts = {} }) {
     <>
       <Head>
         <title>The Council — The Long Council</title>
-        <meta name="description" content="37 historic leaders and thinkers who form The Long Council." />
+        <meta name="description" content="An assembly of historic leaders and thinkers, coming from different centuries, continents and traditions. Each one earned their place through real decisions and lasting work." />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
         <meta property="og:type" content="website" />
         <meta property="og:title" content="The Council — The Long Council" />
-        <meta property="og:description" content="37 historic leaders and thinkers who form The Long Council — from Machiavelli to Mandela, Keynes to Sun Tzu." />
+        <meta property="og:description" content="An assembly of historic leaders and thinkers, coming from different centuries, continents and traditions. Each one earned their place through real decisions and lasting work." />
         <meta property="og:url" content="https://www.thelongcouncil.com/council" />
         <meta property="og:image" content="https://www.thelongcouncil.com/og-default.png" />
         <meta property="og:image:width" content="1200" />
@@ -440,7 +440,7 @@ export default function Council({ debateCounts = {} }) {
         <meta property="og:site_name" content="The Long Council" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="The Council — The Long Council" />
-        <meta name="twitter:description" content="37 historic leaders and thinkers who form The Long Council." />
+        <meta name="twitter:description" content="An assembly of historic leaders and thinkers, coming from different centuries, continents and traditions. Each one earned their place through real decisions and lasting work." />
         <meta name="twitter:image" content="https://www.thelongcouncil.com/og-default.png" />
         <link rel="canonical" href="https://www.thelongcouncil.com/council" />
         <script

@@ -54,7 +54,7 @@ const HOMEPAGE_JSON_LD = {
         '@type': 'ImageObject',
         url: 'https://www.thelongcouncil.com/favicon.svg',
       },
-      description: 'A public AI deliberation tool. 37 documented historic leaders and thinkers debate today\'s governance, geopolitical, and economic questions.',
+      description: 'The Long Council — an AI deliberation tool that brings the reasoning of historic leaders and thinkers to bear on today\'s policy questions.',
     },
     {
       '@type': 'WebSite',
@@ -63,7 +63,7 @@ const HOMEPAGE_JSON_LD = {
       url: 'https://www.thelongcouncil.com',
       inLanguage: 'en',
       publisher: { '@id': 'https://www.thelongcouncil.com/#organization' },
-      description: 'Ask a hard question. Watch history\'s greatest minds debate it. See what they decide.',
+      description: 'A council of history\'s greatest minds. Ask them a question, on politics, society or the future. Put knowledge from the past to work on questions we face today.',
     },
   ],
 };
@@ -857,22 +857,22 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
     <>
       <Head>
         <title>The Long Council</title>
-        <meta name="description" content="Ask a hard question. Watch history's greatest minds debate it. See what they decide." />
+        <meta name="description" content="A council of history's greatest minds. Ask them a question, on politics, society or the future. Put knowledge from the past to work on questions we face today." />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
         <meta property="og:type" content="website" />
         <meta property="og:title" content="The Long Council" />
-        <meta property="og:description" content="Ask a hard question. Watch history's greatest minds debate it. See what they decide." />
+        <meta property="og:description" content="A council of history's greatest minds. Ask them a question, on politics, society or the future. Put knowledge from the past to work on questions we face today." />
         <meta property="og:url" content="https://www.thelongcouncil.com/" />
         <meta property="og:image" content="https://www.thelongcouncil.com/og-default.png" />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
-        <meta property="og:image:alt" content="The Long Council — History's counsel on today's questions" />
+        <meta property="og:image:alt" content="The Long Council — a council of history's greatest minds" />
         <meta property="og:site_name" content="The Long Council" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="The Long Council" />
-        <meta name="twitter:description" content="Ask a hard question. Watch history's greatest minds debate it. See what they decide." />
+        <meta name="twitter:description" content="A council of history's greatest minds. Ask them a question, on politics, society or the future. Put knowledge from the past to work on questions we face today." />
         <meta name="twitter:image" content="https://www.thelongcouncil.com/og-default.png" />
         <link rel="canonical" href="https://www.thelongcouncil.com/" />
         <script
@@ -896,9 +896,9 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
                 >
                   A council of history&apos;s greatest minds.
                   <br />
-                  <span className="sm:hidden">Ask them your own question.</span>
+                  <span className="sm:hidden">Ask them a question.</span>
                   <span className="hidden sm:inline">
-                    Ask them your own question, on politics, society or the future.
+                    Ask them a question, on politics, society or the future.
                   </span>
                   <br />
                   The most recent question they debated:
