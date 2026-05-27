@@ -36,6 +36,37 @@ function StepDot({ state, Icon }) {
 // ── Recovery polling constants ──────────────────────────────────────────
 const FINALIZE_POLL_INTERVAL_MS = 5000;
 const FINALIZE_MAX_ATTEMPTS = 60;
+
+// Site-wide JSON-LD foundation. Organization establishes the publishing
+// entity; WebSite registers the site itself with a SearchAction sitelinks
+// box hint. Both are referenced by @id from per-page graphs (Article,
+// QAPage, CollectionPage) so AI agents can resolve all attribution to the
+// same Organization without ambiguity.
+const HOMEPAGE_JSON_LD = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'Organization',
+      '@id': 'https://www.thelongcouncil.com/#organization',
+      name: 'The Long Council',
+      url: 'https://www.thelongcouncil.com',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://www.thelongcouncil.com/favicon.svg',
+      },
+      description: 'A public AI deliberation tool. 37 documented historic leaders and thinkers debate today\'s governance, geopolitical, and economic questions.',
+    },
+    {
+      '@type': 'WebSite',
+      '@id': 'https://www.thelongcouncil.com/#website',
+      name: 'The Long Council',
+      url: 'https://www.thelongcouncil.com',
+      inLanguage: 'en',
+      publisher: { '@id': 'https://www.thelongcouncil.com/#organization' },
+      description: 'Ask a hard question. Watch history\'s greatest minds debate it. See what they decide.',
+    },
+  ],
+};
 const RECENT_SESSION_WINDOW_MINUTES = 10;
 
 // ── Wake Lock helpers ───────────────────────────────────────────────────
@@ -843,6 +874,11 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
         <meta name="twitter:title" content="The Long Council" />
         <meta name="twitter:description" content="Ask a hard question. Watch history's greatest minds debate it. See what they decide." />
         <meta name="twitter:image" content="https://www.thelongcouncil.com/og-default.png" />
+        <link rel="canonical" href="https://www.thelongcouncil.com/" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(HOMEPAGE_JSON_LD) }}
+        />
       </Head>
 
       <SiteHeader />
