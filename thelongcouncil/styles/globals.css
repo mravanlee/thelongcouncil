@@ -507,6 +507,35 @@ a {
 .conc-wrap { opacity: 0; transform: translateY(20px); transition: opacity 0.7s, transform 0.7s; margin: 10px 0 24px; }
 .conc-wrap.visible { opacity: 1; transform: translateY(0); }
 
+.verdict-pill {
+  position: fixed;
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  right: 24px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #6b1a1a;
+  color: #f8f0e8;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 3px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+  opacity: 0;
+  transform: translateY(8px);
+  animation: verdict-pill-in 0.35s ease-out forwards;
+  transition: background 0.2s;
+}
+.verdict-pill:hover { background: #5a1515; }
+.verdict-pill:focus-visible { outline: 2px solid #f8f0e8; outline-offset: 2px; }
+@keyframes verdict-pill-in {
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .conc-bar {
   background: #f3eeea;
   border: 0.5px solid #d4cdbf;

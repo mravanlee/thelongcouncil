@@ -524,6 +524,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
   const [showConclusion, setShowConclusion] = useState(false);
   const [showBriefToggle, setShowBriefToggle] = useState(false);
   const [briefOpen, setBriefOpen] = useState(false);
+  const [showVerdictPill, setShowVerdictPill] = useState(false);
 
   const [error, setError] = useState(null);
 
@@ -547,13 +548,37 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
     };
   }, []);
 
+  // When the verdict renders: only auto-scroll if the user is already near
+  // the bottom (kept pace with the procession). Otherwise show a pill so
+  // the user is not yanked away from a card they are still reading.
   useEffect(() => {
     if (!showConclusion || !concWrapRef.current) return;
     const t = setTimeout(() => {
-      concWrapRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const el = concWrapRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const viewportH = window.innerHeight;
+      const READING_BUFFER = 400;
+      if (rect.top <= viewportH + READING_BUFFER) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        setShowVerdictPill(true);
+      }
     }, 100);
     return () => clearTimeout(t);
   }, [showConclusion]);
+
+  // Hide the pill once the user has scrolled the verdict into view themselves.
+  useEffect(() => {
+    if (!showVerdictPill) return;
+    const handler = () => {
+      if (!concWrapRef.current) return;
+      const rect = concWrapRef.current.getBoundingClientRect();
+      if (rect.top < window.innerHeight) setShowVerdictPill(false);
+    };
+    window.addEventListener('scroll', handler, { passive: true });
+    return () => window.removeEventListener('scroll', handler);
+  }, [showVerdictPill]);
 
   const resetRef = useRef(null);
   useEffect(() => { resetRef.current = reset; });
@@ -749,6 +774,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
     setSessionSlug(null);
     setShowConclusion(false);
     setShowBriefToggle(false);
+    setShowVerdictPill(false);
     setBriefOpen(false);
     setLoadingStep(0);
     setError(null);
@@ -1216,6 +1242,21 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
           <div className="new-session-row">
             <button className="new-session-btn" onClick={reset}>Ask a new question</button>
           </div>
+
+          {showVerdictPill && (
+            <button
+              type="button"
+              className="verdict-pill"
+              onClick={() => {
+                concWrapRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                setShowVerdictPill(false);
+              }}
+              aria-label="Jump to verdict"
+            >
+              <span>Verdict ready</span>
+              <span aria-hidden="true">↓</span>
+            </button>
+          )}
         </div>
       )}
 
