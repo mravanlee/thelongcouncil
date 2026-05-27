@@ -32,7 +32,7 @@ function buildLlmsFull(sessions) {
   const today = new Date().toISOString().slice(0, 10);
   const header = `# The Long Council — Full archive snapshot
 
-> Generated ${today}. A council of history's greatest minds. Ask them a question, on politics, society or the future. Put knowledge from the past to work on questions we face today.
+> Generated ${today}. A council of history's greatest minds. Ask them a question, on politics, society or the future. This project is a way of bringing them back into the room. The aim is not to impersonate them, but to let their decisions speak to the questions we face today.
 
 This file is the dense, citation-ready dump of recent council deliberations. For the site overview, methodology, and the council roster, see ${SITE_URL}/llms.txt.
 
