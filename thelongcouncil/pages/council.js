@@ -324,6 +324,58 @@ const COUNCIL_MEMBERS = [
 
 ];
 
+// JSON-LD CollectionPage exposing the 37-member roster as a schema:ItemList
+// of schema:Person items. AI agents that ask "who is in The Long Council"
+// or "what historical thinkers does site X cover" can extract the roster
+// directly from this graph without parsing the rendered HTML. Each Person
+// links to its Wikipedia entry via sameAs for Wikidata entity-matching.
+function buildCouncilJsonLd() {
+  const memberItems = COUNCIL_MEMBERS.map((m, i) => {
+    const cleanName = m.name;
+    const wikipediaUrl = `https://en.wikipedia.org/wiki/${encodeURIComponent(cleanName.replace(/ /g, '_'))}`;
+    const years = [...m.lifespan.matchAll(/(\d+)/g)].map((x) => x[1]);
+    const isBc = m.lifespan.includes('BC');
+    const person = {
+      '@type': 'Person',
+      name: cleanName,
+      description: m.role,
+      nationality: m.country,
+      url: wikipediaUrl,
+      sameAs: [wikipediaUrl],
+    };
+    // schema.org accepts xsd:gYear (YYYY); BC years require expanded ISO 8601
+    // which most validators reject. Safer to omit dates for BC entries; the
+    // lifespan is still readable in description/role text.
+    if (!isBc) {
+      if (years[0]) person.birthDate = years[0];
+      if (years[1]) person.deathDate = years[1];
+    }
+    return { '@type': 'ListItem', position: i + 1, item: person };
+  });
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    '@id': 'https://www.thelongcouncil.com/council#collection',
+    name: 'The Council',
+    description: '37 documented historic leaders and thinkers who form The Long Council.',
+    url: 'https://www.thelongcouncil.com/council',
+    inLanguage: 'en',
+    isPartOf: {
+      '@type': 'WebSite',
+      '@id': 'https://www.thelongcouncil.com/#website',
+      name: 'The Long Council',
+      url: 'https://www.thelongcouncil.com',
+    },
+    mainEntity: {
+      '@type': 'ItemList',
+      numberOfItems: COUNCIL_MEMBERS.length,
+      itemListElement: memberItems,
+    },
+  };
+}
+
+const COUNCIL_JSON_LD = buildCouncilJsonLd();
+
 export default function Council({ debateCounts = {} }) {
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
@@ -390,6 +442,11 @@ export default function Council({ debateCounts = {} }) {
         <meta name="twitter:title" content="The Council — The Long Council" />
         <meta name="twitter:description" content="37 historic leaders and thinkers who form The Long Council." />
         <meta name="twitter:image" content="https://www.thelongcouncil.com/og-default.png" />
+        <link rel="canonical" href="https://www.thelongcouncil.com/council" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(COUNCIL_JSON_LD) }}
+        />
       </Head>
 
       <div className="min-h-screen bg-background text-foreground antialiased">
