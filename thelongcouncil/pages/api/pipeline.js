@@ -320,10 +320,10 @@ async function precreateSession(originalIssue) {
   }
 }
 
-async function finalizeSession({ slug, sharpenedIssue, assemblyOutput, deliberationOutput, verdictOutput, briefOutput, memberNames, memberTypes, featuredQuote, featuredQuoteMember, actions }) {
+async function finalizeSession({ slug, sharpenedIssue, assemblyOutput, deliberationOutput, verdictOutput, briefOutput, memberNames, memberTypes, featuredQuote, featuredQuoteMember, actions, factualAnchors }) {
   try {
     const supabase = getServiceSupabase();
-    const cards = { assembly: assemblyOutput, deliberation: deliberationOutput, verdict: verdictOutput, brief: briefOutput, actions: actions || [] };
+    const cards = { assembly: assemblyOutput, deliberation: deliberationOutput, verdict: verdictOutput, brief: briefOutput, actions: actions || [], factual_anchors: factualAnchors || '' };
     const { data, error } = await supabase
       .from('sessions')
       .update({
@@ -346,10 +346,10 @@ async function finalizeSession({ slug, sharpenedIssue, assemblyOutput, deliberat
   }
 }
 
-async function saveSessionToDatabase({ originalIssue, sharpenedIssue, assemblyOutput, deliberationOutput, verdictOutput, briefOutput, memberNames, memberTypes, featuredQuote, featuredQuoteMember, actions }) {
+async function saveSessionToDatabase({ originalIssue, sharpenedIssue, assemblyOutput, deliberationOutput, verdictOutput, briefOutput, memberNames, memberTypes, featuredQuote, featuredQuoteMember, actions, factualAnchors }) {
   try {
     const supabase = getServiceSupabase();
-    const cards = { assembly: assemblyOutput, deliberation: deliberationOutput, verdict: verdictOutput, brief: briefOutput, actions: actions || [] };
+    const cards = { assembly: assemblyOutput, deliberation: deliberationOutput, verdict: verdictOutput, brief: briefOutput, actions: actions || [], factual_anchors: factualAnchors || '' };
     let slug = generateSlug(sharpenedIssue || originalIssue);
     let attempt = 0;
     let inserted = null;
@@ -465,6 +465,23 @@ MEMBER: Member Name`;
 // Distils 2-3 imperative next-step actions from the deliberation + verdict.
 // Each action is required to derive from a specific member's argument
 // (the D-rule) so we don't invent policy mechanisms no one proposed.
+async function generateFactualAnchors(question) {
+  try {
+    const output = await callClaude(PROMPT_FACTUAL_ANCHORS_SYSTEM, `SHARPENED QUESTION:\n${question}`, 400, 0.3);
+    const trimmed = (output || '').trim();
+    if (!trimmed || /^NO ANCHORS\b/i.test(trimmed)) return '';
+    return trimmed;
+  } catch (err) {
+    console.warn('[pipeline] factual-anchors generation failed:', err.message);
+    return '';
+  }
+}
+
+function buildContextBlock(factualAnchors) {
+  if (!factualAnchors) return '';
+  return `CURRENT CONTEXT (May 2026), members must reason from these facts. If a member's natural framing conflicts with an anchor, the member must address the conflict explicitly, not bypass it:\n\n${factualAnchors}\n\n`;
+}
+
 async function generateActions(originalIssue, deliberationOutput, verdictOutput) {
   try {
     const userMessage = `ISSUE:\n${originalIssue}\n\nDELIBERATION (Layer 2 member cards):\n${deliberationOutput}\n\nVERDICT:\n${verdictOutput}`;
@@ -511,9 +528,54 @@ function validateActions(actions) {
 
 // ── Prompts ─────────────────────────────────────────────────────────────
 
+const PROMPT_FACTUAL_ANCHORS_SYSTEM = `You read a sharpened policy or governance question. You identify 0-3 state-of-the-world facts (within last 3 years) that any historical thinker reasoning about this question must be confronted with today.
+
+Anchors exist to prevent thinkers from reasoning about an outdated or abstract version of the issue. They constrain which positions remain defensible in 2026.
+
+EACH ANCHOR MUST:
+1. Name a specific actor (person, company, country, institution).
+2. Name a specific fact (number, event, capability, status).
+3. Be load-bearing: removing it would change which positions are tenable.
+4. Be verifiable, the kind of claim that would survive a fact-check.
+
+FORBIDDEN:
+- Opinions, predictions, normative claims.
+- Generic statements ("climate change is accelerating", too vague).
+- Facts older than ~3 years unless they remain operationally current.
+- Inventing numbers, dates, or institutions when uncertain.
+- Em-dashes ("—"). Use comma, period, colon, or semicolon.
+
+EMIT ZERO ANCHORS IF:
+- The question is evergreen (timeless ethics, abstract governance).
+- No fact within recent years changes the reasoning landscape.
+- You are not confident a fact meets all four criteria.
+
+OUTPUT FORMAT, exactly this, no preamble:
+
+ANCHOR 1: [Specific actor + specific fact, ≤ 25 words.]
+ANCHOR 2: [Specific actor + specific fact, ≤ 25 words.]
+ANCHOR 3: [Specific actor + specific fact, ≤ 25 words.]
+
+OR if no anchors apply:
+NO ANCHORS
+
+EXAMPLES, Mars settlement question:
+✓ ANCHOR 1: SpaceX has committed roughly $10B private capital to Mars infrastructure 2024-2026; no government has Mars settlement as official policy.
+✓ ANCHOR 2: NASA's Artemis program targets the Moon, not Mars; Mars timelines depend on private actors, not public budgets.
+
+EXAMPLES, Ukraine ceasefire question:
+✓ ANCHOR 1: Russian Kalibr, Iskander and Kh-101 missile systems range covers all Ukrainian territory and much of NATO Europe.
+✓ ANCHOR 2: Ukrainian power grid has been struck repeatedly since 2022; reconstruction debate is about hardening, not geographic relocation.
+
+EXAMPLES, "How should we think about the meaning of work?" (evergreen):
+✓ NO ANCHORS`;
+
 const PROMPT1_SYSTEM = `You are the Council Assembly Engine for The Long Council — a product that assembles documented historic leaders and thinkers to deliberate on real governance, geopolitical and economic policy questions.
 
 Your task is to select the most relevant members from the council roster for the issue provided. You are not generating reasoning yet — only selecting who should sit at the table and why.
+
+CURRENT CONTEXT ANCHORS:
+If the user message begins with a "CURRENT CONTEXT (May 2026)" block listing factual anchors, those facts are non-negotiable state-of-the-world. Use them to select members whose documented work gives them something to say about the issue as it actually exists today, not an abstract or outdated version of it.
 
 CONFIDENCE SIGNALS — used throughout all outputs:
 [documented] — directly traceable to a specific decision, speech, or published position in the member's T1–T3 profile. Always cite the specific source.
@@ -558,6 +620,9 @@ CONFIDENCE NOTE:
 const PROMPT2_SYSTEM = `You are the Deliberation Engine for The Long Council — a product that assembles documented historic leaders and thinkers to deliberate on real governance, geopolitical and economic policy questions.
 
 Your task is to generate the reasoning cards for this session — the sequential first-person responses from each selected member.
+
+CURRENT CONTEXT ANCHORS:
+If the user message begins with a "CURRENT CONTEXT (May 2026)" block listing factual anchors, those facts are non-negotiable state-of-the-world. Members may not reason from a world that contradicts them. If a member's natural historical framing would clash with an anchor, the framing must acknowledge and address the clash, not bypass it. A 2026 member card that treats the issue as if an anchor were false is a failed card.
 
 ════════════════════════════════════════════════════════════════
 ROSTER DISCIPLINE — ABSOLUTE RULE, APPLIES BEFORE ALL OTHERS
@@ -1119,6 +1184,9 @@ You are the Verdict Engine for The Long Council — a product that assembles doc
 
 Your task is to synthesise the reasoning cards from the Deliberation Engine into the conclusion that appears in the conclusion bar at the end of a session. This is what every user reads — whether or not they open the full policy brief. It must stand alone and be worth reading on its own.
 
+CURRENT CONTEXT ANCHORS:
+If the user message begins with a "CURRENT CONTEXT (May 2026)" block listing factual anchors, those facts are non-negotiable state-of-the-world. The verdict line and reasoning summary must be consistent with them. A verdict that prescribes something an anchor makes impossible (e.g. geographic relocation when the anchor says missile range covers everything) is a failed verdict. Rewrite to match reality.
+
 The conclusion bar has two parts only: the verdict and the reasoning summary. Nothing else. Limits, unresolved questions, and counterfactuals belong in the policy brief. This output is the front page. Sharp, clear, honest.
 
 ════════════════════════════════════════════════════════════════
@@ -1343,6 +1411,9 @@ const PROMPT4_SYSTEM = `You are the Policy Brief Engine for The Long Council —
 
 Your task is to produce the structured policy brief. This is the analyst's report. It is NOT a transcript of the debate. It is a synthesised document that adds genuine value beyond what the reasoning cards and conclusion already provided.
 
+CURRENT CONTEXT ANCHORS:
+If the user message begins with a "CURRENT CONTEXT (May 2026)" block listing factual anchors, the brief must be consistent with them throughout. Where a member's documented historical framing is in tension with an anchor, the brief should name the tension explicitly and show how the member's reasoning adapts (or doesn't) to the present.
+
 CRITICAL ROLE: The reasoning cards are short (50-80 words each, one paragraph). They give the headline position of each member. The DEPTH lives here, in the brief. Counterintuitive points, candid limits, sharp positioning against alternatives, fuller member quotes, the irreducible dissent: all of that belongs in this brief, not on the cards. The cards are the front page; you are the long read.
 
 ════════════════════════════════════════════════════════════════
@@ -1534,10 +1605,19 @@ export default async function handler(req, res) {
 
     const allProfiles = loadAllProfiles();
 
+    send('progress', { step: 1, message: 'Establishing current context...' });
+    const factualAnchors = await generateFactualAnchors(question);
+    if (factualAnchors) {
+      console.log('[pipeline] Factual anchors generated:\n' + factualAnchors);
+    } else {
+      console.log('[pipeline] No factual anchors emitted (evergreen or no confident facts).');
+    }
+    const contextBlock = buildContextBlock(factualAnchors);
+
     send('progress', { step: 1, message: 'Assembling the council...' });
     const assemblyOutput = await callClaude(
       PROMPT1_SYSTEM,
-      `MEMBER PROFILES:\n${allProfiles}\n\nTHE ISSUE:\n${question}`,
+      `${contextBlock}MEMBER PROFILES:\n${allProfiles}\n\nTHE ISSUE:\n${question}`,
       2000
     );
     send('assembly', { data: assemblyOutput });
@@ -1566,7 +1646,7 @@ export default async function handler(req, res) {
     const rosterLine = `SELECTED MEMBERS FOR THIS DELIBERATION (the only members at the table):\n${selectedNames.map((n, i) => `${i + 1}. ${n}`).join('\n')}\n\n`;
 
     send('progress', { step: 2, message: 'The council is deliberating...' });
-    const deliberationUserBase = `ISSUE:\n${question}\n\n${rosterLine}PROMPT 1 OUTPUT:\n${assemblyOutput}\n\nMEMBER PROFILES:\n${profilesForDeliberation}\n\nFINAL REMINDER: Each card is exactly ONE paragraph, 60-100 words total. Framing line ≤ 12 words AND must answer THIS specific issue (not generic philosophy). Challenge line ≤ 8 words ending in ? (chain forward to next speaker; never on the final card). Zero em-dashes anywhere. No exceptions.`;
+    const deliberationUserBase = `${contextBlock}ISSUE:\n${question}\n\n${rosterLine}PROMPT 1 OUTPUT:\n${assemblyOutput}\n\nMEMBER PROFILES:\n${profilesForDeliberation}\n\nFINAL REMINDER: Each card is exactly ONE paragraph, 60-100 words total. Framing line ≤ 12 words AND must answer THIS specific issue (not generic philosophy). Challenge line ≤ 8 words ending in ? (chain forward to next speaker; never on the final card). Zero em-dashes anywhere. No exceptions.`;
     let deliberationOutput = await callClaude(
       PROMPT2_SYSTEM,
       deliberationUserBase,
@@ -1652,12 +1732,13 @@ Rewrite the full deliberation so that:
       missingProfiles: loadInfo.missing,
       availableProfileKeys: loadInfo.availableKeys,
       prompt1Preview: assemblyOutput.substring(0, 1500),
+      factualAnchors,
     });
 
     send('progress', { step: 3, message: 'Forming the verdict...' });
     const verdictOutput = await callClaude(
       PROMPT3_SYSTEM,
-      `ISSUE:\n${question}\n\nPROMPT 2 OUTPUT — REASONING CARDS AND CONVERGENCE NOTE:\n${deliberationOutput}`,
+      `${contextBlock}ISSUE:\n${question}\n\nPROMPT 2 OUTPUT — REASONING CARDS AND CONVERGENCE NOTE:\n${deliberationOutput}`,
       1500,
       0.7
     );
@@ -1697,7 +1778,7 @@ Rewrite the full deliberation so that:
     send('progress', { step: 4, message: 'Writing the policy brief...' });
     const briefOutput = await callClaude(
       PROMPT4_SYSTEM,
-      `ISSUE:\n${question}\n\nTODAY'S DATE: ${todayForBrief}\n\nPROMPT 2 OUTPUT — REASONING CARDS AND CONVERGENCE NOTE:\n${deliberationOutput}\n\nPROMPT 3 OUTPUT — VERDICT:\n${verdictOutput}`,
+      `${contextBlock}ISSUE:\n${question}\n\nTODAY'S DATE: ${todayForBrief}\n\nPROMPT 2 OUTPUT — REASONING CARDS AND CONVERGENCE NOTE:\n${deliberationOutput}\n\nPROMPT 3 OUTPUT — VERDICT:\n${verdictOutput}`,
       3000
     );
     send('brief', { data: briefOutput });
@@ -1726,6 +1807,7 @@ Rewrite the full deliberation so that:
         featuredQuote: featured?.quote || null,
         featuredQuoteMember: featured?.member || null,
         actions,
+        factualAnchors,
       });
     } else {
       saved = await saveSessionToDatabase({
@@ -1740,6 +1822,7 @@ Rewrite the full deliberation so that:
         featuredQuote: featured?.quote || null,
         featuredQuoteMember: featured?.member || null,
         actions,
+        factualAnchors,
       });
     }
 
