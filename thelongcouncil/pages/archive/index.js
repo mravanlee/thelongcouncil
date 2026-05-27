@@ -129,6 +129,40 @@ export default function Archive({ sessions, error, initialFilters }) {
   const [activeTheme, setActiveTheme] = useState(initialFilters?.theme || null);
   const [page, setPage] = useState(1);
 
+  // CollectionPage + ItemList of recent sessions. Limit to 50 to keep the
+  // JSON-LD payload reasonable; the full set is always in the sitemap.
+  const archiveJsonLd = useMemo(() => ({
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    '@id': 'https://www.thelongcouncil.com/archive#collection',
+    name: 'The Archive',
+    description: 'Every deliberation the council has considered.',
+    url: 'https://www.thelongcouncil.com/archive',
+    inLanguage: 'en',
+    isPartOf: {
+      '@type': 'WebSite',
+      '@id': 'https://www.thelongcouncil.com/#website',
+      name: 'The Long Council',
+      url: 'https://www.thelongcouncil.com',
+    },
+    mainEntity: {
+      '@type': 'ItemList',
+      numberOfItems: sessions.length,
+      itemListElement: sessions.slice(0, 50).map((s, i) => ({
+        '@type': 'ListItem',
+        position: i + 1,
+        url: `https://www.thelongcouncil.com/archive/${s.slug}`,
+        item: {
+          '@type': 'Article',
+          '@id': `https://www.thelongcouncil.com/archive/${s.slug}#article`,
+          url: `https://www.thelongcouncil.com/archive/${s.slug}`,
+          headline: s.original_issue,
+          datePublished: s.created_at,
+        },
+      })),
+    },
+  }), [sessions]);
+
   // Sync state → URL (debounced)
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -266,6 +300,11 @@ export default function Archive({ sessions, error, initialFilters }) {
           content="Every issue the council has considered — past debates from history's greatest minds."
         />
         <meta name="twitter:image" content="https://www.thelongcouncil.com/og-default.png" />
+        <link rel="canonical" href="https://www.thelongcouncil.com/archive" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(archiveJsonLd) }}
+        />
       </Head>
 
       <div className="min-h-screen bg-background text-foreground antialiased">
