@@ -239,6 +239,15 @@ export default function ArchiveDetail({ session, memberQuery }) {
     '@context': 'https://schema.org',
     '@graph': [
       {
+        '@type': 'BreadcrumbList',
+        '@id': `${baseShareUrl}#breadcrumbs`,
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.thelongcouncil.com/' },
+          { '@type': 'ListItem', position: 2, name: 'The Archive', item: 'https://www.thelongcouncil.com/archive' },
+          { '@type': 'ListItem', position: 3, name: session.original_issue },
+        ],
+      },
+      {
         '@type': 'Article',
         '@id': `${baseShareUrl}#article`,
         headline: session.original_issue,
