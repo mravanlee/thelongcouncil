@@ -295,6 +295,98 @@ function validateRoster(deliberationOutput, selectedNames) {
   return violations;
 }
 
+// Build name -> canonical title map from the selected members' profiles.
+// Profile line 3 has the form "<Tier> · <Title> · <affiliation> ...".
+// The card title is the role segment (index 1, after the tier). Used to
+// overwrite titles the deliberation engine sometimes invents wrong, e.g.
+// "First President of Israel" for Ben-Gurion who was Prime Minister.
+function loadProfileTitles(selectedNames) {
+  const dir = path.join(process.cwd(), 'data', 'profiles');
+  const files = fs.readdirSync(dir).filter(f => f.endsWith('.md'));
+  const fileMap = new Map();
+  for (const f of files) {
+    const nameFromFile = f.replace(/^profile_/, '').replace(/\.md$/, '').replace(/_/g, ' ');
+    fileMap.set(normalizeName(nameFromFile), path.join(dir, f));
+  }
+  const titles = new Map();
+  for (const name of selectedNames) {
+    const key = normalizeName(name);
+    if (!fileMap.has(key)) continue;
+    let content;
+    try { content = fs.readFileSync(fileMap.get(key), 'utf-8'); } catch { continue; }
+    const lines = content.split('\n').slice(0, 8);
+    for (const line of lines) {
+      if (/Knowledge Document/i.test(line)) continue; // skip the T1-T5 banner
+      if (!line.includes('·')) continue;
+      const segments = line.split('·').map(s => s.trim()).filter(Boolean);
+      if (segments.length >= 2) { titles.set(key, segments[1]); break; }
+    }
+  }
+  return titles;
+}
+
+// Overwrite each card's title line with the canonical profile title.
+function applyCanonicalTitles(deliberationOutput, titleMap) {
+  if (!deliberationOutput || !titleMap || titleMap.size === 0) return deliberationOutput;
+  let corrections = 0;
+  const fixed = deliberationOutput.replace(
+    /(##[ \t]*([^\n]+)\n)([^\n]+)/g,
+    (match, header, name, titleLine) => {
+      const canonical = titleMap.get(normalizeName(name.trim()));
+      if (!canonical) return match;                 // not a member card (e.g. convergence note)
+      if (titleLine.trim() === canonical) return match;
+      corrections++;
+      return `${header}${canonical}`;
+    }
+  );
+  if (corrections > 0) console.log(`[pipeline] Corrected ${corrections} card title line(s) to canonical profile titles.`);
+  return fixed;
+}
+
+// Detect a card whose body opens by naming its OWN speaker in third person
+// (e.g. Arendt's card starting "Arendt misunderstands..."). In first-person
+// cards a member never names themselves; this is almost always a name-swap
+// where the rebuttal should have targeted the previous speaker.
+function validateSelfReference(deliberationOutput) {
+  if (!deliberationOutput) return { ok: true };
+  const blocks = deliberationOutput
+    .split(/(?:^|\n)\s*---\s*(?:\n|$)/)
+    .map(b => b.trim())
+    .filter(Boolean);
+  const violations = [];
+  for (const b of blocks) {
+    if (/##\s*The convergence note/i.test(b)) continue;
+    const headingMatch = b.match(/##\s*([^\n]+)/);
+    const speaker = headingMatch ? headingMatch[1].trim() : null;
+    if (!speaker) continue;
+    const body = b
+      .replace(/##\s*[^\n]+\n?/, '')           // heading
+      .replace(/^[^\n]*\n?/, '')                // title line
+      .replace(/^\s*\*[^\n]*\*\s*\n?/m, '')     // italic framing line
+      .replace(/\*\*\s*Challenge to[\s\S]*$/i, '')
+      .trim();
+    if (!body) continue;
+    const firstSentence = (body.split(/(?<=[.!?])\s+/)[0] || '').trim();
+    const last = speaker.split(/\s+/).slice(-1)[0];
+    const escFull = speaker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const escLast = last.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if (new RegExp(`^(${escFull}|${escLast})['’]?s?\\b`, 'i').test(firstSentence)) {
+      violations.push({ speaker, opening: firstSentence.slice(0, 120) });
+    }
+  }
+  return violations.length ? { ok: false, violations } : { ok: true };
+}
+
+// Replace em-dashes (U+2014) with a comma. En-dashes (U+2013, used in date
+// ranges like 1948–53) are a different character and left untouched.
+function stripEmDashes(text) {
+  if (!text) return text;
+  return text
+    .replace(/\s*—\s*/g, ', ')
+    .replace(/,\s*,/g, ',')
+    .replace(/ {2,}/g, ' ');
+}
+
 // ── Session storage ─────────────────────────────────────────────────────
 async function precreateSession(originalIssue) {
   try {
@@ -1757,6 +1849,45 @@ Rewrite the full deliberation so that:
     } else {
       console.log('[pipeline] Challenge-chain check PASSED.');
     }
+
+    // Self-reference guard: a card whose body opens by naming its OWN speaker
+    // in third person is a generation slip (almost always a name-swap where the
+    // rebuttal should target the previous speaker). Regenerate once.
+    let selfRefCheck = validateSelfReference(deliberationOutput);
+    if (!selfRefCheck.ok) {
+      const list = selfRefCheck.violations.map(v =>
+        `- ${v.speaker}'s own card opens with "${v.opening}". A member never names themselves in the third person. If this was a rebuttal, it must name the PREVIOUS speaker, not ${v.speaker}.`
+      ).join('\n');
+      console.warn('[pipeline] SELF-REFERENCE VIOLATION on first attempt:\n' + list);
+      send('progress', { step: 2, message: 'Fixing a speaker voice slip...' });
+      const selfRefRetry = `${deliberationUserBase}
+
+REGENERATION CONSTRAINT, CRITICAL:
+A card referred to its own speaker in the third person:
+${list}
+
+Every card is first person. A member says "I" and "my" and never names themselves. When a card rebuts the previous speaker, it names THAT speaker. Rewrite the full deliberation.`;
+      const retried = await callClaude(PROMPT2_SYSTEM, selfRefRetry, 2500, 0.5);
+      const recheck = validateSelfReference(retried);
+      const p1Recheck = validatePosition1Card(retried, selectedNames);
+      const chainRecheck = validateChallengeChain(retried);
+      if (recheck.ok && p1Recheck.ok && chainRecheck.ok) {
+        console.log('[pipeline] Self-reference retry SUCCEEDED');
+        deliberationOutput = retried;
+        selfRefCheck = recheck;
+      } else {
+        console.warn('[pipeline] Self-reference retry rejected (selfref:', recheck.ok, 'p1:', p1Recheck.ok, 'chain:', chainRecheck.ok, ') — using original.');
+      }
+    } else {
+      console.log('[pipeline] Self-reference check PASSED.');
+    }
+
+    // Deterministic post-processing on the final deliberation:
+    // 1. Overwrite card titles with canonical profile titles (Claude sometimes
+    //    invents wrong offices, e.g. "First President of Israel" for Ben-Gurion).
+    // 2. Strip em-dashes (PROMPT2 is told zero em-dashes but slips).
+    deliberationOutput = applyCanonicalTitles(deliberationOutput, loadProfileTitles(selectedNames));
+    deliberationOutput = stripEmDashes(deliberationOutput);
 
     send('deliberation', { data: deliberationOutput });
 
