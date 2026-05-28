@@ -127,9 +127,12 @@ function MemberCard({ member: m, debates }) {
       </div>
 
       {debates > 0 && (
-        <div className="text-[11px] text-muted-foreground">
-          {debates} {debates === 1 ? 'debate' : 'debates'}
-        </div>
+        <Link
+          href={`/archive?q=${encodeURIComponent(m.name)}`}
+          className="w-fit text-[11px] text-muted-foreground transition hover:text-primary hover:underline"
+        >
+          {debates} {debates === 1 ? 'debate' : 'debates'} →
+        </Link>
       )}
     </li>
   );
