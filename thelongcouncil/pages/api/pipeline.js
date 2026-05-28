@@ -343,10 +343,12 @@ function applyCanonicalTitles(deliberationOutput, titleMap) {
   return fixed;
 }
 
-// Detect a card whose body opens by naming its OWN speaker in third person
-// (e.g. Arendt's card starting "Arendt misunderstands..."). In first-person
-// cards a member never names themselves; this is almost always a name-swap
-// where the rebuttal should have targeted the previous speaker.
+// Detect a card that names its OWN speaker in third person anywhere in the
+// body (e.g. Arendt opening "Arendt misunderstands..." or FDR mid-card with
+// "Roosevelt's approach includes..."). In first-person cards a member never
+// names themselves; this is almost always a name-swap where a rebuttal should
+// have targeted another speaker. Scans the whole body, not just the opening,
+// so mid-paragraph slips are caught too.
 function validateSelfReference(deliberationOutput) {
   if (!deliberationOutput) return { ok: true };
   const blocks = deliberationOutput
@@ -366,12 +368,16 @@ function validateSelfReference(deliberationOutput) {
       .replace(/\*\*\s*Challenge to[\s\S]*$/i, '')
       .trim();
     if (!body) continue;
-    const firstSentence = (body.split(/(?<=[.!?])\s+/)[0] || '').trim();
     const last = speaker.split(/\s+/).slice(-1)[0];
     const escFull = speaker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const escLast = last.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    if (new RegExp(`^(${escFull}|${escLast})['’]?s?\\b`, 'i').test(firstSentence)) {
-      violations.push({ speaker, opening: firstSentence.slice(0, 120) });
+    // Word boundaries exclude adjectival forms ("Lockean", "Keynesian"); the
+    // (?!-) lookahead excludes hyphenated named theories ("Prebisch-Singer
+    // hypothesis") where the speaker correctly uses first person around it.
+    const m = body.match(new RegExp(`\\b(${escFull}|${escLast})\\b(?!-)`, 'i'));
+    if (m) {
+      const idx = body.indexOf(m[0]);
+      violations.push({ speaker, opening: body.slice(Math.max(0, idx - 25), idx + 40).trim() });
     }
   }
   return violations.length ? { ok: false, violations } : { ok: true };
