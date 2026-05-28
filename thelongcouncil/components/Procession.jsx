@@ -262,7 +262,7 @@ function Seat({ card, tier, state, sessionSlug, scrollReveal = false }) {
   }, [scrollReveal])
 
   return (
-    <div ref={seatRef} className={`seat ${isThinker ? 'thinker' : 'leader'} state-${state}${scrollReveal ? ' scroll-reveal' : ''}${revealed ? ' revealed' : ''}`}>
+    <div ref={seatRef} id={`speaker-${slug}`} className={`seat ${isThinker ? 'thinker' : 'leader'} state-${state}${scrollReveal ? ' scroll-reveal' : ''}${revealed ? ' revealed' : ''}`}>
       <div className="avatar">
         {showImage ? (
           <img src={`/avatars/avatar_${slug}.webp`} alt={name} onError={() => setImgFailed(true)} />
@@ -300,6 +300,7 @@ function Seat({ card, tier, state, sessionSlug, scrollReveal = false }) {
         .seat {
           position: relative;
           margin-bottom: 32px;
+          scroll-margin-top: 24px;
           opacity: 0;
           transform: translateX(-6px);
           transition: opacity 0.6s ease-out, transform 0.6s ease-out;

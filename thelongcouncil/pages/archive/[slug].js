@@ -81,36 +81,53 @@ function VerdictCast({ names }) {
       {names.map((name) => {
         const [line1, line2] = splitNameForCast(name);
         const slug = nameToAvatarSlug(name);
+        const anchor = `speaker-${slug}`;
         return (
           <li
             key={name}
             className="flex w-14 flex-col items-center text-center sm:w-16"
           >
-            <div className="relative grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-full border border-border bg-secondary sm:h-14 sm:w-14">
-              <span
-                className="text-[12px] font-semibold text-primary sm:text-[13px]"
-                style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
-              >
-                {getInitials(name)}
-              </span>
-              <img
-                src={`/avatars/avatar_${slug}.webp`}
-                alt=""
-                className="absolute inset-0 h-full w-full object-cover"
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                }}
-              />
-            </div>
-            <div className="mt-2 text-[10px] leading-tight text-muted-foreground sm:text-[11px]">
-              {line1}
-              {line2 ? (
-                <>
-                  <br />
-                  {line2}
-                </>
-              ) : null}
-            </div>
+            <a
+              href={`#${anchor}`}
+              title={`Jump to ${stripTierSuffix(name)}'s contribution`}
+              onClick={(e) => {
+                if (typeof document === 'undefined') return;
+                const el = document.getElementById(anchor);
+                if (!el) return;
+                e.preventDefault();
+                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                if (window.history && window.history.replaceState) {
+                  window.history.replaceState(null, '', `#${anchor}`);
+                }
+              }}
+              className="group flex flex-col items-center"
+            >
+              <div className="relative grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-full border border-border bg-secondary transition group-hover:border-primary group-hover:ring-2 group-hover:ring-primary/30 sm:h-14 sm:w-14">
+                <span
+                  className="text-[12px] font-semibold text-primary sm:text-[13px]"
+                  style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+                >
+                  {getInitials(name)}
+                </span>
+                <img
+                  src={`/avatars/avatar_${slug}.webp`}
+                  alt=""
+                  className="absolute inset-0 h-full w-full object-cover"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                  }}
+                />
+              </div>
+              <div className="mt-2 text-[10px] leading-tight text-muted-foreground transition group-hover:text-foreground sm:text-[11px]">
+                {line1}
+                {line2 ? (
+                  <>
+                    <br />
+                    {line2}
+                  </>
+                ) : null}
+              </div>
+            </a>
           </li>
         );
       })}
