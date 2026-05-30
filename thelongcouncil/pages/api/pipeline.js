@@ -643,6 +643,11 @@ async function translateQuestion(question) {
     const english = stripEmDashes(enMatch[1].trim());
     const lang = langMatch[1].trim();
     if (!english || /^english$/i.test(lang)) return { english: null, lang: null };
+    // Guard: an English question that merely contains foreign names or quoted
+    // phrases can be misdetected as foreign and "translated" into near-identical
+    // text. If the translation matches the original, there is nothing to toggle.
+    const norm = (s) => stripEmDashes(s).replace(/\s+/g, ' ').trim().toLowerCase();
+    if (norm(english) === norm(question)) return { english: null, lang: null };
     return { english, lang };
   } catch (err) {
     console.warn('[pipeline] question translation failed:', err.message);
@@ -702,6 +707,7 @@ You receive one question. It may be in any language.
 
 1. If the question is already written in English, respond with EXACTLY this and nothing else:
 ALREADY ENGLISH
+A question written in English counts as English even if it contains non-English names, places, parties or quoted foreign phrases (e.g. "How should Özgür Özel challenge Kılıçdaroğlu?" is ALREADY ENGLISH). Only treat it as another language when the sentence's own words and grammar are in that language.
 
 2. If it is in another language, translate it into clear, natural English that preserves the exact meaning. Keep all named people, places, institutions and quoted phrases intact. Keep it as a single question. Do not add or drop information. Do not explain or comment.
 Respond with EXACTLY this format and nothing else:

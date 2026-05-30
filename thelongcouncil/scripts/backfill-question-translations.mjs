@@ -54,6 +54,7 @@ You receive one question. It may be in any language.
 
 1. If the question is already written in English, respond with EXACTLY this and nothing else:
 ALREADY ENGLISH
+A question written in English counts as English even if it contains non-English names, places, parties or quoted foreign phrases (e.g. "How should Özgür Özel challenge Kılıçdaroğlu?" is ALREADY ENGLISH). Only treat it as another language when the sentence's own words and grammar are in that language.
 
 2. If it is in another language, translate it into clear, natural English that preserves the exact meaning. Keep all named people, places, institutions and quoted phrases intact. Keep it as a single question. Do not add or drop information. Do not explain or comment.
 Respond with EXACTLY this format and nothing else:
@@ -137,7 +138,11 @@ async function main() {
     if (!s.original_issue) { console.log(`${n} ⚠️  ${s.slug}: no question — skip`); continue; }
 
     try {
-      const { english: en, lang } = parseTranslation(await callClaude(s.original_issue));
+      let { english: en, lang } = parseTranslation(await callClaude(s.original_issue));
+      // Guard: drop a "translation" that matches the original (English question
+      // with foreign names misdetected as foreign). Treat it as English.
+      const norm = (x) => stripEmDashes(x || '').replace(/\s+/g, ' ').trim().toLowerCase();
+      if (en && norm(en) === norm(s.original_issue)) { en = null; lang = 'English'; }
       if (en) {
         console.log(`${n} ✓ ${s.slug}  [${lang}]`);
         console.log(`     EN: "${en}"\n`);
