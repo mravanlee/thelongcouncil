@@ -418,10 +418,10 @@ async function precreateSession(originalIssue) {
   }
 }
 
-async function finalizeSession({ slug, sharpenedIssue, assemblyOutput, deliberationOutput, verdictOutput, briefOutput, memberNames, memberTypes, featuredQuote, featuredQuoteMember, actions, factualAnchors }) {
+async function finalizeSession({ slug, sharpenedIssue, assemblyOutput, deliberationOutput, verdictOutput, briefOutput, memberNames, memberTypes, featuredQuote, featuredQuoteMember, actions, factualAnchors, questionEnglish, questionLang }) {
   try {
     const supabase = getServiceSupabase();
-    const cards = { assembly: assemblyOutput, deliberation: deliberationOutput, verdict: verdictOutput, brief: briefOutput, actions: actions || [], factual_anchors: factualAnchors || '' };
+    const cards = { assembly: assemblyOutput, deliberation: deliberationOutput, verdict: verdictOutput, brief: briefOutput, actions: actions || [], factual_anchors: factualAnchors || '', question_en: questionEnglish || null, question_lang: questionLang || null };
     const { data, error } = await supabase
       .from('sessions')
       .update({
@@ -444,10 +444,10 @@ async function finalizeSession({ slug, sharpenedIssue, assemblyOutput, deliberat
   }
 }
 
-async function saveSessionToDatabase({ originalIssue, sharpenedIssue, assemblyOutput, deliberationOutput, verdictOutput, briefOutput, memberNames, memberTypes, featuredQuote, featuredQuoteMember, actions, factualAnchors }) {
+async function saveSessionToDatabase({ originalIssue, sharpenedIssue, assemblyOutput, deliberationOutput, verdictOutput, briefOutput, memberNames, memberTypes, featuredQuote, featuredQuoteMember, actions, factualAnchors, questionEnglish, questionLang }) {
   try {
     const supabase = getServiceSupabase();
-    const cards = { assembly: assemblyOutput, deliberation: deliberationOutput, verdict: verdictOutput, brief: briefOutput, actions: actions || [], factual_anchors: factualAnchors || '' };
+    const cards = { assembly: assemblyOutput, deliberation: deliberationOutput, verdict: verdictOutput, brief: briefOutput, actions: actions || [], factual_anchors: factualAnchors || '', question_en: questionEnglish || null, question_lang: questionLang || null };
     let slug = generateSlug(sharpenedIssue || originalIssue);
     let attempt = 0;
     let inserted = null;
@@ -491,7 +491,7 @@ async function deleteOrphanSession(slug) {
 }
 
 // ── Claude API call ─────────────────────────────────────────────────────
-async function callClaude(system, user, maxTokens = 4000, temperature = 1.0) {
+async function callClaude(system, user, maxTokens = 4000, temperature = 1.0, model = 'claude-sonnet-4-20250514') {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -500,7 +500,7 @@ async function callClaude(system, user, maxTokens = 4000, temperature = 1.0) {
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
+      model,
       max_tokens: maxTokens,
       temperature,
       system,
@@ -618,6 +618,38 @@ function buildContextBlock(factualAnchors) {
   return `CURRENT CONTEXT (May 2026), members must reason from these facts. If a member's natural framing conflicts with an anchor, the member must address the conflict explicitly, not bypass it:\n\n${factualAnchors}\n\n`;
 }
 
+// The Long Council is English-first. When a question is asked in another
+// language we store an English translation (shown by default) plus the
+// source language name, so the detail page can offer an X-style
+// "Show original" toggle. Best-effort: any failure returns nulls and the
+// UI simply shows the original question with no toggle.
+async function translateQuestion(question) {
+  try {
+    const output = await callClaude(
+      PROMPT_TRANSLATE_QUESTION_SYSTEM,
+      `QUESTION:\n${question}`,
+      500,
+      0.2,
+      'claude-haiku-4-5-20251001'
+    );
+    const text = (output || '').trim();
+    if (!text || /^ALREADY ENGLISH\b/i.test(text)) return { english: null, lang: null };
+    const langMatch = text.match(/LANGUAGE:\s*(.+?)(?:\n|$)/i);
+    const enMatch = text.match(/ENGLISH:\s*([\s\S]+)$/i);
+    if (!langMatch || !enMatch) {
+      console.warn('[pipeline] translate parse failed:', text.slice(0, 200));
+      return { english: null, lang: null };
+    }
+    const english = stripEmDashes(enMatch[1].trim());
+    const lang = langMatch[1].trim();
+    if (!english || /^english$/i.test(lang)) return { english: null, lang: null };
+    return { english, lang };
+  } catch (err) {
+    console.warn('[pipeline] question translation failed:', err.message);
+    return { english: null, lang: null };
+  }
+}
+
 async function generateActions(originalIssue, deliberationOutput, verdictOutput) {
   try {
     const userMessage = `ISSUE:\n${originalIssue}\n\nDELIBERATION (Layer 2 member cards):\n${deliberationOutput}\n\nVERDICT:\n${verdictOutput}`;
@@ -663,6 +695,22 @@ function validateActions(actions) {
 }
 
 // ── Prompts ─────────────────────────────────────────────────────────────
+
+const PROMPT_TRANSLATE_QUESTION_SYSTEM = `You translate a single deliberation question into English for an English-first publication.
+
+You receive one question. It may be in any language.
+
+1. If the question is already written in English, respond with EXACTLY this and nothing else:
+ALREADY ENGLISH
+
+2. If it is in another language, translate it into clear, natural English that preserves the exact meaning. Keep all named people, places, institutions and quoted phrases intact. Keep it as a single question. Do not add or drop information. Do not explain or comment.
+Respond with EXACTLY this format and nothing else:
+LANGUAGE: <source language name in English, e.g. Turkish, Dutch, Spanish>
+ENGLISH: <the English translation>
+
+Hard rules:
+- Never use em-dashes. Use commas or rephrase.
+- Output only the tag(s) above. No preamble, no notes, no quotation marks around the whole line.`;
 
 const PROMPT_FACTUAL_ANCHORS_SYSTEM = `You read a sharpened policy or governance question. You identify 0-3 state-of-the-world facts (within last 3 years) that any historical thinker reasoning about this question must be confronted with today.
 
@@ -1753,11 +1801,17 @@ export default async function handler(req, res) {
     const allProfiles = loadAllProfiles();
 
     send('progress', { step: 1, message: 'Establishing current context...' });
-    const factualAnchors = await generateFactualAnchors(question);
+    const [factualAnchors, translation] = await Promise.all([
+      generateFactualAnchors(question),
+      translateQuestion(question),
+    ]);
     if (factualAnchors) {
       console.log('[pipeline] Factual anchors generated:\n' + factualAnchors);
     } else {
       console.log('[pipeline] No factual anchors emitted (evergreen or no confident facts).');
+    }
+    if (translation.english) {
+      console.log(`[pipeline] Question translated from ${translation.lang}: ${translation.english}`);
     }
     const contextBlock = buildContextBlock(factualAnchors);
 
@@ -1994,6 +2048,8 @@ Every card is first person. A member says "I" and "my" and never names themselve
         featuredQuoteMember: featured?.member || null,
         actions,
         factualAnchors,
+        questionEnglish: translation.english,
+        questionLang: translation.lang,
       });
     } else {
       saved = await saveSessionToDatabase({
@@ -2009,6 +2065,8 @@ Every card is first person. A member says "I" and "my" and never names themselve
         featuredQuoteMember: featured?.member || null,
         actions,
         factualAnchors,
+        questionEnglish: translation.english,
+        questionLang: translation.lang,
       });
     }
 
