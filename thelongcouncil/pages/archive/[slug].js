@@ -58,6 +58,14 @@ function stripTierSuffix(name) {
   return name.replace(/\s*[—–-]\s*(Practitioner|Framer|Leader|Thinker|Wildcard)(\/\w+)?\s*$/i, '').trim();
 }
 
+// The headline size follows the question length so short questions stay
+// dramatic and long ones stay readable. Tiers: <=70, 71-140, >140 chars.
+function detailTitleSize(len) {
+  if (len <= 70) return 'text-[28px] sm:text-[36px]';
+  if (len <= 140) return 'text-[24px] sm:text-[30px]';
+  return 'text-[22px] sm:text-[26px]';
+}
+
 function nameToAvatarSlug(name) {
   const naive = stripTierSuffix(name).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\s.\-]+/g, '_').replace(/[^a-z0-9_]/g, '').replace(/_+/g, '_').replace(/^_|_$/g, '');
   return resolveAvatarSlug(naive);
@@ -233,6 +241,9 @@ export default function ArchiveDetail({ session, memberQuery }) {
   const englishQuestion = cards.question_en || session.original_issue;
   const [showOriginal, setShowOriginal] = useState(false);
   const displayQuestion = hasTranslation && showOriginal ? session.original_issue : englishQuestion;
+  // Size by the longer of both versions so the headline never overflows and
+  // does not jump size when toggling between English and the original.
+  const titleSizeClass = detailTitleSize(Math.max((englishQuestion || '').length, (session.original_issue || '').length));
 
   const memberCount = session.member_names ? session.member_names.length : 0;
   const memberSummary = session.member_names && session.member_names.length > 0
@@ -376,7 +387,7 @@ export default function ArchiveDetail({ session, memberQuery }) {
             {formatDate(session.created_at)} · {memberCount} member{memberCount !== 1 ? 's' : ''}
           </div>
           <h1
-            className="mt-4 max-w-[62ch] text-[28px] font-semibold leading-[1.18] tracking-tight text-foreground sm:text-[36px]"
+            className={`mt-4 max-w-[62ch] ${titleSizeClass} font-semibold leading-[1.18] tracking-tight text-foreground`}
             style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
           >
             {displayQuestion}
