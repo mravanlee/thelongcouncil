@@ -29,6 +29,9 @@ export async function getServerSideProps(ctx) {
     id: s.id,
     slug: s.slug,
     original_issue: s.original_issue,
+    // English-first headline: translated question when the original was in
+    // another language, otherwise the original. Used for display + SEO.
+    display_issue: (s.cards && s.cards.question_en) || s.original_issue,
     sharpened_issue: s.sharpened_issue,
     member_names: s.member_names || [],
     member_types: s.member_types || [],
@@ -114,7 +117,7 @@ const THEME_REGEX = Object.fromEntries(
 // that a session debated by Lee Kuan Yew does not auto-match the China theme
 // just because his name is on the panel.
 function topicHaystack(session) {
-  return [session.original_issue, session.sharpened_issue, session.teaser, session.featured_quote]
+  return [session.display_issue, session.original_issue, session.sharpened_issue, session.teaser, session.featured_quote]
     .filter(Boolean).join(' ').toLowerCase();
 }
 
@@ -156,7 +159,7 @@ export default function Archive({ sessions, error, initialFilters }) {
           '@type': 'Article',
           '@id': `https://www.thelongcouncil.com/archive/${s.slug}#article`,
           url: `https://www.thelongcouncil.com/archive/${s.slug}`,
-          headline: s.original_issue,
+          headline: s.display_issue,
           datePublished: s.created_at,
         },
       })),
@@ -230,7 +233,7 @@ export default function Archive({ sessions, error, initialFilters }) {
     const q = search.trim().toLowerCase();
     return sessions.filter((s) => {
       // Search still includes member names so users can find sessions by speaker.
-      const searchHay = [s.original_issue, s.sharpened_issue, s.teaser, s.featured_quote, ...(s.member_names || [])]
+      const searchHay = [s.display_issue, s.original_issue, s.sharpened_issue, s.teaser, s.featured_quote, ...(s.member_names || [])]
         .filter(Boolean).join(' ').toLowerCase();
       if (q && !searchHay.includes(q)) return false;
       // Theme filter only matches against topic content (no member names).
@@ -446,7 +449,7 @@ function ArchiveEntry({ session, themes, onMemberClick }) {
           className="mt-3 max-w-3xl text-[22px] leading-[1.3] tracking-tight text-foreground transition group-hover:text-primary sm:text-[26px]"
           style={SERIF}
         >
-          {session.original_issue}
+          {session.display_issue}
         </h2>
         {session.teaser && (
           <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-baseline sm:gap-4">

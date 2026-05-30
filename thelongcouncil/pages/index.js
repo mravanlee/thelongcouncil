@@ -189,7 +189,9 @@ export async function getServerSideProps() {
     .map(s => ({
       id: s.id,
       slug: s.slug,
-      original_issue: s.original_issue,
+      // English-first headline: translated question when the original was in
+      // another language, otherwise the original.
+      original_issue: (s.cards && s.cards.question_en) || s.original_issue,
       created_at: s.created_at,
       teaser: extractTeaser(s.cards),
       featured_quote: s.featured_quote || null,
