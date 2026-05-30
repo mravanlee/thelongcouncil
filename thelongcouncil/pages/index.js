@@ -202,6 +202,14 @@ export async function getServerSideProps() {
   return { props: { recentSessions: enriched, sessionCount } };
 }
 
+// The hero headline size follows the question length so short questions stay
+// dramatic and long ones stay readable. Tiers: <=70, 71-140, >140 chars.
+function heroTitleSize(len) {
+  if (len <= 70) return 'text-[24px] sm:text-[36px] lg:text-[44px]';
+  if (len <= 140) return 'text-[22px] sm:text-[30px] lg:text-[34px]';
+  return 'text-[20px] sm:text-[26px] lg:text-[28px]';
+}
+
 function stripTier(name) {
   return (name || '').replace(/\s*[—–-]\s*(Practitioner|Framer|Leader|Thinker|Wildcard)(\/\w+)?\s*$/i, '').trim();
 }
@@ -907,7 +915,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
                 </p>
 
                 <h1
-                  className="max-w-4xl text-[24px] leading-[1.15] tracking-tight text-foreground sm:text-[36px] lg:text-[44px]"
+                  className={`max-w-4xl ${heroTitleSize((recentSessions[0].original_issue || '').length)} leading-[1.15] tracking-tight text-foreground`}
                   style={SERIF}
                 >
                   {recentSessions[0].original_issue}
