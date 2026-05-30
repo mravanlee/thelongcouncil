@@ -2,7 +2,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Languages } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import Procession from '../../components/Procession';
 import { resolveAvatarSlug } from '../../lib/avatarSlugs';
@@ -223,12 +223,23 @@ export default function ArchiveDetail({ session, memberQuery }) {
   const assemblyText = cards.assembly || '';
   const actions = Array.isArray(cards.actions) ? cards.actions.filter(Boolean) : [];
 
+  // Questions asked in another language are stored translated (cards.question_en)
+  // with the source language name (cards.question_lang). The site is English-first:
+  // the English version is the canonical headline used everywhere (title, OG,
+  // structured data, share), and the detail page offers an X-style toggle to view
+  // the original. Sessions without a translation fall back to the original question.
+  const questionLang = cards.question_lang || null;
+  const hasTranslation = !!(cards.question_en && questionLang && !/^english$/i.test(questionLang));
+  const englishQuestion = cards.question_en || session.original_issue;
+  const [showOriginal, setShowOriginal] = useState(false);
+  const displayQuestion = hasTranslation && showOriginal ? session.original_issue : englishQuestion;
+
   const memberCount = session.member_names ? session.member_names.length : 0;
   const memberSummary = session.member_names && session.member_names.length > 0
     ? session.member_names.slice(0, 4).map(stripTierSuffix).join(', ') + (session.member_names.length > 4 ? `, +${session.member_names.length - 4} more` : '')
     : '';
 
-  const pageTitle = session.original_issue ? session.original_issue.substring(0, 60) : 'Archive';
+  const pageTitle = englishQuestion ? englishQuestion.substring(0, 60) : 'Archive';
   const pageDescription = verdict ? verdict.substring(0, 155) : 'A past council debate.';
 
   const baseShareUrl = `https://www.thelongcouncil.com/archive/${session.slug}`;
@@ -261,13 +272,13 @@ export default function ArchiveDetail({ session, memberQuery }) {
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.thelongcouncil.com/' },
           { '@type': 'ListItem', position: 2, name: 'The Archive', item: 'https://www.thelongcouncil.com/archive' },
-          { '@type': 'ListItem', position: 3, name: session.original_issue },
+          { '@type': 'ListItem', position: 3, name: englishQuestion },
         ],
       },
       {
         '@type': 'Article',
         '@id': `${baseShareUrl}#article`,
-        headline: session.original_issue,
+        headline: englishQuestion,
         description: pageDescription,
         datePublished: session.created_at,
         dateModified: session.updated_at || session.created_at,
@@ -282,8 +293,8 @@ export default function ArchiveDetail({ session, memberQuery }) {
         '@id': `${baseShareUrl}#qa`,
         mainEntity: {
           '@type': 'Question',
-          name: session.original_issue,
-          text: session.original_issue,
+          name: englishQuestion,
+          text: englishQuestion,
           answerCount: 1 + speakers.length,
           dateCreated: session.created_at,
           author: orgPublisher,
@@ -331,16 +342,16 @@ export default function ArchiveDetail({ session, memberQuery }) {
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
         <meta property="og:type" content="article" />
-        <meta property="og:title" content={session.original_issue || 'The Long Council'} />
+        <meta property="og:title" content={englishQuestion || 'The Long Council'} />
         <meta property="og:description" content={pageDescription} />
         <meta property="og:url" content={canonicalUrl} />
         <meta property="og:image" content={ogImageUrl} />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
-        <meta property="og:image:alt" content={`${session.original_issue} — The Long Council`} />
+        <meta property="og:image:alt" content={`${englishQuestion}, The Long Council`} />
         <meta property="og:site_name" content="The Long Council" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={session.original_issue || 'The Long Council'} />
+        <meta name="twitter:title" content={englishQuestion || 'The Long Council'} />
         <meta name="twitter:description" content={pageDescription} />
         <meta name="twitter:image" content={ogImageUrl} />
         <link rel="canonical" href={canonicalUrl} />
@@ -368,8 +379,31 @@ export default function ArchiveDetail({ session, memberQuery }) {
             className="mt-4 max-w-[62ch] text-[28px] font-semibold leading-[1.18] tracking-tight text-foreground sm:text-[36px]"
             style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
           >
-            {session.original_issue}
+            {displayQuestion}
           </h1>
+          {hasTranslation && (
+            <button
+              type="button"
+              onClick={() => setShowOriginal((v) => !v)}
+              className="mt-3 inline-flex items-center gap-2 text-[12px] text-muted-foreground transition hover:text-foreground"
+              aria-label={showOriginal ? 'Show the English translation' : `Show the original ${questionLang} question`}
+            >
+              <Languages className="h-3.5 w-3.5 shrink-0" />
+              {showOriginal ? (
+                <span>
+                  <span className="text-foreground">{questionLang} (original)</span>
+                  {' · '}
+                  <span className="font-semibold text-primary">Show English</span>
+                </span>
+              ) : (
+                <span>
+                  Translated from {questionLang}
+                  {' · '}
+                  <span className="font-semibold text-primary">Show original</span>
+                </span>
+              )}
+            </button>
+          )}
         </div>
       </section>
 
@@ -431,7 +465,7 @@ export default function ArchiveDetail({ session, memberQuery }) {
           </div>
         )}
 
-        <ShareButton url={baseShareUrl} question={session.original_issue || 'The Long Council'} />
+        <ShareButton url={baseShareUrl} question={englishQuestion || 'The Long Council'} />
 
         {deliberationText && (
           <div className="debate-section">
