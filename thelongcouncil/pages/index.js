@@ -389,7 +389,13 @@ function ShareButton({ url, question }) {
   const shareText = `"${cleanQuestion}" — debated by The Long Council\n\n${url}`;
 
   async function handleClick() {
-    if (typeof navigator !== 'undefined' && navigator.share) {
+    // Native share sheet only on touch devices; on desktop it hides "copy link"
+    // behind a clunky system sheet, so prefer clipboard there.
+    const useNativeShare =
+      typeof navigator !== 'undefined' && navigator.share &&
+      typeof window !== 'undefined' && window.matchMedia &&
+      window.matchMedia('(pointer: coarse)').matches;
+    if (useNativeShare) {
       try {
         await navigator.share({ title: 'The Long Council', text: `"${cleanQuestion}" — debated by The Long Council`, url });
         return;

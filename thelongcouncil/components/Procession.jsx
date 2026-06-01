@@ -177,7 +177,13 @@ function ShareQuoteLink({ name, sessionSlug }) {
     const cleanName = name.replace(/\s*[—–-]\s*(Practitioner|Framer|Leader|Thinker|Wildcard)\s*$/i, '').trim()
     const shareUrl = `https://www.thelongcouncil.com/archive/${sessionSlug}?member=${encodeURIComponent(cleanName)}`
 
-    if (typeof navigator !== 'undefined' && navigator.share) {
+    // Native share sheet is useful on touch devices but on desktop it hides
+    // "copy link" behind a clunky system sheet. Prefer clipboard on desktop.
+    const useNativeShare =
+      typeof navigator !== 'undefined' && navigator.share &&
+      typeof window !== 'undefined' && window.matchMedia &&
+      window.matchMedia('(pointer: coarse)').matches
+    if (useNativeShare) {
       try {
         await navigator.share({ title: `${cleanName} — The Long Council`, url: shareUrl })
         return
