@@ -601,6 +601,28 @@ async function notifyIndexNow(slug) {
   }
 }
 
+// Pre-warm the OG share image so the FIRST social-media crawl gets a cached,
+// fast response instead of a cold ~2.5s render. Cold renders exceed some
+// crawlers' timeout (X/Twitter, etc.), which makes them cache an imageless
+// card for ~7 days. One GET here primes Vercel's CDN (the image is immutable,
+// 1y cache) before anyone shares the link, so cards reliably show the image.
+async function prewarmOgImage(slug) {
+  if (!slug) return;
+  if (process.env.VERCEL_ENV && process.env.VERCEL_ENV !== 'production') {
+    console.log('[prewarm-og] skipped (non-production env)');
+    return;
+  }
+  try {
+    const imageUrl = `https://${INDEXNOW_HOST}/api/og/vs/${slug}`;
+    const res = await fetch(imageUrl, { headers: { 'User-Agent': 'TLC-Prewarm/1.0' } });
+    // Drain the body so the CDN fully stores the rendered PNG.
+    await res.arrayBuffer().catch(() => {});
+    console.log(`[prewarm-og] warmed ${imageUrl} (HTTP ${res.status})`);
+  } catch (err) {
+    console.warn('[prewarm-og] failed:', err.message);
+  }
+}
+
 async function generateFactualAnchors(question) {
   try {
     const output = await callClaude(PROMPT_FACTUAL_ANCHORS_SYSTEM, `SHARPENED QUESTION:\n${question}`, 400, 0.3);
@@ -2081,7 +2103,9 @@ Every card is first person. A member says "I" and "my" and never names themselve
     // Best-effort IndexNow ping. Awaited because Vercel serverless cuts off
     // execution after the response is sent, so fire-and-forget would die.
     // ~100-300ms typical; never blocks save or breaks the session.
-    if (saved) await notifyIndexNow(finalSlug);
+    // Awaited (concurrently) for the same reason as IndexNow: Vercel cuts off
+    // execution once the response is sent, so fire-and-forget would be killed.
+    if (saved) await Promise.all([notifyIndexNow(finalSlug), prewarmOgImage(finalSlug)]);
 
     send('complete', {
       message: 'Session complete',
