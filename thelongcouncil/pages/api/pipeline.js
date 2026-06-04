@@ -583,23 +583,27 @@ function findMemberCardText(deliberationOutput, name) {
 async function pickQuotesForMember(question, name, cardText, quotes) {
   try {
     const numbered = quotes.map((q, i) => `${i + 1}. "${q.text}"`).join('\n');
-    const prompt = `You are choosing which of a historical figure's REAL documented quotes best fit a specific policy debate.
+    const prompt = `You are deciding which — if any — of a historical figure's REAL documented quotes belongs beside a specific policy debate, as a small sidebar of authentic quotations.
 
 FIGURE: ${name}
-
-WHAT ${name} ARGUED IN THIS DEBATE:
-${cardText || '(no card text available)'}
 
 THE DEBATE QUESTION:
 ${question}
 
+WHAT ${name} ARGUED HERE:
+${cardText || '(no card text available)'}
+
 ${name}'S REAL QUOTES:
 ${numbered}
 
-Pick the 1 or 2 quotes that most sharply resonate with this question and with ${name}'s argument above. A quote must genuinely fit — if none is a sharp match, answer NONE. Prefer one excellent quote over two loose ones.
+Strict rules:
+- A quote qualifies ONLY if it is clearly about the SAME SUBJECT as the question. Judge the quote against the QUESTION's subject ONLY — never pick one because it fits ${name}'s general theme or echoes an example, topic or word they used in their argument. And never pick a generic line that could sit beside almost any debate.
+- Be demanding: most of the time the right answer is NONE or a single quote. A loosely-related or generic quote is worse than showing nothing.
+- Choose the SINGLE best quote a knowledgeable reader would call clearly on-topic. Add a SECOND only if it is just as on-topic AND makes a genuinely different point.
+- If nothing is clearly on-topic, answer NONE.
 
-Answer with ONLY the quote numbers, comma-separated (e.g. "3" or "3, 7"), or the single word NONE. No other text.`;
-    const responseText = await callClaude('', prompt, 20, 0.2, 'claude-haiku-4-5-20251001');
+Answer with ONLY the quote number(s), comma-separated, at most two (e.g. "3" or "3, 7"), or the single word NONE. No other text.`;
+    const responseText = await callClaude('', prompt, 20, 0.2, 'claude-sonnet-4-20250514');
     if (/none/i.test(responseText)) return [];
     const nums = (responseText.match(/\d+/g) || []).map(n => parseInt(n, 10)).filter(n => n >= 1 && n <= quotes.length);
     const seen = new Set();

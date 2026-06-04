@@ -284,7 +284,6 @@ export const MEMBER_QUOTES = {
       { text: "The size of your dreams must always exceed your current capacity to achieve them.", source: "Harvard commencement address, 2011" },
       { text: "Be not afraid to denounce injustice, though you may be outnumbered.", source: "Nobel Peace Prize Lecture, 2011" },
       { text: "Be not afraid to seek peace, even if your voice may be small.", source: "Nobel Peace Prize Lecture, 2011" },
-      { text: "Only through service is one's life truly blessed.", source: "Nobel Peace Prize Lecture, 2011" },
       { text: "Access to quality education is the social justice issue of our time.", source: "Nobel Peace Prize Lecture, 2011" },
       { text: "Surely there is no place for a continuing belief that leadership qualities belong to only one gender.", source: "Nobel Peace Prize Lecture, 2011" },
       { text: "These rights are not given to us by governments, which might revoke them at their pleasure.", source: "Nobel Peace Prize Lecture, 2011" },
@@ -300,8 +299,6 @@ export const MEMBER_QUOTES = {
       { text: "We are called to assist the Earth to heal her wounds and in the process heal our own.", source: "Nobel Peace Prize Lecture, 2004" },
       { text: "In the course of history, there comes a time when humanity is called to shift to a new level of consciousness.", source: "Nobel Peace Prize Lecture, 2004" },
       { text: "I have always believed that solutions to most of our problems must come from us.", source: "Nobel Peace Prize Lecture, 2004" },
-      { text: "Civil society should embrace not only their rights but also their responsibilities.", source: "Nobel Peace Prize Lecture, 2004" },
-      { text: "The choice is ours.", source: "Nobel Peace Prize Lecture, 2004" },
     ],
   },
 
@@ -339,7 +336,6 @@ export const MEMBER_QUOTES = {
       { text: "The rule of law has not to win, nor has it to lose; it has to exist.", source: "Die Zeit, 2007", translation: "trans. from German" },
       { text: "Anyone who has visions should go see a doctor.", source: "Election campaign remark, c. 1980", translation: "trans. from German" },
       { text: "On the fundamental questions one has to be naive.", source: "Weggefährten, 1996", translation: "trans. from German" },
-      { text: "I am indeed a pragmatist.", source: "Helmut-Schmidt-Stiftung Zitatesammlung, 1976", translation: "trans. from German" },
     ],
   },
 
@@ -367,7 +363,6 @@ export const MEMBER_QUOTES = {
       { text: "Every human being has their purpose within themselves; no one may be reduced to merely another's tool.", source: "Speech to the SSU congress, 1964", translation: "trans. from Swedish" },
       { text: "Freedom we reach not against society but, to a substantial extent, through society.", source: "Speech to the SSU congress, 1964", translation: "trans. from Swedish" },
       { text: "The feeling of revolt against injustice knows no borders.", source: "Speech to the SSU congress, 1964", translation: "trans. from Swedish" },
-      { text: "Alone we can do little; together we can accomplish great deeds.", source: "Speech to the SSU congress, 1964", translation: "trans. from Swedish" },
       { text: "This is our world. We depend on it. Toward it we bear responsibility.", source: "Speech to the SSU congress, 1964", translation: "trans. from Swedish" },
     ],
   },
