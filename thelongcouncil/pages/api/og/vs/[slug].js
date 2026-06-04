@@ -117,8 +117,8 @@ export default async function handler(req) {
       : rawQuestion;
     const quoteText = member.quote || '';
     const speakerName = member.name || '';
-    const nameFontSize = getNameFontSize(speakerName);
-    const quoteFontSize = getQuoteFontSize(quoteText);
+    const nameFontSize = Math.round(getNameFontSize(speakerName) * 0.7);
+    const quoteFontSize = Math.round(getQuoteFontSize(quoteText) * 0.7);
 
     // Build the portrait from the resolved slug so it always points at a file
     // that exists (we only ever feature members that have a real avatar).
@@ -129,16 +129,15 @@ export default async function handler(req) {
 
     return new ImageResponse(
       (
-        // 1200×630 design scaled into an 840×441 output so the PNG lands ~400KB —
-        // a safe margin under WhatsApp's ~600KB limit (one wrapper, no layout rework).
-        <div style={{ width: '840px', height: '441px', display: 'flex', overflow: 'hidden', background: PAPER }}>
-          <div style={{ width: '1200px', height: '630px', background: PAPER, display: 'flex', transform: 'scale(0.7)', transformOrigin: 'top left', flexShrink: 0 }}>
+        // Native 840×441 design (0.7× of the original 1200×630) so the PNG lands
+        // ~250–330KB — a safe margin under WhatsApp's ~600KB share-card limit.
+        <div style={{ width: '840px', height: '441px', background: PAPER, display: 'flex' }}>
           {/* LEFT — portrait + name strip */}
-          <div style={{ width: '504px', height: '630px', position: 'relative', display: 'flex', overflow: 'hidden', background: PAPER_SOFT }}>
-            <img src={portrait} style={{ position: 'absolute', top: '-40px', left: '-108px', width: '720px', height: '720px' }} />
+          <div style={{ width: '353px', height: '441px', position: 'relative', display: 'flex', overflow: 'hidden', background: PAPER_SOFT }}>
+            <img src={portrait} style={{ position: 'absolute', top: '-28px', left: '-76px', width: '504px', height: '504px' }} />
             <div style={{
-              position: 'absolute', bottom: 0, left: 0, right: 0, height: '116px',
-              background: PAPER, padding: '0 44px',
+              position: 'absolute', bottom: 0, left: 0, right: 0, height: '81px',
+              background: PAPER, padding: '0 31px',
               display: 'flex', alignItems: 'center',
               borderTop: `1px solid ${RULE}`,
             }}>
@@ -159,26 +158,26 @@ export default async function handler(req) {
 
           {/* RIGHT — cream editorial panel */}
           <div style={{
-            width: '696px', height: '630px', background: PAPER, color: INK,
+            width: '487px', height: '441px', background: PAPER, color: INK,
             display: 'flex', flexDirection: 'column', boxSizing: 'border-box',
             position: 'relative',
           }}>
             {/* Brand row (compass + wordmark) with bleeding border-bottom */}
             <div style={{
-              display: 'flex', alignItems: 'center', gap: '12px',
-              padding: '40px 60px 18px',
+              display: 'flex', alignItems: 'center', gap: '8px',
+              padding: '28px 42px 13px',
               borderBottom: `1px solid ${RULE}`,
               color: OXBLOOD,
             }}>
               {/* Inline compass SVG (lucide-react compass) */}
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={OXBLOOD} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={OXBLOOD} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10" />
                 <path d="m16.24 7.76-1.804 5.411a2 2 0 0 1-1.265 1.265L7.76 16.24l1.804-5.411a2 2 0 0 1 1.265-1.265z" />
               </svg>
               <div style={{
                 display: 'flex',
                 fontFamily: 'Playfair Display',
-                fontSize: '20px',
+                fontSize: '14px',
                 letterSpacing: '0.12em',
                 textTransform: 'uppercase',
                 fontWeight: 500,
@@ -193,17 +192,17 @@ export default async function handler(req) {
               flex: 1,
               display: 'flex',
               flexDirection: 'column',
-              padding: '40px 60px 0',
+              padding: '28px 42px 0',
               position: 'relative',
               overflow: 'hidden',
             }}>
               {/* Faded oversized opening quote */}
               <div style={{
                 position: 'absolute',
-                top: '8px',
-                left: '54px',
+                top: '6px',
+                left: '38px',
                 fontFamily: 'Playfair Display',
-                fontSize: '150px',
+                fontSize: '105px',
                 lineHeight: 1,
                 color: QUOTEMARK,
                 fontWeight: 500,
@@ -219,18 +218,18 @@ export default async function handler(req) {
                 lineHeight: 1.25,
                 fontWeight: 500,
                 color: INK,
-                paddingLeft: '70px',
-                marginTop: '36px',
+                paddingLeft: '49px',
+                marginTop: '25px',
               }}>
                 {quoteText}
               </div>
             </div>
 
-            {/* Question block — PAPER_SOFT, 116px tall to match name strip */}
+            {/* Question block — PAPER_SOFT, 81px tall to match name strip */}
             <div style={{
-              height: '116px',
+              height: '81px',
               background: PAPER_SOFT,
-              padding: '20px 60px',
+              padding: '14px 42px',
               borderTop: `1px solid ${RULE}`,
               display: 'flex',
               flexDirection: 'column',
@@ -240,7 +239,7 @@ export default async function handler(req) {
               <div style={{
                 display: 'flex',
                 fontFamily: 'Playfair Display',
-                fontSize: '28px',
+                fontSize: '20px',
                 lineHeight: 1.25,
                 color: INK,
                 fontWeight: 500,
@@ -250,7 +249,6 @@ export default async function handler(req) {
               </div>
             </div>
           </div>
-        </div>
         </div>
       ),
       {
