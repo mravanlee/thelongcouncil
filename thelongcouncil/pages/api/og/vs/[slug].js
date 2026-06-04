@@ -100,15 +100,20 @@ export default async function handler(req) {
       return new Response('No speakers found', { status: 400 });
     }
 
-    // Feature a member that actually has an avatar file. Off-roster figures the
-    // pipeline occasionally adds (e.g. Charles de Gaulle) have no portrait, which
-    // breaks @vercel/og into an empty image — so never feature one as the face.
+    // Pick the member to feature. A per-member share (?member=) ALWAYS shows that
+    // exact member — never a substitute, because showing someone else's face or
+    // quote would be misinformation. A wildcard/off-roster member has no avatar and
+    // gets a neutral default-profile placeholder (below), with their OWN name+quote.
+    // The canonical card (no ?member) features the first member that has a portrait.
     const hasAvatar = (m) => KNOWN_AVATAR_SLUGS.has(avatarSlugFor(m && m.name));
-    let member = session.members.find(hasAvatar) || session.members[0];
+    let member;
     if (memberQuery) {
       const target = normaliseName(memberQuery);
-      const found = session.members.find((m) => normaliseName(m.name) === target);
-      if (found && hasAvatar(found)) member = found;
+      member = session.members.find((m) => normaliseName(m.name) === target)
+        || session.members.find(hasAvatar)
+        || session.members[0];
+    } else {
+      member = session.members.find(hasAvatar) || session.members[0];
     }
 
     const rawQuestion = session.question || session.sharpenedQuestion || '';
@@ -120,8 +125,8 @@ export default async function handler(req) {
     const nameFontSize = Math.round(getNameFontSize(speakerName) * 0.7);
     const quoteFontSize = Math.round(getQuoteFontSize(quoteText) * 0.7);
 
-    // Build the portrait from the resolved slug so it always points at a file
-    // that exists (we only ever feature members that have a real avatar).
+    // Real portrait when the member has one; null (→ default-profile placeholder
+    // in the card) for wildcard / off-roster members without an avatar.
     const memberSlug = avatarSlugFor(speakerName);
     const portrait = KNOWN_AVATAR_SLUGS.has(memberSlug)
       ? `${baseUrl}/avatars/avatar_${memberSlug}.png`
@@ -134,7 +139,16 @@ export default async function handler(req) {
         <div style={{ width: '840px', height: '441px', background: PAPER, display: 'flex' }}>
           {/* LEFT — portrait + name strip */}
           <div style={{ width: '353px', height: '441px', position: 'relative', display: 'flex', overflow: 'hidden', background: PAPER_SOFT }}>
-            <img src={portrait} style={{ position: 'absolute', top: '-28px', left: '-76px', width: '504px', height: '504px' }} />
+            {portrait ? (
+              <img src={portrait} style={{ position: 'absolute', top: '-28px', left: '-76px', width: '504px', height: '504px' }} />
+            ) : (
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <svg width="190" height="190" viewBox="0 0 100 100" fill="rgba(90,74,61,0.32)">
+                  <circle cx="50" cy="35" r="21" />
+                  <path d="M50 60 C29 60 15 77 15 100 L85 100 C85 77 71 60 50 60 Z" />
+                </svg>
+              </div>
+            )}
             <div style={{
               position: 'absolute', bottom: 0, left: 0, right: 0, height: '81px',
               background: PAPER, padding: '0 31px',
