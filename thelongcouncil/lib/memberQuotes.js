@@ -570,6 +570,46 @@ export const MEMBER_QUOTES = {
       { text: "A just system must generate its own support.", source: "A Theory of Justice, 1971, §41" },
     ],
   },
+
+  deng_xiaoping: {
+    pronoun: 'his',
+    quotes: [
+      { text: "It doesn't matter whether a cat is black or white, as long as it catches mice.", source: "Remark, 1962", translation: "popularized English (orig. Chinese)" },
+      { text: "Seeking truth from facts is the basis of the proletarian world outlook as well as the ideological basis of Marxism.", source: "Selected Works, Vol. 2, 1978", translation: "trans. Foreign Languages Press" },
+      { text: "The thing to be feared most is silence.", source: "Selected Works, Vol. 2, 1978", translation: "trans. Foreign Languages Press" },
+      { text: "Poverty is not socialism.", source: "Selected Works, Vol. 3, 1987", translation: "trans. Foreign Languages Press" },
+    ],
+  },
+
+  mustafa_kemal_ataturk: {
+    pronoun: 'his',
+    quotes: [
+      { text: "We work for peace at home, peace in the world.", source: "Statement on party policy, 1931", translation: "trans. from Turkish" },
+      { text: "Sovereignty belongs unconditionally to the nation.", source: "1921 Constitution, Article 1", translation: "trans. from Turkish" },
+      { text: "The strength you need is in the noble blood in your veins!", source: "Address to Turkish Youth (Nutuk), 1927", translation: "trans. from Turkish" },
+      { text: "Teachers! The new generation will be your masterpiece.", source: "Address to the Teachers' Union Congress, 1924", translation: "trans. from Turkish" },
+    ],
+  },
+
+  david_ben_gurion: {
+    pronoun: 'his',
+    quotes: [
+      { text: "If the state does not liquidate the desert, the desert may liquidate the state.", source: "Said at Sde Boker, 1955", translation: "trans. from Hebrew" },
+      { text: "The State of Israel will be judged not by its wealth or military strength nor by its technology, but by its moral worth and human values.", source: "The Call of Spirit in Israel, 1951", translation: "trans. from Hebrew" },
+      { text: "Without moral and intellectual independence there is no anchor for national independence.", source: "Ben-Gurion Heritage Institute archive", translation: "trans. from Hebrew" },
+      { text: "A land can be won by a people only through their own efforts and creativity, their building and settlement.", source: "Article on the Balfour Declaration, 1917", translation: "trans. from Hebrew" },
+    ],
+  },
+
+  simon_bolivar: {
+    pronoun: 'his',
+    quotes: [
+      { text: "Slavery is the daughter of darkness: an ignorant people is a blind instrument of its own destruction.", source: "Angostura Address, 1819", translation: "trans. from Spanish" },
+      { text: "Absolute liberty invariably lapses into absolute power, and the mean between these two extremes is supreme social liberty.", source: "Angostura Address, 1819", translation: "trans. from Spanish" },
+      { text: "We need equality to recast, so to speak, into a unified nation, the classes of men, political opinions, and public customs.", source: "Angostura Address, 1819", translation: "trans. from Spanish" },
+      { text: "Those who serve a revolution plough the sea.", source: "Attributed (reported c. 1830)", translation: "trans. from Spanish" },
+    ],
+  },
 };
 
 // Look up a member's quote entry by (possibly non-canonical) member name.
