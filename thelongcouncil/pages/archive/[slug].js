@@ -263,12 +263,13 @@ export default function ArchiveDetail({ session, memberQuery }) {
 
   const baseShareUrl = `https://www.thelongcouncil.com/archive/${session.slug}`;
   const canonicalUrl = memberQuery ? `${baseShareUrl}?member=${encodeURIComponent(memberQuery)}` : baseShareUrl;
-  // OG image is ALWAYS the canonical session card. We intentionally never pass
-  // ?member= to the image endpoint: the query param makes it return an empty
-  // (0-byte) PNG, which social crawlers then cache as an imageless card for ~7
-  // days. The page deep-link still highlights the member; only the share image
-  // stays canonical so every shared link gets a valid card.
-  const ogImageUrl = `https://www.thelongcouncil.com/api/og/vs/${session.slug}`;
+  // Per-member shares (?member=) get THAT member's card. The OG endpoint now
+  // handles ?member safely: it features the member when they have a portrait,
+  // and falls back to a roster member with a portrait otherwise — so the card is
+  // never empty/broken (this used to return a 0-byte PNG, hence the old caveat).
+  const ogImageUrl = memberQuery
+    ? `https://www.thelongcouncil.com/api/og/vs/${session.slug}?member=${encodeURIComponent(memberQuery)}`
+    : `https://www.thelongcouncil.com/api/og/vs/${session.slug}`;
 
   // Structured data for AI search engines (Google AI Overview, Perplexity, ChatGPT Search, etc).
   // We expose two graphs:
