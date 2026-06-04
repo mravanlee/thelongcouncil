@@ -5,7 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import { ArrowLeft, Languages } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import Procession from '../../components/Procession';
-import { resolveAvatarSlug } from '../../lib/avatarSlugs';
+import { resolveAvatarSlug, KNOWN_AVATAR_SLUGS } from '../../lib/avatarSlugs';
 import { parseCard } from '../../lib/cardParser';
 import { SiteFooter, SiteHeader } from '../../components/SiteChrome';
 
@@ -117,14 +117,16 @@ function VerdictCast({ names }) {
                 >
                   {getInitials(name)}
                 </span>
-                <img
-                  src={`/avatars/avatar_${slug}.webp`}
-                  alt=""
-                  className="absolute inset-0 h-full w-full object-cover"
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                  }}
-                />
+                {KNOWN_AVATAR_SLUGS.has(slug) && (
+                  <img
+                    src={`/avatars/avatar_${slug}.webp`}
+                    alt=""
+                    className="absolute inset-0 h-full w-full object-cover"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                    }}
+                  />
+                )}
               </div>
               <div className="mt-2 text-[10px] leading-tight text-muted-foreground transition group-hover:text-foreground sm:text-[11px]">
                 {line1}

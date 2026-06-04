@@ -4,7 +4,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import Procession from '../components/Procession';
 import { supabase } from '../lib/supabase';
-import { resolveAvatarSlug } from '../lib/avatarSlugs';
+import { resolveAvatarSlug, KNOWN_AVATAR_SLUGS } from '../lib/avatarSlugs';
 import { SiteFooter, SiteHeader, SERIF } from '../components/SiteChrome';
 import { Check, FileText, MessagesSquare, Scale, Users } from 'lucide-react';
 
@@ -249,7 +249,7 @@ function RecentSessionAvatar({ name }) {
   return (
     <div className="rs-avatar" aria-hidden="true">
       <span className="rs-avatar-monogram">{memberMonogram(name)}</span>
-      {slug && (
+      {KNOWN_AVATAR_SLUGS.has(slug) && (
         <img
           src={`/avatars/avatar_${slug}.webp`}
           alt=""
@@ -316,17 +316,6 @@ function stripTierSuffix(name) {
   return name.replace(/\s*[—–-]\s*(Practitioner|Framer|Leader|Thinker|Wildcard)\s*$/i, '').trim();
 }
 
-function nameToAvatarSlug(name) {
-  return stripTierSuffix(name)
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[\s.\-]+/g, '_')
-    .replace(/[^a-z0-9_]/g, '')
-    .replace(/_+/g, '_')
-    .replace(/^_|_$/g, '');
-}
-
 function splitNameForCast(name) {
   const clean = stripTierSuffix(name);
   const parts = clean.split(' ');
@@ -352,12 +341,14 @@ function VerdictCast({ names }) {
     <div className="cast-row">
       {names.map((name) => {
         const [line1, line2] = splitNameForCast(name);
-        const slug = nameToAvatarSlug(name);
+        const slug = memberSlug(name);
         return (
           <div key={name} className="cast-col">
             <div className="cast-avatar">
               <span className="cast-initials">{getInitials(name)}</span>
-              <img src={`/avatars/avatar_${slug}.webp`} alt="" className="cast-img" onError={(e) => { e.target.style.display = 'none'; }} />
+              {KNOWN_AVATAR_SLUGS.has(slug) && (
+                <img src={`/avatars/avatar_${slug}.webp`} alt="" className="cast-img" onError={(e) => { e.target.style.display = 'none'; }} />
+              )}
             </div>
             <div className="cast-name">{line1}{line2 ? <><br />{line2}</> : null}</div>
           </div>
