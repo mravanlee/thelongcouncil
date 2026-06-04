@@ -24,9 +24,10 @@
 //   source      — work / speech + year (+ locator where useful)
 //   translation — translator/edition; ONLY for non-English originals, else omitted
 //
-// Members absent here (or with an empty quotes array) simply render no block —
-// expected for the dry theorists (Ostrom, Prebisch, Hirschman) who lack enough
-// pointy lines to clear the bar.
+// Members absent here (or with an empty quotes array) simply render no block.
+// A few dry theorists (Ostrom, Hirschman, Prebisch) carry only a handful of
+// pointy lines — that is fine: the selection step shows a quote only when one
+// genuinely fits the session, so a small set just means they appear rarely.
 
 import { resolveAvatarSlug } from './avatarSlugs';
 
@@ -608,6 +609,30 @@ export const MEMBER_QUOTES = {
       { text: "Absolute liberty invariably lapses into absolute power, and the mean between these two extremes is supreme social liberty.", source: "Angostura Address, 1819", translation: "trans. from Spanish" },
       { text: "We need equality to recast, so to speak, into a unified nation, the classes of men, political opinions, and public customs.", source: "Angostura Address, 1819", translation: "trans. from Spanish" },
       { text: "Those who serve a revolution plough the sea.", source: "Attributed (reported c. 1830)", translation: "trans. from Spanish" },
+    ],
+  },
+
+  elinor_ostrom: {
+    pronoun: 'her',
+    quotes: [
+      { text: "The power of a theory is exactly proportional to the diversity of situations it can explain.", source: "Governing the Commons, 1990" },
+      { text: "Hardly a week goes by without a major news story about the threatened destruction of a valuable natural resource.", source: "Governing the Commons, 1990" },
+      { text: "'One-size-fits-all' policies are not effective.", source: "Nobel Prize Lecture, 2009" },
+    ],
+  },
+
+  albert_hirschman: {
+    pronoun: 'his',
+    quotes: [
+      { text: "Most of them have been long on moral indignation and short on irony.", source: "The Rhetoric of Reaction, 1991" },
+      { text: "Everything backfires.", source: "The Rhetoric of Reaction, 1991" },
+    ],
+  },
+
+  raul_prebisch: {
+    pronoun: 'his',
+    quotes: [
+      { text: "In economics, ideologies usually tend either to lag behind events or to outlive them.", source: "The Economic Development of Latin America and Its Principal Problems, 1950", translation: "trans. from Spanish" },
     ],
   },
 };
