@@ -16,6 +16,16 @@ async function loadGoogleFont(family, weight, italic = false) {
   return fetch(fontUrl).then((res) => res.arrayBuffer());
 }
 
+// Resilient wrapper: a font hiccup must never break the card. On failure we
+// render with the default font — the portrait and layout still come through.
+async function safeFont(family, weight, italic = false) {
+  try {
+    return await loadGoogleFont(family, weight, italic);
+  } catch {
+    return null;
+  }
+}
+
 function getNameFontSize(name) {
   const len = name.length;
   if (len <= 10) return 56;
@@ -55,12 +65,6 @@ function avatarSlugFor(name) {
   return resolveAvatarSlug(naive);
 }
 
-function memberInitials(name) {
-  const words = (name || '').trim().split(/\s+/).filter(Boolean);
-  if (words.length >= 2) return (words[0][0] + words[words.length - 1][0]).toUpperCase();
-  return (name || '').slice(0, 2).toUpperCase();
-}
-
 // ─── Editorial cream palette (matches site design tokens) ──────────────
 const PAPER = '#f3eeea';
 const PAPER_SOFT = '#ede4d3';
@@ -69,28 +73,6 @@ const INK_SOFT = '#5a4a3d';
 const OXBLOOD = '#6b1a1a';
 const RULE = 'rgba(31,24,18,0.14)';
 const QUOTEMARK = 'rgba(107,26,26,0.20)';
-
-// Guaranteed-valid fallback card: no external image and no font fetch, so it can
-// never itself fail. Short cache so any transient failure self-heals next request.
-function fallbackImage() {
-  return new ImageResponse(
-    (
-      <div style={{ width: '1200px', height: '630px', background: PAPER, color: INK, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px', boxSizing: 'border-box' }}>
-        <div style={{ display: 'flex', fontSize: '46px', letterSpacing: '0.12em', textTransform: 'uppercase', color: OXBLOOD, fontWeight: 700, marginBottom: '28px' }}>
-          The Long Council
-        </div>
-        <div style={{ display: 'flex', fontSize: '30px', color: INK_SOFT }}>
-          A council of history&apos;s greatest minds.
-        </div>
-      </div>
-    ),
-    {
-      width: 1200,
-      height: 630,
-      headers: { 'Cache-Control': 'public, max-age=300' },
-    },
-  );
-}
 
 export default async function handler(req) {
   try {
@@ -106,9 +88,9 @@ export default async function handler(req) {
 
     const [sessionRes, playfair500, playfair600, playfairItalic] = await Promise.all([
       fetch(`${baseUrl}/api/session/${slug}`),
-      loadGoogleFont('Playfair Display', 500, false),
-      loadGoogleFont('Playfair Display', 600, false),
-      loadGoogleFont('Playfair Display', 500, true),
+      safeFont('Playfair Display', 500, false),
+      safeFont('Playfair Display', 600, false),
+      safeFont('Playfair Display', 500, true),
     ]);
 
     if (!sessionRes.ok) return new Response('Session not found', { status: 404 });
@@ -150,13 +132,7 @@ export default async function handler(req) {
         <div style={{ width: '1200px', height: '630px', background: PAPER, display: 'flex' }}>
           {/* LEFT — portrait + name strip */}
           <div style={{ width: '504px', height: '630px', position: 'relative', display: 'flex', overflow: 'hidden', background: PAPER_SOFT }}>
-            {portrait ? (
-              <img src={portrait} style={{ position: 'absolute', top: '-40px', left: '-108px', width: '720px', height: '720px' }} />
-            ) : (
-              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Playfair Display', fontSize: '210px', fontWeight: 600, color: OXBLOOD }}>
-                {memberInitials(speakerName)}
-              </div>
-            )}
+            <img src={portrait} style={{ position: 'absolute', top: '-40px', left: '-108px', width: '720px', height: '720px' }} />
             <div style={{
               position: 'absolute', bottom: 0, left: 0, right: 0, height: '116px',
               background: PAPER, padding: '0 44px',
@@ -277,21 +253,16 @@ export default async function handler(req) {
         width: 1200,
         height: 630,
         fonts: [
-          { name: 'Playfair Display', data: playfair500, style: 'normal', weight: 500 },
-          { name: 'Playfair Display', data: playfair600, style: 'normal', weight: 600 },
-          { name: 'Playfair Display', data: playfairItalic, style: 'italic', weight: 500 },
-        ],
+          playfair500 && { name: 'Playfair Display', data: playfair500, style: 'normal', weight: 500 },
+          playfair600 && { name: 'Playfair Display', data: playfair600, style: 'normal', weight: 600 },
+          playfairItalic && { name: 'Playfair Display', data: playfairItalic, style: 'italic', weight: 500 },
+        ].filter(Boolean),
         headers: {
           'Cache-Control': 'public, max-age=31536000, s-maxage=31536000, immutable',
         },
       },
     );
   } catch (err) {
-    // Never surface a 500 / broken card to a social crawler — always a valid image.
-    try {
-      return fallbackImage();
-    } catch (e) {
-      return new Response('', { status: 200, headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=60' } });
-    }
+    return new Response(`Error generating image: ${err.message}`, { status: 500 });
   }
 }
