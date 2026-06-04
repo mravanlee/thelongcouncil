@@ -214,6 +214,362 @@ export const MEMBER_QUOTES = {
       { text: "There is nothing like returning to a place that remains unchanged to find the ways in which you yourself have altered.", source: "Long Walk to Freedom, 1994" },
     ],
   },
+
+  lee_kuan_yew: {
+    pronoun: 'his',
+    quotes: [
+      { text: "We are pragmatists. We don't stick to any ideology.", source: "From Third World to First, 2000" },
+      { text: "I was never a prisoner of any theory. What guided me were reason and reality.", source: "From Third World to First, 2000" },
+      { text: "The acid test I applied to every theory or scheme was, would it work?", source: "From Third World to First, 2000" },
+      { text: "The acid test of any legal system is not the grandeur of its ideal concepts, but whether it can produce order and justice.", source: "From Third World to First, 2000" },
+      { text: "If Singapore is a nanny state, then I am proud to have fostered one.", source: "From Third World to First, 2000" },
+      { text: "Between being loved and being feared, I have always believed Machiavelli was right.", source: "The Singapore Story, 1998" },
+      { text: "If nobody is afraid of me, I'm meaningless.", source: "The Singapore Story, 1998" },
+      { text: "I ignore polling as a method of government. I think that shows a certain weakness of mind.", source: "Interview, 2002" },
+      { text: "Repression is a habit that grows.", source: "Singapore Legislative Assembly, 1956" },
+      { text: "Poetry is a luxury we cannot afford.", source: "Address to University of Singapore students, 1968" },
+      { text: "If you don't include your women graduates in your breeding pool, you would end up a more stupid society.", source: "National Day Rally speech, 1983" },
+    ],
+  },
+
+  jawaharlal_nehru: {
+    pronoun: 'his',
+    quotes: [
+      { text: "Long years ago we made a tryst with destiny, and now the time comes when we shall redeem our pledge.", source: "Tryst with Destiny, 1947" },
+      { text: "At the stroke of the midnight hour, when the world sleeps, India will awake to life and freedom.", source: "Tryst with Destiny, 1947" },
+      { text: "Freedom and power bring responsibility.", source: "Tryst with Destiny, 1947" },
+      { text: "The past is over and it is the future that beckons to us now.", source: "Tryst with Destiny, 1947" },
+      { text: "We end today a period of ill fortune, and India discovers herself again.", source: "Tryst with Destiny, 1947" },
+      { text: "The light has gone out of our lives and there is darkness everywhere.", source: "Broadcast on Gandhi's death, 1948" },
+      { text: "The future belongs to science and those who make friends with science.", source: "Address to the Indian Science Congress, 1938" },
+      { text: "Crises and deadlocks when they occur have at least this advantage, that they force us to think.", source: "The Unity of India, 1942" },
+      { text: "We must constantly remind ourselves that whatever our religion or creed, we are all one people.", source: "Radio address to the Defence Services, 1947" },
+      { text: "Where freedom is menaced or justice threatened, we cannot be and shall not be neutral.", source: "Address to the U.S. Congress, 1949" },
+    ],
+  },
+
+  indira_gandhi: {
+    pronoun: 'her',
+    quotes: [
+      { text: "You cannot shake hands with a clenched fist.", source: "Press conference, New Delhi, 1971" },
+      { text: "India wants to avoid a war at all costs, but it is not a one-sided affair.", source: "Press conference, New Delhi, 1971" },
+      { text: "I am alive today, I may not be there tomorrow.", source: "Last speech, Bhubaneswar, 1984" },
+      { text: "I shall continue to serve until my last breath, and when I die every drop of my blood will invigorate India.", source: "Last speech, Bhubaneswar, 1984" },
+      { text: "A nation's strength ultimately consists in what it can do on its own, not in what it can borrow from others.", source: "Preface, Fourth Five Year Plan, 1970" },
+      { text: "My father was a statesman, I am a political woman.", source: "Interview with Oriana Fallaci, 1972" },
+      { text: "To be liberated, woman must feel free to be herself.", source: "True Liberation of Women speech, 1980" },
+      { text: "The power to question is the basis of all human progress.", source: "Selected Speeches of Indira Gandhi (Publications Division)" },
+    ],
+  },
+
+  mahathir_mohamad: {
+    pronoun: 'his',
+    quotes: [
+      { text: "Small countries continued to be at the mercy of the powerful.", source: "Address to the UN General Assembly, 2018" },
+      { text: "Kill one man, it is murder; kill a million and you become a hero.", source: "Address to the UN General Assembly, 2018" },
+      { text: "A Malaysia that is a friend to all and an enemy of none.", source: "Address to the UN General Assembly, 2018" },
+      { text: "Five countries on the basis of their victories cannot claim to hold the world to ransom forever.", source: "Address to the UN General Assembly, 2018" },
+      { text: "I was the Prime Minister of the people, not of my family.", source: "A Doctor in the House, 2011" },
+      { text: "My vision for Malaysia was for everybody, not just a politically-connected elite.", source: "A Doctor in the House, 2011" },
+      { text: "A good leader does not let stereotypes go unchallenged.", source: "A Doctor in the House, 2011" },
+      { text: "Perfect people simply do not exist.", source: "A Doctor in the House, 2011" },
+    ],
+  },
+
+  ellen_johnson_sirleaf: {
+    pronoun: 'her',
+    quotes: [
+      { text: "If your dreams do not scare you, they are not big enough.", source: "Harvard commencement address, 2011" },
+      { text: "The size of your dreams must always exceed your current capacity to achieve them.", source: "Harvard commencement address, 2011" },
+      { text: "Be not afraid to denounce injustice, though you may be outnumbered.", source: "Nobel Peace Prize Lecture, 2011" },
+      { text: "Be not afraid to seek peace, even if your voice may be small.", source: "Nobel Peace Prize Lecture, 2011" },
+      { text: "Only through service is one's life truly blessed.", source: "Nobel Peace Prize Lecture, 2011" },
+      { text: "Access to quality education is the social justice issue of our time.", source: "Nobel Peace Prize Lecture, 2011" },
+      { text: "Surely there is no place for a continuing belief that leadership qualities belong to only one gender.", source: "Nobel Peace Prize Lecture, 2011" },
+      { text: "These rights are not given to us by governments, which might revoke them at their pleasure.", source: "Nobel Peace Prize Lecture, 2011" },
+    ],
+  },
+
+  wangari_maathai: {
+    pronoun: 'her',
+    quotes: [
+      { text: "Sustainable development, democracy and peace are indivisible.", source: "Nobel Peace Prize Lecture, 2004" },
+      { text: "There can be no peace without equitable development; and there can be no development without sustainable management of the environment.", source: "Nobel Peace Prize Lecture, 2004" },
+      { text: "Responsible governance of the environment was impossible without democratic space.", source: "Nobel Peace Prize Lecture, 2004" },
+      { text: "We are called to assist the Earth to heal her wounds and in the process heal our own.", source: "Nobel Peace Prize Lecture, 2004" },
+      { text: "In the course of history, there comes a time when humanity is called to shift to a new level of consciousness.", source: "Nobel Peace Prize Lecture, 2004" },
+      { text: "I have always believed that solutions to most of our problems must come from us.", source: "Nobel Peace Prize Lecture, 2004" },
+      { text: "Civil society should embrace not only their rights but also their responsibilities.", source: "Nobel Peace Prize Lecture, 2004" },
+      { text: "The choice is ours.", source: "Nobel Peace Prize Lecture, 2004" },
+    ],
+  },
+
+  julius_nyerere: {
+    pronoun: 'his',
+    quotes: [
+      { text: "Independence means self-reliance.", source: "The Arusha Declaration, 1967" },
+      { text: "Independence cannot be real if a nation depends upon gifts and loans from another for its development.", source: "The Arusha Declaration, 1967" },
+      { text: "It is stupid to rely on money as the major instrument of development when we know only too well that our country is poor.", source: "The Arusha Declaration, 1967" },
+      { text: "We made a mistake in choosing money, something we do not have, to be the big instrument of our development.", source: "The Arusha Declaration, 1967" },
+      { text: "In order to prevent exploitation it is necessary for everybody to work and to live on his own labour.", source: "The Arusha Declaration, 1967" },
+      { text: "We have been oppressed a great deal, we have been exploited a great deal and we have been disregarded a great deal.", source: "The Arusha Declaration, 1967" },
+    ],
+  },
+
+  eleanor_roosevelt: {
+    pronoun: 'her',
+    quotes: [
+      { text: "You must do the thing you think you cannot do.", source: "You Learn by Living, 1960" },
+      { text: "You gain strength, courage and confidence by every experience in which you really stop to look fear in the face.", source: "You Learn by Living, 1960" },
+      { text: "We must not be confused about what freedom is.", source: "The Struggle for Human Rights, 1948" },
+      { text: "Human rights exist to the degree that they are respected by people in relations with each other and by governments in relations with their citizens.", source: "The Struggle for Human Rights, 1948" },
+      { text: "In the totalitarian state a trade-union is an instrument used by the government to enforce duties, not to assert rights.", source: "The Struggle for Human Rights, 1948" },
+    ],
+  },
+
+  helmut_schmidt: {
+    pronoun: 'his',
+    quotes: [
+      { text: "Democracy is not a condition, democracy is a process.", source: "Gefragt: Helmut Schmidt, 1969", translation: "trans. from German" },
+      { text: "Democracy consists of debate, and then a decision on the basis of the debate.", source: "Gefragt: Helmut Schmidt, 1969", translation: "trans. from German" },
+      { text: "Politics is not just a mental sport; politics is also action.", source: "Gefragt: Helmut Schmidt, 1969", translation: "trans. from German" },
+      { text: "There are times when preserving what has been achieved is the maximum of the achievable.", source: "Helmut-Schmidt-Stiftung Zitatesammlung, 1978", translation: "trans. from German" },
+      { text: "A snail's pace is the normal pace of every democracy.", source: "Die Zeit, 2003", translation: "trans. from German" },
+      { text: "The rule of law has not to win, nor has it to lose; it has to exist.", source: "Die Zeit, 2007", translation: "trans. from German" },
+      { text: "Anyone who has visions should go see a doctor.", source: "Election campaign remark, c. 1980", translation: "trans. from German" },
+      { text: "On the fundamental questions one has to be naive.", source: "Weggefährten, 1996", translation: "trans. from German" },
+      { text: "I am indeed a pragmatist.", source: "Helmut-Schmidt-Stiftung Zitatesammlung, 1976", translation: "trans. from German" },
+    ],
+  },
+
+  konrad_adenauer: {
+    pronoun: 'his',
+    quotes: [
+      { text: "Democracy is more than a parliamentary form of government; it is a worldview.", source: "Erinnerungen 1945–1953, 1965", translation: "trans. from German" },
+      { text: "Democracy must be lived.", source: "Cadenabbia, 1964", translation: "trans. from German" },
+      { text: "I hold the view that the opposition is a necessity of the state.", source: "Bundestag, 1949", translation: "trans. from German" },
+      { text: "Personal freedom is and remains the highest good of human beings.", source: "CDU party congress, Recklinghausen, 1948", translation: "trans. from German" },
+      { text: "Peace without freedom is no peace.", source: "Christmas address, 1952", translation: "trans. from German" },
+      { text: "The age of the nation-state is over.", source: "Bulletin Nr. 69/55, 1955", translation: "trans. from German" },
+      { text: "A united Europe would be an imperative necessity even if there were no Soviet danger at all.", source: "Die Zeit, 1952", translation: "trans. from German" },
+      { text: "Politics is the art of realizing what has been recognized as right on an ethical basis.", source: "Washington D.C., 1957", translation: "trans. from German" },
+      { text: "Power in itself is nothing evil, but power can become something very evil.", source: "Cologne, 1947", translation: "trans. from German" },
+      { text: "One of the main things in politics is that one does not chase after fantasies or utopias.", source: "Dortmund, 1953", translation: "trans. from German" },
+    ],
+  },
+
+  olof_palme: {
+    pronoun: 'his',
+    quotes: [
+      { text: "Politics, comrades, is to want something.", source: "Speech to the SSU congress, 1964", translation: "trans. from Swedish" },
+      { text: "Social Democratic politics is to want change, because change promises improvement.", source: "Speech to the SSU congress, 1964", translation: "trans. from Swedish" },
+      { text: "Every human being has their purpose within themselves; no one may be reduced to merely another's tool.", source: "Speech to the SSU congress, 1964", translation: "trans. from Swedish" },
+      { text: "Freedom we reach not against society but, to a substantial extent, through society.", source: "Speech to the SSU congress, 1964", translation: "trans. from Swedish" },
+      { text: "The feeling of revolt against injustice knows no borders.", source: "Speech to the SSU congress, 1964", translation: "trans. from Swedish" },
+      { text: "Alone we can do little; together we can accomplish great deeds.", source: "Speech to the SSU congress, 1964", translation: "trans. from Swedish" },
+      { text: "This is our world. We depend on it. Toward it we bear responsibility.", source: "Speech to the SSU congress, 1964", translation: "trans. from Swedish" },
+    ],
+  },
+
+  friedrich_hayek: {
+    pronoun: 'his',
+    quotes: [
+      { text: "The more the state plans the more difficult planning becomes for the individual.", source: "The Road to Serfdom, 1944, ch. 6" },
+      { text: "Government in all its actions is bound by rules fixed and announced beforehand.", source: "The Road to Serfdom, 1944, ch. 6" },
+      { text: "The principle that the end justifies the means is in individualist ethics regarded as the denial of all morals.", source: "The Road to Serfdom, 1944, ch. 11" },
+      { text: "To be controlled in our economic pursuits means to be controlled in everything.", source: "The Road to Serfdom, 1944, ch. 7" },
+      { text: "We must look at the price system as a mechanism for communicating information if we want to understand its real function.", source: "The Use of Knowledge in Society, 1945" },
+      { text: "The most significant fact about this system is the economy of knowledge with which it operates.", source: "The Use of Knowledge in Society, 1945" },
+      { text: "Liberty and responsibility are inseparable.", source: "The Constitution of Liberty, 1960, ch. 5" },
+      { text: "A claim for equality of material position can be met only by a government with totalitarian powers.", source: "The Constitution of Liberty, 1960, ch. 6" },
+      { text: "Freedom granted only when it is known beforehand that its effects will be beneficial is not freedom.", source: "The Constitution of Liberty, 1960, ch. 2" },
+      { text: "The case for individual freedom rests chiefly on the recognition of the inevitable ignorance of all of us.", source: "The Constitution of Liberty, 1960, ch. 2" },
+      { text: "Coercion is evil precisely because it thus eliminates an individual as a thinking and valuing person.", source: "The Constitution of Liberty, 1960, ch. 1" },
+      { text: "If we knew how freedom would be used, the case for it would largely disappear.", source: "The Constitution of Liberty, 1960, ch. 2" },
+    ],
+  },
+
+  milton_friedman: {
+    pronoun: 'his',
+    quotes: [
+      { text: "The great threat to freedom is the concentration of power.", source: "Capitalism and Freedom, 1962, ch. 1" },
+      { text: "The kind of economic organization that provides economic freedom directly also promotes political freedom.", source: "Capitalism and Freedom, 1962, ch. 1" },
+      { text: "The great advances of civilization have never come from centralized government.", source: "Capitalism and Freedom, 1962, ch. 1" },
+      { text: "A major source of objection to a free economy is precisely that it gives people what they want instead of what a particular group thinks they ought to want.", source: "Capitalism and Freedom, 1962, ch. 1" },
+      { text: "Underlying most arguments against the free market is a lack of belief in freedom itself.", source: "Capitalism and Freedom, 1962, ch. 1" },
+      { text: "Inflation is always and everywhere a monetary phenomenon.", source: "The Counter-Revolution in Monetary Theory, 1970" },
+      { text: "Inflation is the one form of taxation that can be imposed without legislation.", source: "What Price Guideposts?, 1966" },
+      { text: "A society that puts equality before freedom will get neither.", source: "Free to Choose, 1980, ch. 5" },
+      { text: "A society that puts freedom before equality will get a high degree of both.", source: "Free to Choose, 1980, ch. 5" },
+      { text: "Nobody spends somebody else's money as carefully as he spends his own.", source: "Free to Choose (TV series), 1980" },
+      { text: "No exchange takes place unless both parties benefit.", source: "Free to Choose, 1980, ch. 1" },
+    ],
+  },
+
+  john_locke: {
+    pronoun: 'his',
+    quotes: [
+      { text: "No one ought to harm another in his life, health, liberty, or possessions.", source: "Two Treatises of Government, 1689, II §6" },
+      { text: "The end of law is not to abolish or restrain, but to preserve and enlarge freedom.", source: "Two Treatises of Government, 1689, II §57" },
+      { text: "Where there is no law, there is no freedom.", source: "Two Treatises of Government, 1689, II §57" },
+      { text: "Men being by nature all free, equal, and independent, no one can be subjected to the political power of another without his own consent.", source: "Two Treatises of Government, 1689, II §95" },
+      { text: "There remains still in the people a supreme power to remove or alter the legislative.", source: "Two Treatises of Government, 1689, II §149" },
+      { text: "Where-ever law ends, tyranny begins.", source: "Two Treatises of Government, 1689, II §202" },
+      { text: "Tyranny is the exercise of power beyond right.", source: "Two Treatises of Government, 1689, II §199" },
+      { text: "Whensoever the legislators endeavour to take away and destroy the property of the people, they put themselves into a state of war with the people.", source: "Two Treatises of Government, 1689, II §222" },
+      { text: "Reason must be our last judge and guide in everything.", source: "An Essay Concerning Human Understanding, 1689, IV.xix.14" },
+      { text: "New opinions are always suspected, and usually opposed, without any other reason but because they are not already common.", source: "An Essay Concerning Human Understanding, 1689" },
+      { text: "No man's knowledge here can go beyond his experience.", source: "An Essay Concerning Human Understanding, 1689, II.i.19" },
+    ],
+  },
+
+  hannah_arendt: {
+    pronoun: 'her',
+    quotes: [
+      { text: "The trouble with Eichmann was precisely that so many were like him, and that the many were neither perverted nor sadistic, that they were, and still are, terribly and terrifyingly normal.", source: "Eichmann in Jerusalem, 1963" },
+      { text: "Power corresponds to the human ability not just to act but to act in concert.", source: "On Violence, 1970" },
+      { text: "Power springs up between men when they act together and vanishes the moment they disperse.", source: "The Human Condition, 1958, §28" },
+      { text: "Action, as distinguished from fabrication, is never possible in isolation.", source: "The Human Condition, 1958, §24" },
+      { text: "The ideal subject of totalitarian rule is people for whom the distinction between fact and fiction no longer exists.", source: "The Origins of Totalitarianism, 1951" },
+      { text: "Total terror is the essence of totalitarian government.", source: "The Origins of Totalitarianism, 1951" },
+      { text: "The aim of totalitarian education has never been to instill convictions but to destroy the capacity to form any.", source: "The Origins of Totalitarianism, 1951" },
+      { text: "No one has ever counted truthfulness among the political virtues.", source: "Truth and Politics, 1967" },
+      { text: "Revolutions are the only political events which confront us directly and inevitably with the problem of beginning.", source: "On Revolution, 1963" },
+    ],
+  },
+
+  jean_jacques_rousseau: {
+    pronoun: 'his',
+    quotes: [
+      { text: "Man was born free, and he is everywhere in chains.", source: "The Social Contract, Bk. I, ch. 1", translation: "trans. Cranston" },
+      { text: "Those who think themselves the masters of others are indeed greater slaves than they.", source: "The Social Contract, Bk. I, ch. 1", translation: "trans. Cranston" },
+      { text: "The strongest man is never strong enough to be master all the time, unless he transforms force into right and obedience into duty.", source: "The Social Contract, Bk. I, ch. 3", translation: "trans. Cranston" },
+      { text: "To renounce freedom is to renounce one's humanity, one's rights as a man and equally one's duties.", source: "The Social Contract, Bk. I, ch. 4", translation: "trans. Cranston" },
+      { text: "The general will is always right and always tends towards the public good.", source: "The Social Contract, Bk. II, ch. 3", translation: "trans. Cranston" },
+      { text: "The first man who, having enclosed a piece of ground, said 'This is mine,' was the true founder of civil society.", source: "Discourse on the Origin of Inequality, Part II", translation: "trans. Cole" },
+      { text: "Everything is good as it leaves the hands of the Author of things; everything degenerates in the hands of man.", source: "Emile, or On Education, Bk. I", translation: "trans. Bloom" },
+    ],
+  },
+
+  ibn_khaldun: {
+    pronoun: 'his',
+    quotes: [
+      { text: "At the beginning of the dynasty, taxation yields a large revenue from small assessments. At the end of the dynasty, taxation yields a small revenue from large assessments.", source: "Muqaddimah, Bk. I, ch. 3", translation: "trans. Rosenthal" },
+      { text: "Royal authority and dynastic power are attained only through a group and group feeling.", source: "Muqaddimah, Bk. I, ch. 3", translation: "trans. Rosenthal" },
+      { text: "Dynasties have a natural life span like individuals.", source: "Muqaddimah, Bk. I, ch. 3", translation: "trans. Rosenthal" },
+      { text: "As a rule, no dynasty lasts beyond the life span of three generations.", source: "Muqaddimah, Bk. I, ch. 3", translation: "trans. Rosenthal" },
+      { text: "The vanquished always want to imitate the victor in his distinctive marks, his dress, his occupation, and all his other conditions and customs.", source: "Muqaddimah, Bk. I, ch. 2", translation: "trans. Rosenthal" },
+      { text: "Injustice brings about the ruin of civilization.", source: "Muqaddimah, Bk. I, ch. 3", translation: "trans. Rosenthal" },
+    ],
+  },
+
+  frantz_fanon: {
+    pronoun: 'his',
+    quotes: [
+      { text: "Decolonization is always a violent phenomenon.", source: "The Wretched of the Earth, 'Concerning Violence'", translation: "trans. Farrington" },
+      { text: "The naked truth of decolonization evokes for us the searing bullets and bloodstained knives which emanate from it.", source: "The Wretched of the Earth, 'Concerning Violence'", translation: "trans. Farrington" },
+      { text: "For the native, life can only spring up again out of the rotting corpse of the settler.", source: "The Wretched of the Earth, 'Concerning Violence'", translation: "trans. Farrington" },
+      { text: "At the level of individuals, violence is a cleansing force.", source: "The Wretched of the Earth, 'Concerning Violence'", translation: "trans. Farrington" },
+      { text: "Each generation must, out of relative obscurity, discover its mission, fulfill it, or betray it.", source: "The Wretched of the Earth, 'On National Culture'", translation: "trans. Farrington" },
+      { text: "Leave this Europe where they are never done talking of Man, yet murder men everywhere they find them.", source: "The Wretched of the Earth, 'Conclusion'", translation: "trans. Farrington" },
+      { text: "The black man wants to be white. The white man slaves to reach a human level.", source: "Black Skin, White Masks, Introduction", translation: "trans. Markmann" },
+      { text: "To speak a language is to take on a world, a culture.", source: "Black Skin, White Masks, ch. 1", translation: "trans. Markmann" },
+      { text: "What is often called the black soul is a white man's artifact.", source: "Black Skin, White Masks, ch. 1", translation: "trans. Markmann" },
+      { text: "I am my own foundation.", source: "Black Skin, White Masks, Conclusion", translation: "trans. Markmann" },
+      { text: "O my body, make of me always a man who questions!", source: "Black Skin, White Masks, Conclusion", translation: "trans. Markmann" },
+    ],
+  },
+
+  sun_tzu: {
+    pronoun: 'his',
+    quotes: [
+      { text: "All warfare is based on deception.", source: "The Art of War, ch. I", translation: "trans. Giles" },
+      { text: "Attack him where he is unprepared, appear where you are not expected.", source: "The Art of War, ch. I", translation: "trans. Giles" },
+      { text: "If your opponent is of choleric temper, seek to irritate him.", source: "The Art of War, ch. I", translation: "trans. Giles" },
+      { text: "There is no instance of a country having benefited from prolonged warfare.", source: "The Art of War, ch. II", translation: "trans. Giles" },
+      { text: "Supreme excellence consists in breaking the enemy's resistance without fighting.", source: "The Art of War, ch. III", translation: "trans. Giles" },
+      { text: "He will win who knows when to fight and when not to fight.", source: "The Art of War, ch. III", translation: "trans. Giles" },
+      { text: "If you know the enemy and know yourself, you need not fear the result of a hundred battles.", source: "The Art of War, ch. III", translation: "trans. Giles" },
+      { text: "The good fighters of old first put themselves beyond the possibility of defeat, and then waited for an opportunity of defeating the enemy.", source: "The Art of War, ch. IV", translation: "trans. Giles" },
+      { text: "The victorious strategist only seeks battle after the victory has been won.", source: "The Art of War, ch. IV", translation: "trans. Giles" },
+      { text: "Water shapes its course according to the nature of the ground over which it flows.", source: "The Art of War, ch. VI", translation: "trans. Giles" },
+      { text: "Let your plans be dark and impenetrable as night, and when you move, fall like a thunderbolt.", source: "The Art of War, ch. VII", translation: "trans. Giles" },
+      { text: "Rapidity is the essence of war.", source: "The Art of War, ch. XI", translation: "trans. Giles" },
+      { text: "Throw your soldiers into positions whence there is no escape, and they will prefer death to flight.", source: "The Art of War, ch. XI", translation: "trans. Giles" },
+    ],
+  },
+
+  ali_ibn_abi_talib: {
+    pronoun: 'his',
+    quotes: [
+      { text: "He who adopts greed as a habit devalues himself.", source: "Nahj al-Balagha, Saying 2", translation: "trans. Sayyid Ali Reza" },
+      { text: "Meet people in such a manner that if you die they should weep for you and if you live they should long for you.", source: "Nahj al-Balagha, Saying 10", translation: "trans. Sayyid Ali Reza" },
+      { text: "When you gain power over your adversary, pardon him by way of thanks for being able to overpower him.", source: "Nahj al-Balagha, Saying 11", translation: "trans. Sayyid Ali Reza" },
+      { text: "The most capable of pardoning is he who is the most powerful to punish.", source: "Nahj al-Balagha, Saying 52", translation: "trans. Sayyid Ali Reza" },
+      { text: "The tongue of the wise man is behind his heart, while the heart of the fool is behind his tongue.", source: "Nahj al-Balagha, Saying 40", translation: "trans. Sayyid Ali Reza" },
+      { text: "The worth of every man is in his attainments.", source: "Nahj al-Balagha, Saying 81", translation: "trans. Sayyid Ali Reza" },
+      { text: "Greed is perpetual slavery.", source: "Nahj al-Balagha, Saying 180", translation: "trans. Sayyid Ali Reza" },
+      { text: "The oppressor who starts oppression will tomorrow bite his hands in regret.", source: "Nahj al-Balagha, Saying 186", translation: "trans. Sayyid Ali Reza" },
+      { text: "Whoever does not know his own worth is ruined.", source: "Nahj al-Balagha, Saying 149", translation: "trans. Sayyid Ali Reza" },
+      { text: "Habituate your heart to mercy for the subjects and to affection and kindness for them.", source: "Nahj al-Balagha, Letter 53", translation: "trans. Sayyid Ali Reza" },
+      { text: "Do not regret forgiving, nor rejoice over punishing.", source: "Nahj al-Balagha, Letter 53", translation: "trans. Sayyid Ali Reza" },
+      { text: "Allah hears the prayer of the oppressed and is on the lookout for the oppressors.", source: "Nahj al-Balagha, Letter 53", translation: "trans. Sayyid Ali Reza" },
+    ],
+  },
+
+  kautilya: {
+    pronoun: 'his',
+    quotes: [
+      { text: "In the happiness of his subjects lies the king's happiness; in their welfare his welfare.", source: "Arthashastra, Bk. 1, ch. 19", translation: "trans. Shamasastry" },
+      { text: "Whatever pleases himself he shall not consider as good, but whatever pleases his subjects he shall consider as good.", source: "Arthashastra, Bk. 1, ch. 19", translation: "trans. Shamasastry" },
+      { text: "The root of wealth is activity, and of evil its reverse.", source: "Arthashastra, Bk. 1, ch. 19", translation: "trans. Shamasastry" },
+      { text: "When a king makes himself inaccessible to his people, he becomes a prey to his enemies.", source: "Arthashastra, Bk. 1, ch. 19", translation: "trans. Shamasastry" },
+      { text: "Without his protection the strong will swallow the weak; but under his protection the weak resist the strong.", source: "Arthashastra, Bk. 1, ch. 4", translation: "trans. Shamasastry" },
+      { text: "Whoever imposes severe punishment becomes repulsive to the people; while he who awards mild punishment becomes contemptible.", source: "Arthashastra, Bk. 1, ch. 4", translation: "trans. Shamasastry" },
+      { text: "Collection of revenue when unripe shall never be carried on, lest the source may be injured.", source: "Arthashastra, Bk. 5, ch. 2", translation: "trans. Shamasastry" },
+      { text: "Whoever is superior in power shall wage war; whoever is inferior shall make peace.", source: "Arthashastra, Bk. 7, ch. 1", translation: "trans. Shamasastry" },
+    ],
+  },
+
+  rosa_luxemburg: {
+    pronoun: 'her',
+    quotes: [
+      { text: "Freedom is always and exclusively freedom for the one who thinks differently.", source: "The Russian Revolution, 1918", translation: "trans. Wolfe" },
+      { text: "Freedom only for the supporters of the government, only for the members of one party, is no freedom at all.", source: "The Russian Revolution, 1918", translation: "trans. Wolfe" },
+      { text: "Without general elections, without unrestricted freedom of press and assembly, life dies out in every public institution.", source: "The Russian Revolution, 1918", translation: "trans. Wolfe" },
+      { text: "Every legal constitution is the product of a revolution.", source: "Reform or Revolution, 1900", translation: "trans. from German" },
+      { text: "Bourgeois society stands at the crossroads, either transition to socialism or regression into barbarism.", source: "The Junius Pamphlet, 1915", translation: "trans. from German" },
+      { text: "The international proletariat must learn to take its history into its own hands.", source: "The Junius Pamphlet, 1915", translation: "trans. from German" },
+      { text: "I was, I am, I shall be!", source: "Order Reigns in Berlin, 1919", translation: "trans. from German" },
+    ],
+  },
+
+  amartya_sen: {
+    pronoun: 'his',
+    quotes: [
+      { text: "Starvation is the characteristic of some people not having enough food to eat. It is not the characteristic of there being not enough food to eat.", source: "Poverty and Famines, 1981, ch. 1" },
+      { text: "The illusion of destiny exacts a remarkably heavy price.", source: "Identity and Violence, 2006" },
+      { text: "A solitarist approach can be a good way of misunderstanding nearly everyone in the world.", source: "Identity and Violence, 2006" },
+      { text: "Many of the conflicts and barbarities in the world are sustained through the illusion of a unique and choiceless identity.", source: "Identity and Violence, 2006" },
+      { text: "Democracy is not a luxury that can await the arrival of general prosperity.", source: "Democracy as a Universal Value, 1999" },
+      { text: "A country does not have to be deemed fit for democracy; rather, it has to become fit through democracy.", source: "Democracy as a Universal Value, 1999" },
+      { text: "No substantial famine has ever occurred in any independent and democratic country with a relatively free press.", source: "Democracy as a Universal Value, 1999" },
+    ],
+  },
+
+  john_rawls: {
+    pronoun: 'his',
+    quotes: [
+      { text: "Justice is the first virtue of social institutions, as truth is of systems of thought.", source: "A Theory of Justice, 1971, §1" },
+      { text: "Each person possesses an inviolability founded on justice that even the welfare of society as a whole cannot override.", source: "A Theory of Justice, 1971, §1" },
+      { text: "Being first virtues of human activities, truth and justice are uncompromising.", source: "A Theory of Justice, 1971, §1" },
+      { text: "It may be expedient but it is not just that some should have less in order that others may prosper.", source: "A Theory of Justice, 1971, §3" },
+      { text: "Injustice, then, is simply inequalities that are not to the benefit of all.", source: "A Theory of Justice, 1971, §11" },
+      { text: "The suppression of liberty is always likely to be irrational.", source: "A Theory of Justice, 1971, §33" },
+      { text: "The fault of the utilitarian doctrine is that it mistakes impersonality for impartiality.", source: "A Theory of Justice, 1971, §30" },
+      { text: "A just system must generate its own support.", source: "A Theory of Justice, 1971, §41" },
+    ],
+  },
 };
 
 // Look up a member's quote entry by (possibly non-canonical) member name.
