@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { getServiceSupabase, generateSlug } from '../../lib/supabase';
+import { getMemberQuotes } from '../../lib/memberQuotes';
 
 export const config = { maxDuration: 300 };
 
@@ -418,10 +419,10 @@ async function precreateSession(originalIssue) {
   }
 }
 
-async function finalizeSession({ slug, sharpenedIssue, assemblyOutput, deliberationOutput, verdictOutput, briefOutput, memberNames, memberTypes, featuredQuote, featuredQuoteMember, actions, factualAnchors, questionEnglish, questionLang }) {
+async function finalizeSession({ slug, sharpenedIssue, assemblyOutput, deliberationOutput, verdictOutput, briefOutput, memberNames, memberTypes, featuredQuote, featuredQuoteMember, briefQuotes, actions, factualAnchors, questionEnglish, questionLang }) {
   try {
     const supabase = getServiceSupabase();
-    const cards = { assembly: assemblyOutput, deliberation: deliberationOutput, verdict: verdictOutput, brief: briefOutput, actions: actions || [], factual_anchors: factualAnchors || '', question_en: questionEnglish || null, question_lang: questionLang || null };
+    const cards = { assembly: assemblyOutput, deliberation: deliberationOutput, verdict: verdictOutput, brief: briefOutput, actions: actions || [], brief_quotes: briefQuotes || {}, factual_anchors: factualAnchors || '', question_en: questionEnglish || null, question_lang: questionLang || null };
     const { data, error } = await supabase
       .from('sessions')
       .update({
@@ -444,10 +445,10 @@ async function finalizeSession({ slug, sharpenedIssue, assemblyOutput, deliberat
   }
 }
 
-async function saveSessionToDatabase({ originalIssue, sharpenedIssue, assemblyOutput, deliberationOutput, verdictOutput, briefOutput, memberNames, memberTypes, featuredQuote, featuredQuoteMember, actions, factualAnchors, questionEnglish, questionLang }) {
+async function saveSessionToDatabase({ originalIssue, sharpenedIssue, assemblyOutput, deliberationOutput, verdictOutput, briefOutput, memberNames, memberTypes, featuredQuote, featuredQuoteMember, briefQuotes, actions, factualAnchors, questionEnglish, questionLang }) {
   try {
     const supabase = getServiceSupabase();
-    const cards = { assembly: assemblyOutput, deliberation: deliberationOutput, verdict: verdictOutput, brief: briefOutput, actions: actions || [], factual_anchors: factualAnchors || '', question_en: questionEnglish || null, question_lang: questionLang || null };
+    const cards = { assembly: assemblyOutput, deliberation: deliberationOutput, verdict: verdictOutput, brief: briefOutput, actions: actions || [], brief_quotes: briefQuotes || {}, factual_anchors: factualAnchors || '', question_en: questionEnglish || null, question_lang: questionLang || null };
     let slug = generateSlug(sharpenedIssue || originalIssue);
     let attempt = 0;
     let inserted = null;
@@ -556,6 +557,81 @@ MEMBER: Member Name`;
   } catch (err) {
     console.error('[pipeline] Quote extraction failed:', err.message);
     return null;
+  }
+}
+
+// ── Brief quote selection ───────────────────────────────────────────────
+// Picks 1-2 of a member's REAL documented quotes (from lib/memberQuotes.js)
+// that best fit this session, for the policy-brief "in his/her own words" block.
+// Best-effort and READ-ONLY on the answer: it runs AFTER the deliberation is
+// generated and NEVER feeds back into it — the corpus cannot influence the AI
+// answer. Returns {} on any failure; members without a corpus are skipped.
+function findMemberCardText(deliberationOutput, name) {
+  if (!deliberationOutput || !name) return '';
+  const wanted = name.toLowerCase().replace(/[^a-z]/g, '');
+  const lastToken = name.trim().split(/\s+/).pop().toLowerCase().replace(/[^a-z]/g, '');
+  const blocks = deliberationOutput.split(/\n(?=##\s)/);
+  for (const block of blocks) {
+    const m = block.match(/^\s*##\s*([^\n]+)/);
+    if (!m) continue;
+    const heading = m[1].toLowerCase().replace(/[^a-z]/g, '');
+    if (heading && lastToken && (heading.includes(lastToken) || wanted.includes(heading))) return block;
+  }
+  return '';
+}
+
+async function pickQuotesForMember(question, name, cardText, quotes) {
+  try {
+    const numbered = quotes.map((q, i) => `${i + 1}. "${q.text}"`).join('\n');
+    const prompt = `You are choosing which of a historical figure's REAL documented quotes best fit a specific policy debate.
+
+FIGURE: ${name}
+
+WHAT ${name} ARGUED IN THIS DEBATE:
+${cardText || '(no card text available)'}
+
+THE DEBATE QUESTION:
+${question}
+
+${name}'S REAL QUOTES:
+${numbered}
+
+Pick the 1 or 2 quotes that most sharply resonate with this question and with ${name}'s argument above. A quote must genuinely fit — if none is a sharp match, answer NONE. Prefer one excellent quote over two loose ones.
+
+Answer with ONLY the quote numbers, comma-separated (e.g. "3" or "3, 7"), or the single word NONE. No other text.`;
+    const responseText = await callClaude('', prompt, 20, 0.2, 'claude-haiku-4-5-20251001');
+    if (/none/i.test(responseText)) return [];
+    const nums = (responseText.match(/\d+/g) || []).map(n => parseInt(n, 10)).filter(n => n >= 1 && n <= quotes.length);
+    const seen = new Set();
+    const picks = [];
+    for (const n of nums) {
+      if (seen.has(n)) continue;
+      seen.add(n);
+      picks.push(quotes[n - 1]);
+      if (picks.length >= 2) break;
+    }
+    return picks;
+  } catch (err) {
+    console.error(`[pipeline] Brief quote pick failed for ${name}:`, err.message);
+    return [];
+  }
+}
+
+async function selectBriefQuotes(question, deliberationOutput, memberNames) {
+  try {
+    const names = Array.isArray(memberNames) ? memberNames : [];
+    const result = {};
+    await Promise.all(names.map(async (name) => {
+      const entry = getMemberQuotes(name);
+      if (!entry || !Array.isArray(entry.quotes) || entry.quotes.length === 0) return;
+      const cardText = findMemberCardText(deliberationOutput, name);
+      const picks = await pickQuotesForMember(question, name, cardText, entry.quotes);
+      if (picks.length > 0) result[name] = { pronoun: entry.pronoun || 'his', quotes: picks };
+    }));
+    return result;
+  } catch (err) {
+    console.error('[pipeline] selectBriefQuotes failed:', err.message);
+    return {};
   }
 }
 
@@ -2061,6 +2137,11 @@ Every card is first person. A member says "I" and "my" and never names themselve
       console.log(`[pipeline] Featured quote: "${featured.quote}" — ${featured.member}`);
     }
 
+    // Real documented quotes for the brief "in his/her own words" block.
+    // Best-effort, read-only on the answer — never feeds the deliberation.
+    const briefQuotes = await selectBriefQuotes(sharpenedIssue || question, deliberationOutput, metadata.names);
+    console.log(`[pipeline] Brief quotes selected for ${Object.keys(briefQuotes).length} member(s)`);
+
     let saved;
     if (preSlug) {
       saved = await finalizeSession({
@@ -2074,6 +2155,7 @@ Every card is first person. A member says "I" and "my" and never names themselve
         memberTypes: metadata.types,
         featuredQuote: featured?.quote || null,
         featuredQuoteMember: featured?.member || null,
+        briefQuotes,
         actions,
         factualAnchors,
         questionEnglish: translation.english,
@@ -2091,6 +2173,7 @@ Every card is first person. A member says "I" and "my" and never names themselve
         memberTypes: metadata.types,
         featuredQuote: featured?.quote || null,
         featuredQuoteMember: featured?.member || null,
+        briefQuotes,
         actions,
         factualAnchors,
         questionEnglish: translation.english,

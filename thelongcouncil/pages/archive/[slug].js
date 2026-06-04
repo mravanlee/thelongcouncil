@@ -502,6 +502,23 @@ export default function ArchiveDetail({ session, memberQuery }) {
         {briefText && (
           <CollapsibleSection title="The policy brief" subtitle="The analyst's synthesis — what would change the verdict">
             <div className="md-body"><ReactMarkdown>{briefText}</ReactMarkdown></div>
+            {cards.brief_quotes && Object.keys(cards.brief_quotes).length > 0 && (
+              <div className="brief-quotes">
+                {Object.entries(cards.brief_quotes).map(([name, info]) => (
+                  info && Array.isArray(info.quotes) && info.quotes.length > 0 ? (
+                    <div className="bq-member" key={name}>
+                      <div className="bq-heading">{stripTierSuffix(name)}, in {info.pronoun === 'her' ? 'her' : 'his'} own words</div>
+                      {info.quotes.map((q, i) => (
+                        <blockquote className="bq-item" key={i}>
+                          <p className="bq-quote">{`“${q.text}”`}</p>
+                          <p className="bq-source">— {q.source}{q.translation ? `, ${q.translation}` : ''}</p>
+                        </blockquote>
+                      ))}
+                    </div>
+                  ) : null
+                ))}
+              </div>
+            )}
           </CollapsibleSection>
         )}
 
@@ -541,6 +558,14 @@ export default function ArchiveDetail({ session, memberQuery }) {
         .md-body :global(hr) { border: none; border-top: 0.5px solid var(--border); margin: 1.5rem 0; }
         .md-body :global(ul), .md-body :global(ol) { padding-left: 1.25rem; margin: 0 0 12px; }
         .md-body :global(li) { font-size: 15px; margin-bottom: 4px; }
+        .brief-quotes { margin-top: 2rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border); }
+        .bq-member { margin-bottom: 1.75rem; }
+        .bq-member:last-child { margin-bottom: 0; }
+        .bq-heading { font-family: 'Inter', sans-serif; font-size: 11px; color: var(--muted-foreground); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.85rem; }
+        .bq-item { margin: 0 0 1rem; padding: 0; border: none; }
+        .bq-item:last-child { margin-bottom: 0; }
+        .bq-quote { font-family: 'Playfair Display', Georgia, serif; font-size: 17px; line-height: 1.45; color: var(--foreground); margin: 0 0 0.35rem; max-width: 62ch; }
+        .bq-source { font-family: 'Inter', sans-serif; font-size: 12.5px; color: var(--muted-foreground); margin: 0; }
         .detail-nudge { margin-top: 3rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border); font-family: 'Inter', sans-serif; font-size: 13px; color: var(--muted-foreground); text-align: center; }
         .detail-nudge > div { margin-bottom: 0.5rem; }
         .nudge-link, .nudge-link :global(*), .nudge-link:hover, .nudge-link:visited { color: var(--primary) !important; text-decoration: none !important; }
