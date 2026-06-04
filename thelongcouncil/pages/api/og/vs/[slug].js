@@ -121,7 +121,7 @@ export default async function handler(req) {
     const quoteFontSize = getQuoteFontSize(quoteText);
 
     // Build the portrait from the resolved slug so it always points at a file
-    // that exists; null (→ initials fallback in the card) when there is none.
+    // that exists (we only ever feature members that have a real avatar).
     const memberSlug = avatarSlugFor(speakerName);
     const portrait = KNOWN_AVATAR_SLUGS.has(memberSlug)
       ? `${baseUrl}/avatars/avatar_${memberSlug}.png`
@@ -129,7 +129,10 @@ export default async function handler(req) {
 
     return new ImageResponse(
       (
-        <div style={{ width: '1200px', height: '630px', background: PAPER, display: 'flex' }}>
+        // 1200×630 design scaled into an 840×441 output so the PNG lands ~400KB —
+        // a safe margin under WhatsApp's ~600KB limit (one wrapper, no layout rework).
+        <div style={{ width: '840px', height: '441px', display: 'flex', overflow: 'hidden', background: PAPER }}>
+          <div style={{ width: '1200px', height: '630px', background: PAPER, display: 'flex', transform: 'scale(0.7)', transformOrigin: 'top left', flexShrink: 0 }}>
           {/* LEFT — portrait + name strip */}
           <div style={{ width: '504px', height: '630px', position: 'relative', display: 'flex', overflow: 'hidden', background: PAPER_SOFT }}>
             <img src={portrait} style={{ position: 'absolute', top: '-40px', left: '-108px', width: '720px', height: '720px' }} />
@@ -248,10 +251,11 @@ export default async function handler(req) {
             </div>
           </div>
         </div>
+        </div>
       ),
       {
-        width: 1200,
-        height: 630,
+        width: 840,
+        height: 441,
         fonts: [
           playfair500 && { name: 'Playfair Display', data: playfair500, style: 'normal', weight: 500 },
           playfair600 && { name: 'Playfair Display', data: playfair600, style: 'normal', weight: 600 },
