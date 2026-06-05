@@ -107,36 +107,76 @@ function getInitials(name) {
 // drop the internal [documented]/[inferred]/[extrapolated] coverage tag, and
 // inject each member's single strongest real quote as a blockquote under their
 // entry in SELECTED MEMBERS. Verified to keep the ordered list intact.
+// A member avatar that links to their profile on the council page. Falls back
+// to a monogram (no link) for wildcard / off-roster members without an avatar.
+function MemberAvatar({ name }) {
+  const slug = nameToAvatarSlug(name);
+  const clean = stripTierSuffix(name);
+  const known = KNOWN_AVATAR_SLUGS.has(slug);
+  const inner = known
+    ? <img src={`/avatars/avatar_${slug}.webp`} alt={clean} className="mav-img" />
+    : <span className="mav-mono">{getInitials(name)}</span>;
+  if (!known) return <span className="mav mav-static" aria-hidden="true">{inner}</span>;
+  return (
+    <Link href={`/council#m-${slug}`} className="mav" title={`${clean} — bekijk profiel`} aria-label={`${clean} profiel`}>
+      {inner}
+    </Link>
+  );
+}
+
+// Bold the top-level scaffolding labels so the section has clear hierarchy
+// (these structural markers should read above the member names/field labels).
+const boldAssemblyLabels = (s) => s.replace(/^(\s*)(ISSUE SUMMARY|TAXONOMY TAGS|CENTRAL TENSION|POLES & BALANCE|SELECTED MEMBERS|MEMBERS CONSIDERED BUT NOT SELECTED|CONFIDENCE NOTE)(\s*:)/gim, '$1**$2$3**');
+
+// Format one SELECTED MEMBERS entry into the markdown shown beside the avatar:
+// drop the leading number and the bold name line (the name is in the row header),
+// bold Relevance / Coverage / Will argue on their own lines, append the quote.
+function buildMemberContent(entry, briefQuotes) {
+  let e = entry.replace(/^\s*\d+\.\s*/, '');
+  const nameM = e.match(/^\s*\*\*\s*([^*\n]+?)\s*\*\*/);
+  const name = nameM ? nameM[1].trim() : '';
+  e = e.replace(/^\s*\*\*\s*[^*\n]+?\s*\*\*\s*\n?/, '');
+  e = e.replace(/(Relevance|Coverage|Will argue)\s*:/gi, '**$1:**');
+  e = e.replace(/[ \t]*\n[ \t]*(\*\*(?:Relevance|Coverage|Will argue):\*\*)/g, '  \n$1');
+  e = e.trim();
+  const info = (briefQuotes && name) ? lookupByName(briefQuotes, name) : null;
+  const q = info && info.quotes && info.quotes[0];
+  if (q && q.text) {
+    const src = q.source + (q.translation ? `, ${q.translation}` : '');
+    e += `\n\n> “${q.text}”\n>\n> — ${src}`;
+  }
+  return { name, md: e };
+}
+
 function WhoWasSelected({ assembly, briefQuotes }) {
   let text = assembly || '';
   // Strip tier suffix inside the bolded member name (e.g. "**John Rawls — Framer**").
   text = text.replace(/(\*\*[^*\n]*?)\s*[—–-]\s*(?:Practitioner|Framer|Leader|Thinker|Wildcard)(?:\s*\/\s*(?:Practitioner|Framer|Leader|Thinker|Wildcard))?(\*\*)/g, '$1$2');
   // Drop the internal coverage tag, e.g. "[documented] — ".
   text = text.replace(/\[(?:documented|inferred|extrapolated)\]\s*[—–-]?\s*/gi, '');
-  // Within the SELECTED MEMBERS list, put Relevance / Coverage / Will argue each
-  // on its own line with a bold label (instead of one dense run-on paragraph),
-  // and inject each member's strongest real quote as a blockquote.
   const m = text.match(/(SELECTED MEMBERS:[^\n]*\n+)([\s\S]*?)(\n\s*(?:MEMBERS CONSIDERED BUT NOT SELECTED|CONFIDENCE NOTE)\s*:[\s\S]*|$)/i);
-  if (m) {
-    const entries = m[2].split(/\n(?=\s*\d+\.\s)/);
-    const out = entries.map((entry) => {
-      const nameM = entry.match(/\*\*\s*([^*\n]+?)\s*\*\*/);
-      // Hard line break + bold label before each field.
-      let e = entry.replace(/[ \t]*\n[ \t]*(Relevance|Coverage|Will argue)\s*:[ \t]*/gi, '  \n   **$1:** ');
-      const info = (briefQuotes && nameM) ? lookupByName(briefQuotes, nameM[1]) : null;
-      const q = info && info.quotes && info.quotes[0];
-      if (q && q.text) {
-        const src = q.source + (q.translation ? `, ${q.translation}` : '');
-        e = e.replace(/\s*$/, '') + `\n\n   > “${q.text}”\n   >\n   > — ${src}`;
-      }
-      return e;
-    }).join('\n');
-    text = text.slice(0, m.index) + m[1] + out + m[3];
-  }
-  // Bold the top-level scaffolding labels so the section has clear hierarchy
-  // (these structural markers should read above the member names/field labels).
-  text = text.replace(/^(\s*)(ISSUE SUMMARY|TAXONOMY TAGS|CENTRAL TENSION|POLES & BALANCE|SELECTED MEMBERS|MEMBERS CONSIDERED BUT NOT SELECTED|CONFIDENCE NOTE)(\s*:)/gim, '$1**$2$3**');
-  return <div className="md-body"><ReactMarkdown>{text}</ReactMarkdown></div>;
+  if (!m) return <div className="md-body"><ReactMarkdown>{boldAssemblyLabels(text)}</ReactMarkdown></div>;
+  const before = boldAssemblyLabels(text.slice(0, m.index) + m[1]);
+  const after = boldAssemblyLabels(m[3]);
+  const entries = m[2].split(/\n(?=\s*\d+\.\s)/).map((e) => e.trim()).filter(Boolean);
+  return (
+    <div className="md-body">
+      <ReactMarkdown>{before}</ReactMarkdown>
+      {entries.map((entry, i) => {
+        const { name, md } = buildMemberContent(entry, briefQuotes);
+        return (
+          <div className="member-row" key={i}>
+            <MemberAvatar name={name} />
+            <div className="member-content">
+              <div className="member-name">{name}</div>
+              <ReactMarkdown>{md}</ReactMarkdown>
+            </div>
+          </div>
+        );
+      })}
+      <ReactMarkdown>{after}</ReactMarkdown>
+    </div>
+  );
 }
 
 // The policy brief, with each member's "What X would do" actions interleaved
@@ -165,11 +205,16 @@ function BriefWithActions({ briefText, memberActions }) {
       <ReactMarkdown>{before}</ReactMarkdown>
       {paragraphs.map((p, i) => {
         const nm = p.match(/^\*\*([^*]+)\*\*/);
-        const acts = nm ? lookupByName(memberActions, nm[1]) : null;
+        const name = nm ? nm[1] : '';
+        const acts = name ? lookupByName(memberActions, name) : null;
+        if (!name) return <div className="bm-block" key={i}><ReactMarkdown>{p}</ReactMarkdown></div>;
         return (
-          <div className="bm-block" key={i}>
-            <ReactMarkdown>{p}</ReactMarkdown>
-            {acts && <MemberActionBlock name={nm[1]} actions={acts} />}
+          <div className="member-row" key={i}>
+            <MemberAvatar name={name} />
+            <div className="member-content">
+              <ReactMarkdown>{p}</ReactMarkdown>
+              {acts && <MemberActionBlock name={name} actions={acts} />}
+            </div>
           </div>
         );
       })}
@@ -663,6 +708,18 @@ export default function ArchiveDetail({ session, memberQuery }) {
         .bm-action { display: flex; gap: 0.6rem; font-size: 14px; line-height: 1.55; color: var(--foreground); margin-bottom: 0.7rem; font-family: 'Inter', sans-serif; }
         .bm-action:last-child { margin-bottom: 0; }
         .bm-arrow { color: var(--primary); font-weight: 700; flex: 0 0 auto; }
+        /* Member rows with a clickable avatar (brief section 2 + who-was-selected) */
+        .member-row { display: flex; gap: 0.9rem; align-items: flex-start; margin: 0 0 2rem; }
+        .member-row:last-of-type { margin-bottom: 0.6rem; }
+        .member-content { flex: 1; min-width: 0; }
+        .member-content > p:first-child { margin-top: 0; }
+        .member-content .bm-actions:last-child { margin-bottom: 0; }
+        .member-name { font-family: 'Inter', sans-serif; font-weight: 600; font-size: 16px; color: var(--foreground); margin: 0.1rem 0 0.45rem; }
+        .mav { flex: 0 0 auto; display: block; width: 42px; height: 42px; border-radius: 9999px; overflow: hidden; border: 0.5px solid var(--border); background: var(--secondary, #ede4d3); text-decoration: none; }
+        .mav-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .mav-mono { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; font-family: 'Playfair Display', Georgia, serif; font-size: 14px; font-weight: 600; color: var(--primary); }
+        a.mav { transition: border-color 0.15s, box-shadow 0.15s; }
+        a.mav:hover { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(107,26,26,0.15); }
         @media (min-width: 768px) {
           .md-body p, .md-body li { font-size: 15.5px; }
         }
