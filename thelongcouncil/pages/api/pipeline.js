@@ -880,7 +880,7 @@ SELECTION RULES:
 2. RELEVANCE IS THE ONLY CRITERION. Do not select members to achieve geographic or gender balance if they are not genuinely relevant.
 3. ASSESS CONFIDENCE LEVEL BEFORE SELECTING. Prefer [documented] coverage.
 4. ENSURE DIVERSITY OF ANALYTICAL TRADITION. Avoid selecting members who all reason from the same framework.
-5. IDENTIFY THE CENTRAL TENSION FIRST. Select members who will sit on different sides of that tension.
+5. IDENTIFY THE CENTRAL TENSION FIRST, THEN BALANCE BOTH SIDES OF IT. Before selecting anyone, name the opposing poles of the central tension. Assign every selected member to a pole. No pole that has a credible defender on the roster may be left with one voice while another pole has three or more, aim for rough parity. This is balance ON THE QUESTION, not demographic balance (Rule 2 still holds). Diversity of tradition (Rule 4) is NOT positional balance: four thinkers from four different traditions who all land on the same side of the question is still a one-sided table, both must hold. Any voice you add for balance must be a genuinely strong, relevant defender of its pole, never a token. If the roster truly lacks a credible defender for one pole, state this as an explicit limitation rather than presenting a lopsided table as balanced.
 6. APPLY THE TAXONOMY. Tag the issue: Economic / Social / Political / Crisis / Geopolitical / Technological.
 7. SPECIAL FLAGS: Do not select Sun Tzu for cooperative governance problems. Flag Rousseau's general will when live. Select Elinor Ostrom ONLY when the question genuinely turns on shared or common-pool resources, collective-action problems, or the design of local institutions. Do NOT select her for macro-geopolitics, ideology, individual ethics, skills, or leadership-character questions, where her commons framework adds little and repeats. She is a specialist, not a general-purpose voice.
 
@@ -893,6 +893,8 @@ ISSUE SUMMARY: [One sentence restating the issue as a specific decision]
 TAXONOMY TAGS: [2–3 tags]
 
 CENTRAL TENSION: [One sentence identifying the core analytical conflict]
+
+POLES & BALANCE: [List each pole of the central tension with the members assigned and the count, e.g. "Markets: Friedman (1) | Redistribution: Rawls, Sen, Palme (3)". If any pole with a credible roster defender is outnumbered more than 2:1, rebalance the selection or state the imbalance and the reason here.]
 
 SELECTED MEMBERS:
 
