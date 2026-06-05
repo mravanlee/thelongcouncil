@@ -649,6 +649,14 @@ export default function ArchiveDetail({ session, memberQuery }) {
 
         {briefText && (
           <CollapsibleSection title="The policy brief" subtitle="The analyst's synthesis — what would change the verdict">
+            <a href={`/brief/${session.slug}`} target="_blank" rel="noopener noreferrer" className="brief-save">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              <span>Save policy brief</span>
+            </a>
             <BriefWithActions briefText={briefText} memberActions={cards.member_actions || {}} />
           </CollapsibleSection>
         )}
@@ -669,6 +677,8 @@ export default function ArchiveDetail({ session, memberQuery }) {
 
       <style jsx>{`
         .detail-wrap { max-width: 680px; margin: 0 auto; padding: 0 1.25rem; }
+        .brief-save { display: inline-flex; align-items: center; gap: 0.5rem; margin: 0.6rem 0 0.2rem; font-family: 'Inter', sans-serif; font-size: 11.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--primary); text-decoration: none; border: 0.5px solid var(--border); border-radius: 5px; padding: 0.5rem 0.85rem; transition: border-color 0.15s, background 0.15s; }
+        .brief-save:hover { border-color: var(--primary); background: var(--secondary); }
         /* Verdict + actions + header now use Tailwind tokens — see JSX above.
            Markdown inner paragraph margins still need a global hook: */
         .verdict-md :global(p) { margin: 0 0 10px; }
