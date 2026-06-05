@@ -113,21 +113,25 @@ function WhoWasSelected({ assembly, briefQuotes }) {
   text = text.replace(/(\*\*[^*\n]*?)\s*[—–-]\s*(?:Practitioner|Framer|Leader|Thinker|Wildcard)(?:\s*\/\s*(?:Practitioner|Framer|Leader|Thinker|Wildcard))?(\*\*)/g, '$1$2');
   // Drop the internal coverage tag, e.g. "[documented] — ".
   text = text.replace(/\[(?:documented|inferred|extrapolated)\]\s*[—–-]?\s*/gi, '');
-  // Inject each member's strongest real quote as a blockquote inside their entry.
-  if (briefQuotes && Object.keys(briefQuotes).length > 0) {
-    const m = text.match(/(SELECTED MEMBERS:[^\n]*\n+)([\s\S]*?)(\n\s*(?:MEMBERS CONSIDERED BUT NOT SELECTED|CONFIDENCE NOTE)\s*:[\s\S]*|$)/i);
-    if (m) {
-      const entries = m[2].split(/\n(?=\s*\d+\.\s)/);
-      const withQuotes = entries.map((entry) => {
-        const nameM = entry.match(/\*\*\s*([^*\n]+?)\s*\*\*/);
-        const info = nameM ? lookupByName(briefQuotes, nameM[1]) : null;
-        const q = info && info.quotes && info.quotes[0];
-        if (!q || !q.text) return entry;
+  // Within the SELECTED MEMBERS list, put Relevance / Coverage / Will argue each
+  // on its own line with a bold label (instead of one dense run-on paragraph),
+  // and inject each member's strongest real quote as a blockquote.
+  const m = text.match(/(SELECTED MEMBERS:[^\n]*\n+)([\s\S]*?)(\n\s*(?:MEMBERS CONSIDERED BUT NOT SELECTED|CONFIDENCE NOTE)\s*:[\s\S]*|$)/i);
+  if (m) {
+    const entries = m[2].split(/\n(?=\s*\d+\.\s)/);
+    const out = entries.map((entry) => {
+      const nameM = entry.match(/\*\*\s*([^*\n]+?)\s*\*\*/);
+      // Hard line break + bold label before each field.
+      let e = entry.replace(/[ \t]*\n[ \t]*(Relevance|Coverage|Will argue)\s*:[ \t]*/gi, '  \n   **$1:** ');
+      const info = (briefQuotes && nameM) ? lookupByName(briefQuotes, nameM[1]) : null;
+      const q = info && info.quotes && info.quotes[0];
+      if (q && q.text) {
         const src = q.source + (q.translation ? `, ${q.translation}` : '');
-        return entry.replace(/\s*$/, '') + `\n\n   > “${q.text}”\n   >\n   > — ${src}`;
-      }).join('\n');
-      text = text.slice(0, m.index) + m[1] + withQuotes + m[3];
-    }
+        e = e.replace(/\s*$/, '') + `\n\n   > “${q.text}”\n   >\n   > — ${src}`;
+      }
+      return e;
+    }).join('\n');
+    text = text.slice(0, m.index) + m[1] + out + m[3];
   }
   return <div className="md-body"><ReactMarkdown>{text}</ReactMarkdown></div>;
 }
