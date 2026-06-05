@@ -374,9 +374,13 @@ function CollapsibleSection({ title, subtitle, children, defaultOpen = false }) 
 export default function ArchiveDetail({ session, memberQuery }) {
   const cards = session.cards || {};
   const { verdict, reasoning } = parseVerdict(cards.verdict);
-  const deliberationText = cleanDeliberation(cards.deliberation);
+  // Rename the old "What only the policymaker can resolve" heading/label to the
+  // clearer "What the policymaker must decide" for existing sessions too.
+  const PM_OLD = /What only the policymaker can resolve/gi;
+  const PM_NEW = 'What the policymaker must decide';
+  const deliberationText = cleanDeliberation(cards.deliberation).replace(PM_OLD, PM_NEW);
   const { cards: deliberationCards, convergence } = parseDeliberation(deliberationText);
-  const briefText = cards.brief || '';
+  const briefText = (cards.brief || '').replace(PM_OLD, PM_NEW);
   const assemblyText = cards.assembly || '';
   const actions = Array.isArray(cards.actions) ? cards.actions.filter(Boolean) : [];
 
@@ -684,7 +688,7 @@ export default function ArchiveDetail({ session, memberQuery }) {
         /* These render inside child components (WhoWasSelected, BriefWithActions),
            which fall outside this page's styled-jsx scope, so their styles must
            be global. */
-        .md-body { padding-top: 1rem; font-family: 'Inter', sans-serif; color: var(--foreground); line-height: 1.7; }
+        .md-body { padding-top: 1.5rem; font-family: 'Inter', sans-serif; color: var(--foreground); line-height: 1.7; }
         .md-body h2 { font-family: 'Playfair Display', Georgia, serif; font-size: 20px; color: var(--foreground); font-weight: 600; margin: 1.75rem 0 0.5rem; line-height: 1.3; }
         .md-body h2:first-child { margin-top: 0; }
         .md-body h3 { font-family: 'Playfair Display', Georgia, serif; font-size: 17px; color: var(--foreground); font-weight: 600; margin: 1.25rem 0 0.5rem; }
@@ -709,8 +713,8 @@ export default function ArchiveDetail({ session, memberQuery }) {
         .bm-action:last-child { margin-bottom: 0; }
         .bm-arrow { color: var(--primary); font-weight: 700; flex: 0 0 auto; }
         /* Member rows with a clickable avatar (brief section 2 + who-was-selected) */
-        .member-row { display: flex; gap: 0.9rem; align-items: flex-start; margin: 0 0 2rem; }
-        .member-row:last-of-type { margin-bottom: 0.6rem; }
+        .member-row { display: flex; gap: 0.9rem; align-items: flex-start; margin-top: 1.7rem; padding-top: 1.7rem; border-top: 0.5px solid var(--border); }
+        .member-row:last-of-type { margin-bottom: 0.4rem; }
         .member-content { flex: 1; min-width: 0; }
         .member-content > p:first-child { margin-top: 0; }
         .member-content .bm-actions:last-child { margin-bottom: 0; }

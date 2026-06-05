@@ -1457,7 +1457,7 @@ After the final card, emit:
 **Where it divides:**
 [1–3 sentences. Max 20 words each. Name the specific disagreement.]
 
-**What only the policymaker can resolve:**
+**What the policymaker must decide:**
 [1–2 sentences. Max 20 words each. Name the actual choice in concrete language.]
 
 ---
@@ -1823,7 +1823,7 @@ BRIEF RULES
    Section 2 (How each member frames it): 50–80 words PER MEMBER (depth, not the cards' headline). For 4 members, 200–320 words.
    Section 3 (Where the council agrees): 120–180 words.
    Section 4 (Where the council splits): 100–150 words. MANDATORY section. Name the actual disagreement, who holds which side, why neither side is wrong.
-   Section 5 (What only the policymaker can resolve): 1 concrete choice, 60–100 words. State the trade-off and the moment of decision.
+   Section 5 (What the policymaker must decide): 1 concrete choice, 60–100 words. State the trade-off and the moment of decision.
 3. Total brief: 600–900 words. The brief is the long-form; do not skimp.
 4. This is NOT a transcript replay. Add depth the reasoning cards intentionally left out.
 
@@ -1861,7 +1861,7 @@ Lens not transcript. Surface any live T4 contradictions. Quote no more than one 
 
 [100–150 words. MANDATORY. Name the actual disagreement in plain language. Who holds which side. Why both sides have a real argument. Do not paper over it with "the council recognises both perspectives". Name the line and who stands on which side. If the deliberation showed only thin disagreement, write 100 words explaining what kept it from being a full split.]
 
-## 5. What only the policymaker can resolve
+## 5. What the policymaker must decide
 
 [60–100 words. ONE concrete choice. Name the trade-off the council cannot decide for the policymaker because it depends on a value judgment, a national priority, or a moment of decision only they can make. State both options as specifically as possible.]
 
