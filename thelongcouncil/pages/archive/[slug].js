@@ -133,6 +133,9 @@ function WhoWasSelected({ assembly, briefQuotes }) {
     }).join('\n');
     text = text.slice(0, m.index) + m[1] + out + m[3];
   }
+  // Bold the top-level scaffolding labels so the section has clear hierarchy
+  // (these structural markers should read above the member names/field labels).
+  text = text.replace(/^(\s*)(ISSUE SUMMARY|TAXONOMY TAGS|CENTRAL TENSION|POLES & BALANCE|SELECTED MEMBERS|MEMBERS CONSIDERED BUT NOT SELECTED|CONFIDENCE NOTE)(\s*:)/gim, '$1**$2$3**');
   return <div className="md-body"><ReactMarkdown>{text}</ReactMarkdown></div>;
 }
 
