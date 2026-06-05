@@ -1,5 +1,5 @@
 # The Long Council — Project Instructions
-Last updated: May 11, 2026 (end of day)
+Last updated: June 5, 2026
 
 ==============================================================
 PRODUCT
@@ -20,6 +20,58 @@ Redirects (308):
 
 Repo: github.com/mravanlee/thelongcouncil
 (code in subfolder thelongcouncil/)
+
+==============================================================
+CORE VALUE — THE BEST ANSWER, NOT A BALANCED SHOW
+==============================================================
+
+The council's job is the BEST answer to the question, not a
+balanced display of opinions. Two distinct jobs that must
+never be confused:
+
+1. INPUT — a balanced, fair fight. Every serious position gets
+   its STRONGEST defender at the table, so criticism lands on a
+   real argument, never a strawman. Selection is balanced on
+   the central tension (the poles of the question, not
+   demographics). But a seat is not an endorsement: representing
+   a position is not the same as validating it. When a pole
+   needs reinforcement, add a voice that brings a DISTINCT
+   argument (and ideally a different register), not an echo of
+   one already at the table.
+
+2. OUTPUT — an evidence-weighted verdict. The verdict follows
+   the weight of argument and the empirical track record, NEVER
+   a vote count. A balanced panel does NOT mandate a centrist
+   "both sides have a point" draw. A fair fight may have a
+   clear winner.
+
+Weigh the track record:
+   - CLEAR record (e.g. command-economy central planning's
+     failures): decisive evidence; the verdict weighs it and
+     may lean.
+   - CONTESTED record (mixed or disputed outcomes, e.g. the
+     long-run results of the Nordic model): hedge and weigh
+     both sides rather than asserting a disputed claim as
+     settled.
+
+Two failure modes, avoid in equal measure:
+   - BOTHSIDESISM / false parity — treating a demonstrably
+     weaker position as an equal contender just because it was
+     represented.
+   - STRAWMANNING — excluding or weakening a position so the
+     win is hollow. (This is why we still seat its strongest
+     defender.)
+
+Frame the central tension at the LIVE level — where reasonable
+disagreement genuinely exists today — not by resurrecting a
+largely settled extreme as a co-equal pole. For "how should
+wealth be distributed", the live tension is market vs.
+mixed/redistributive, not capitalism vs. revolutionary
+socialism.
+
+The value the council adds: confront the strongest case for
+every serious position, then judge honestly by argument and
+evidence — so the verdict is trustworthy, not diplomatic.
 
 ==============================================================
 COUNCIL ROSTER (37 members)
