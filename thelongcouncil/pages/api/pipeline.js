@@ -1611,6 +1611,17 @@ The type is decided by the weight of argument and the empirical track record, ne
 
 Where a doctrine or policy has a CLEAR real-world record of success or failure, that record is decisive evidence: weigh it and let the verdict lean accordingly. Do not elevate a position to false parity just because it had a defender at the table. BUT where the record is genuinely CONTESTED (mixed or disputed outcomes, e.g. the long-run results of the Nordic model), hedge and weigh both sides rather than asserting a disputed claim as settled. Lean where the evidence is clear; hedge where it is disputed.
 
+ATTRIBUTION — A CONTESTED CLAIM IS ATTRIBUTED, NOT ASSERTED AS FACT.
+The verdict and reasoning summary are the council's NEUTRAL voice, not any one member's. In that voice, a CONTESTED empirical claim must be carried by the member who holds it, never stated as settled history.
+
+The verbs "proves", "proved", "shows", "showed", "demonstrates", "demonstrated", "confirms", and "establishes that" assert settled fact. In the neutral voice they are FORBIDDEN for any outcome whose real-world record informed people still dispute. Replace them with attribution: "argues", "claims", "contends", "in his account", "on her reading".
+
+  ✗ NEUTRAL: "Palme proves the Nordic model delivers growth with equality." (states a disputed outcome as settled fact)
+  ✓ NEUTRAL: "Palme argues the Nordic model delivered growth with equality; the stagnation of the 1990s is the standing objection."
+  ✓ A member, in his OWN card, may state his case forcefully: "The Nordic model delivered growth with equality." That is his voice, not the council's.
+
+THE TEST: would informed people today dispute the outcome? If YES, attribute it or weigh the counter-evidence. If the record is genuinely CLEAR (an undisputed success or failure), state it plainly. This is the word-level half of the rule above: lean where the record is clear, attribute-or-hedge where it is contested.
+
 ════════════════════════════════════════════════════════════════
 VERDICT RULES
 ════════════════════════════════════════════════════════════════
@@ -1712,6 +1723,7 @@ Then check each sentence against this list. Rewrite any that fails.
 - Does any sentence have NO concrete content (no person, place, year, or object)? Rewrite.
 - Are there -tion / -ment / -ance / -ity nouns where a verb would work? Rewrite.
 - Does "documented" appear? Rewrite.
+- Does the NEUTRAL voice say a contested outcome "proves / proved / shows / showed / demonstrates / confirms / establishes that" something? Attribute it ("X argues") or weigh the counter-evidence. Only a genuinely undisputed record may be stated as fact.
 - Does it open with "The council establishes that..." or "The council cannot resolve..."? Rewrite to lead with the positive finding.
 - Does the verdict answer the question as asked, not just describe the debate? If not: rewrite.
 - Are the two beats separated by a blank line?
@@ -1740,6 +1752,8 @@ WRITING STYLE
 - ZERO em-dashes ("—") anywhere in the brief. Use comma, period, colon, or semicolon. Em-dashes are a Claude tic. Scan and replace every one before emitting.
 
 The word "documented" MUST NOT appear in the prose. Do not emit bracketed confidence tags. Do not cite members' written works by name. Reference events, decisions, policies.
+
+CONTESTED CLAIMS ARE ATTRIBUTED, NOT ASSERTED. In the brief's neutral analyst voice (sections 1, 3, 4, 5), an empirical outcome that informed people still dispute must be carried by the member who holds it ("Palme argues...", "on Friedman's reading...") or weighed against the counter-evidence, never stated as settled history. Do not write that a member "proves", "shows", or "demonstrates" a disputed result. A member presenting their OWN position (section 2) may state their case forcefully; that is their lens, not the council's finding. Where a record is genuinely undisputed, state it plainly.
 
 ════════════════════════════════════════════════════════════════
 BRIEF RULES
@@ -1802,6 +1816,7 @@ Before emitting, check:
 - Are there ANY \`━\` or other ASCII divider characters? If yes, remove.
 - Does ANY em-dash ("—") appear in the brief? If yes, replace every one with comma, period, colon, or semicolon. ZERO tolerance.
 - Does the word "documented" appear anywhere? If yes, rewrite.
+- Does the neutral analyst voice (sections 1, 3, 4, 5) state a contested outcome as proven ("proves", "shows", "demonstrates", "confirms")? Attribute it to the member or weigh the counter-evidence.
 - Are member names in section 2 marked with \`**bold**\`?
 - Are there FIVE sections (1 core, 2 members, 3 agrees, 4 splits, 5 policymaker)? Section 4 is MANDATORY; never skip it.
 - Does section 2 give 50–80 words PER MEMBER (not 100–130 words total)?
