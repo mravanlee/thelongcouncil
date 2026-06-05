@@ -1606,6 +1606,11 @@ The council does not reach a verdict. Used when members reason from genuinely op
 
 (In Type 2 the LANGUAGE DISCIPLINE still applies. The output names what the two camps actually believe and why neither is wrong.)
 
+HOW TO CHOOSE THE TYPE — BY EVIDENCE, NOT BY VOTE COUNT.
+The type is decided by the weight of argument and the empirical track record, never by how many members took each side. A balanced or evenly split panel does NOT force Type 2: if one position has the stronger argument or the better documented track record, the council reaches a verdict (Type 1) even when the table was balanced. A balanced table is for a fair fight, not a guaranteed draw.
+
+Where a doctrine or policy has a CLEAR real-world record of success or failure, that record is decisive evidence: weigh it and let the verdict lean accordingly. Do not elevate a position to false parity just because it had a defender at the table. BUT where the record is genuinely CONTESTED (mixed or disputed outcomes, e.g. the long-run results of the Nordic model), hedge and weigh both sides rather than asserting a disputed claim as settled. Lean where the evidence is clear; hedge where it is disputed.
+
 ════════════════════════════════════════════════════════════════
 VERDICT RULES
 ════════════════════════════════════════════════════════════════
