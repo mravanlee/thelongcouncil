@@ -419,10 +419,10 @@ async function precreateSession(originalIssue) {
   }
 }
 
-async function finalizeSession({ slug, sharpenedIssue, assemblyOutput, deliberationOutput, verdictOutput, briefOutput, memberNames, memberTypes, featuredQuote, featuredQuoteMember, briefQuotes, actions, factualAnchors, questionEnglish, questionLang }) {
+async function finalizeSession({ slug, sharpenedIssue, assemblyOutput, deliberationOutput, verdictOutput, briefOutput, memberNames, memberTypes, featuredQuote, featuredQuoteMember, briefQuotes, memberActions, actions, factualAnchors, questionEnglish, questionLang }) {
   try {
     const supabase = getServiceSupabase();
-    const cards = { assembly: assemblyOutput, deliberation: deliberationOutput, verdict: verdictOutput, brief: briefOutput, actions: actions || [], brief_quotes: briefQuotes || {}, factual_anchors: factualAnchors || '', question_en: questionEnglish || null, question_lang: questionLang || null };
+    const cards = { assembly: assemblyOutput, deliberation: deliberationOutput, verdict: verdictOutput, brief: briefOutput, actions: actions || [], brief_quotes: briefQuotes || {}, member_actions: memberActions || {}, factual_anchors: factualAnchors || '', question_en: questionEnglish || null, question_lang: questionLang || null };
     const { data, error } = await supabase
       .from('sessions')
       .update({
@@ -445,10 +445,10 @@ async function finalizeSession({ slug, sharpenedIssue, assemblyOutput, deliberat
   }
 }
 
-async function saveSessionToDatabase({ originalIssue, sharpenedIssue, assemblyOutput, deliberationOutput, verdictOutput, briefOutput, memberNames, memberTypes, featuredQuote, featuredQuoteMember, briefQuotes, actions, factualAnchors, questionEnglish, questionLang }) {
+async function saveSessionToDatabase({ originalIssue, sharpenedIssue, assemblyOutput, deliberationOutput, verdictOutput, briefOutput, memberNames, memberTypes, featuredQuote, featuredQuoteMember, briefQuotes, memberActions, actions, factualAnchors, questionEnglish, questionLang }) {
   try {
     const supabase = getServiceSupabase();
-    const cards = { assembly: assemblyOutput, deliberation: deliberationOutput, verdict: verdictOutput, brief: briefOutput, actions: actions || [], brief_quotes: briefQuotes || {}, factual_anchors: factualAnchors || '', question_en: questionEnglish || null, question_lang: questionLang || null };
+    const cards = { assembly: assemblyOutput, deliberation: deliberationOutput, verdict: verdictOutput, brief: briefOutput, actions: actions || [], brief_quotes: briefQuotes || {}, member_actions: memberActions || {}, factual_anchors: factualAnchors || '', question_en: questionEnglish || null, question_lang: questionLang || null };
     let slug = generateSlug(sharpenedIssue || originalIssue);
     let attempt = 0;
     let inserted = null;
@@ -799,6 +799,64 @@ function validateActions(actions) {
   }
   if (violations.length > 0) return { ok: false, violations };
   return { ok: true };
+}
+
+// ── Per-member actions ("What X would do") ──────────────────────────────
+// For each member at the table, 2-3 concrete actions that follow from THAT
+// member's own card — their divergent stance, NOT the council synthesis (the
+// Layer-1 actions already carry that). Best-effort: any failure or unmatched
+// member is omitted and the UI hides that member's block. Never blocks save.
+function matchMemberName(heading, memberNames) {
+  const h = (heading || '').toLowerCase().replace(/[^a-z]/g, '');
+  if (!h) return null;
+  for (const name of memberNames) {
+    const full = name.toLowerCase().replace(/[^a-z]/g, '');
+    const last = name.trim().split(/\s+/).pop().toLowerCase().replace(/[^a-z]/g, '');
+    if (full && (h.includes(full) || full.includes(h))) return name;
+    if (last && last.length >= 3 && (h.includes(last) || last.includes(h))) return name;
+  }
+  return null;
+}
+
+function parseMemberActions(output, memberNames) {
+  if (!output || !Array.isArray(memberNames) || memberNames.length === 0) return {};
+  const result = {};
+  const blocks = output.split(/\n(?=##\s)/);
+  for (const block of blocks) {
+    const m = block.match(/^\s*##\s*([^\n]+)/);
+    if (!m) continue;
+    const name = matchMemberName(m[1], memberNames);
+    if (!name || result[name]) continue;
+    const actions = [];
+    for (const line of block.split('\n')) {
+      const lm = line.trim().match(/^(?:[-*]|\d+\.)\s+(.+)$/);
+      if (!lm) continue;
+      const a = stripEmDashes(lm[1].trim().replace(/\s+/g, ' '));
+      if (!a) continue;
+      const words = a.split(/\s+/).length;
+      if (words < 3 || words > 30) continue;
+      if (VAGUE_ACTION_VERBS.test(a)) continue;
+      if (SHOULD_PREFIX.test(a)) continue;
+      actions.push(a);
+      if (actions.length >= 3) break;
+    }
+    if (actions.length > 0) result[name] = actions;
+  }
+  return result;
+}
+
+async function generateMemberActions(originalIssue, deliberationOutput, verdictOutput, memberNames) {
+  try {
+    const names = Array.isArray(memberNames) ? memberNames : [];
+    if (names.length === 0) return {};
+    const roster = names.map((n, i) => `${i + 1}. ${n}`).join('\n');
+    const userMessage = `ISSUE:\n${originalIssue}\n\nMEMBERS AT THE TABLE (use these EXACT names as ## headings, one block each):\n${roster}\n\nDELIBERATION (Layer 2 member cards):\n${deliberationOutput}\n\nVERDICT:\n${verdictOutput}`;
+    const output = await callClaude(PROMPT_MEMBER_ACTIONS_SYSTEM, userMessage, 1500, 0.6);
+    return parseMemberActions(output, names);
+  } catch (err) {
+    console.error('[pipeline] Member-action extraction failed:', err.message);
+    return {};
+  }
 }
 
 // ── Prompts ─────────────────────────────────────────────────────────────
@@ -1902,6 +1960,54 @@ For each action:
 
 If, after applying these checks, you cannot produce 2 actions that meet every rule, emit only 1 action. Better one defensible action than three invented ones.`;
 
+const PROMPT_MEMBER_ACTIONS_SYSTEM = `You distil, for EACH member at a council deliberation, 2-3 concrete next-step actions that THAT member — and that member alone — would take, given the position in their card. These appear on the detail page under each member in the policy brief, as "What <member> would do".
+
+You read the Layer 2 member cards and the verdict. For each member, you extract 2-3 actions that follow from THEIR specific reasoning.
+
+════════════════════════════════════════════════════════════════
+WHAT MAKES THESE DIFFERENT FROM THE COUNCIL ACTIONS
+════════════════════════════════════════════════════════════════
+
+These are NOT the council's consensus. They are each member's OWN moves, in their own direction. Members disagree, so their actions will too: one member's actions may directly contradict another's. That is correct and wanted. Do NOT soften them toward agreement, and do NOT make every member say a version of the same thing. Each member's set must be recognisably theirs — a reader who likes that member should see what that specific person would concretely do.
+
+════════════════════════════════════════════════════════════════
+SOURCING RULE — NON-NEGOTIABLE
+════════════════════════════════════════════════════════════════
+
+Each action MUST derive from a specific position in THAT member's card. Before writing it, identify the sentence in their card that implies it. If their card does not imply a concrete action, give that member only one action, or skip them — better fewer than invented.
+
+You may NOT invent percentages, institutions, treaties, timelines, or policy mechanisms that the member did not reference in their card.
+
+════════════════════════════════════════════════════════════════
+WRITING STYLE — same bar as the council actions
+════════════════════════════════════════════════════════════════
+
+EVERY ACTION MUST:
+1. Begin with an imperative verb (Cut, Fund, Replace, Maintain, Tax, Guarantee, Abolish, Tie, Build, Protect).
+2. Name a concrete entity or mechanism the member actually pointed to.
+3. Be ≤ 22 words.
+4. State WHAT to do, not whether to consider it.
+5. Contain ZERO em-dashes. Use comma, period, colon, or semicolon.
+
+FORBIDDEN OPENINGS: "Consider…", "Explore…", "Examine…", "Review…", "Assess…", "Evaluate whether…", "Should…", "It is important to…".
+
+════════════════════════════════════════════════════════════════
+OUTPUT FORMAT — exactly this, nothing else
+════════════════════════════════════════════════════════════════
+
+For each member, a heading with their EXACT name as given in the input, then 2-3 actions as bullets. No preamble, no commentary, no per-action attribution, no closing summary.
+
+## <Member Name>
+- <Verb-first action, ≤ 22 words.>
+- <Verb-first action, ≤ 22 words.>
+
+## <Next Member Name>
+- <...>
+
+Use the members' names EXACTLY as listed in MEMBERS AT THE TABLE. Produce one block per member, in that order. If a member's card genuinely implies no concrete action, emit their heading with a single best action rather than inventing a second.
+
+QUALITY CHECK before emitting, for every action: imperative verb start? concrete? ≤ 22 words? no "consider/explore/should"? no em-dash? traceable to that member's card? If any fails, rewrite or drop it.`;
+
 // ── Main handler ────────────────────────────────────────────────────────
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end('Method not allowed');
@@ -2168,6 +2274,10 @@ Every card is first person. A member says "I" and "my" and never names themselve
     const briefQuotes = await selectBriefQuotes(sharpenedIssue || question, deliberationOutput, metadata.names);
     console.log(`[pipeline] Brief quotes selected for ${Object.keys(briefQuotes).length} member(s)`);
 
+    // Per-member "What X would do" actions for the brief (best-effort, never blocks save).
+    const memberActions = await generateMemberActions(sharpenedIssue || question, deliberationOutput, verdictOutput, metadata.names);
+    console.log(`[pipeline] Member actions generated for ${Object.keys(memberActions).length} member(s)`);
+
     let saved;
     if (preSlug) {
       saved = await finalizeSession({
@@ -2182,6 +2292,7 @@ Every card is first person. A member says "I" and "my" and never names themselve
         featuredQuote: featured?.quote || null,
         featuredQuoteMember: featured?.member || null,
         briefQuotes,
+        memberActions,
         actions,
         factualAnchors,
         questionEnglish: translation.english,
@@ -2200,6 +2311,7 @@ Every card is first person. A member says "I" and "my" and never names themselve
         featuredQuote: featured?.quote || null,
         featuredQuoteMember: featured?.member || null,
         briefQuotes,
+        memberActions,
         actions,
         factualAnchors,
         questionEnglish: translation.english,
