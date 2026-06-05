@@ -58,6 +58,25 @@ function stripTierSuffix(name) {
   return name.replace(/\s*[—–-]\s*(Practitioner|Framer|Leader|Thinker|Wildcard)(\/\w+)?\s*$/i, '').trim();
 }
 
+const normName = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z]/g, '');
+
+// Match a name against the keys of a {name: value} object, tolerant of tier
+// suffixes, accents and last-name-only references. Returns the value or null.
+function lookupByName(map, name) {
+  if (!map || !name) return null;
+  const want = normName(stripTierSuffix(name));
+  const wantLast = normName(stripTierSuffix(name).split(/\s+/).pop());
+  for (const key of Object.keys(map)) {
+    const k = normName(stripTierSuffix(key));
+    if (k === want) return map[key];
+  }
+  for (const key of Object.keys(map)) {
+    const kLast = normName(stripTierSuffix(key).split(/\s+/).pop());
+    if (kLast && kLast.length >= 3 && kLast === wantLast) return map[key];
+  }
+  return null;
+}
+
 // The headline size follows the question length so short questions stay
 // dramatic and long ones stay readable. Tiers: <=70, 71-140, >140 chars.
 function detailTitleSize(len) {
@@ -80,6 +99,98 @@ function splitNameForCast(name) {
 
 function getInitials(name) {
   return stripTierSuffix(name).split(' ').filter(Boolean).map(p => p[0]).join('').toUpperCase().slice(0, 3);
+}
+
+// The redesigned "Who was selected" panel. Shows the central tension, the
+// balance of the table, the on-the-record trust signals, each member with one
+// line on why they are here AND their single strongest real quote, and who was
+// considered but left out. Falls back to raw markdown if the assembly text has
+// none of the expected structure.
+function MemberQuote({ info }) {
+  if (!info || !Array.isArray(info.quotes) || info.quotes.length === 0) return null;
+  const q = info.quotes[0]; // strongest / most relevant only
+  if (!q || !q.text) return null;
+  return (
+    <blockquote className="sel-quote">
+      <p className="sel-quote-text">{`“${q.text}”`}</p>
+      <p className="sel-quote-src">— {q.source}{q.translation ? `, ${q.translation}` : ''}</p>
+    </blockquote>
+  );
+}
+
+function WhoWasSelected({ assembly, briefQuotes }) {
+  // Keep the original assembly content and layout exactly as before; only ADD
+  // each member's single strongest real quote under their entry in the
+  // SELECTED MEMBERS list. Everything before (issue, tension, poles) and after
+  // (members considered but not selected, confidence note) renders unchanged.
+  const hasQuotes = briefQuotes && Object.keys(briefQuotes).length > 0;
+  const m = hasQuotes
+    ? assembly.match(/^([\s\S]*?\n\s*SELECTED MEMBERS:[^\n]*\n+)([\s\S]*?)(\n\s*(?:MEMBERS CONSIDERED BUT NOT SELECTED|CONFIDENCE NOTE)\s*:[\s\S]*)$/i)
+    : null;
+  if (!m) return <div className="md-body"><ReactMarkdown>{assembly}</ReactMarkdown></div>;
+  const [, before, membersBlock, after] = m;
+  const entries = membersBlock.split(/\n(?=\s*\d+\.\s)/).map((e) => e.trim()).filter(Boolean);
+  return (
+    <div className="md-body">
+      <ReactMarkdown>{before}</ReactMarkdown>
+      {entries.map((entry, i) => {
+        const numM = entry.match(/^\s*(\d+)\.\s*/);
+        const num = numM ? numM[1] : String(i + 1);
+        const body = entry.replace(/^\s*\d+\.\s*/, '');
+        const nameM = body.match(/^\*{0,2}\s*([^\n*]+?)\s*\*{0,2}\s*(?:\n|$)/);
+        const info = nameM ? lookupByName(briefQuotes, nameM[1]) : null;
+        return (
+          <div className="wsel-entry" key={i}>
+            <div className="wsel-row">
+              <span className="wsel-num">{num}.</span>
+              <div className="wsel-md"><ReactMarkdown>{body}</ReactMarkdown></div>
+            </div>
+            <MemberQuote info={info} />
+          </div>
+        );
+      })}
+      <ReactMarkdown>{after}</ReactMarkdown>
+    </div>
+  );
+}
+
+// The policy brief, with each member's "What X would do" actions interleaved
+// directly under their paragraph in section 2. Falls back to a plain render if
+// the brief lacks the expected section structure or has no member actions.
+function MemberActionBlock({ name, actions }) {
+  if (!actions || actions.length === 0) return null;
+  return (
+    <div className="bm-actions">
+      <div className="bm-actions-label">What {stripTierSuffix(name)} would do</div>
+      {actions.map((act, i) => (
+        <div className="bm-action" key={i}><span className="bm-arrow">→</span><span>{act}</span></div>
+      ))}
+    </div>
+  );
+}
+
+function BriefWithActions({ briefText, memberActions }) {
+  const hasActions = memberActions && Object.keys(memberActions).length > 0;
+  const m = hasActions ? briefText.match(/^([\s\S]*?##\s*2\.[^\n]*\n)([\s\S]*?)(\n##\s*3\.[\s\S]*)$/) : null;
+  if (!m) return <div className="md-body"><ReactMarkdown>{briefText}</ReactMarkdown></div>;
+  const [, before, section2, after] = m;
+  const paragraphs = section2.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+  return (
+    <div className="md-body">
+      <ReactMarkdown>{before}</ReactMarkdown>
+      {paragraphs.map((p, i) => {
+        const nm = p.match(/^\*\*([^*]+)\*\*/);
+        const acts = nm ? lookupByName(memberActions, nm[1]) : null;
+        return (
+          <div className="bm-block" key={i}>
+            <ReactMarkdown>{p}</ReactMarkdown>
+            {acts && <MemberActionBlock name={nm[1]} actions={acts} />}
+          </div>
+        );
+      })}
+      <ReactMarkdown>{after}</ReactMarkdown>
+    </div>
+  );
 }
 
 function VerdictCast({ names }) {
@@ -504,30 +615,13 @@ export default function ArchiveDetail({ session, memberQuery }) {
 
         {briefText && (
           <CollapsibleSection title="The policy brief" subtitle="The analyst's synthesis — what would change the verdict">
-            <div className="md-body"><ReactMarkdown>{briefText}</ReactMarkdown></div>
-            {cards.brief_quotes && Object.keys(cards.brief_quotes).length > 0 && (
-              <div className="brief-quotes">
-                {Object.entries(cards.brief_quotes).map(([name, info]) => (
-                  info && Array.isArray(info.quotes) && info.quotes.length > 0 ? (
-                    <div className="bq-member" key={name}>
-                      <div className="bq-heading">{stripTierSuffix(name)}, in {info.pronoun === 'her' ? 'her' : 'his'} own words</div>
-                      {info.quotes.map((q, i) => (
-                        <blockquote className="bq-item" key={i}>
-                          <p className="bq-quote">{`“${q.text}”`}</p>
-                          <p className="bq-source">— {q.source}{q.translation ? `, ${q.translation}` : ''}</p>
-                        </blockquote>
-                      ))}
-                    </div>
-                  ) : null
-                ))}
-              </div>
-            )}
+            <BriefWithActions briefText={briefText} memberActions={cards.member_actions || {}} />
           </CollapsibleSection>
         )}
 
         {assemblyText && (
-          <CollapsibleSection title="Who was selected, and why" subtitle="The assembly reasoning — who was at the table and who wasn't">
-            <div className="md-body"><ReactMarkdown>{assemblyText}</ReactMarkdown></div>
+          <CollapsibleSection title="Who was selected, and why" subtitle="The table — who was at it, who wasn't, and in their own words">
+            <WhoWasSelected assembly={assemblyText} briefQuotes={cards.brief_quotes || {}} />
           </CollapsibleSection>
         )}
 
@@ -569,6 +663,24 @@ export default function ArchiveDetail({ session, memberQuery }) {
         .bq-item:last-child { margin-bottom: 0; }
         .bq-quote { font-family: 'Playfair Display', Georgia, serif; font-size: 17px; line-height: 1.45; color: var(--foreground); margin: 0 0 0.35rem; max-width: 62ch; }
         .bq-source { font-family: 'Inter', sans-serif; font-size: 12.5px; color: var(--muted-foreground); margin: 0; }
+
+        /* "Who was selected" — original assembly layout, plus one real quote per member */
+        .wsel-entry { margin: 0 0 1.4rem; }
+        .wsel-row { display: flex; gap: 0.5rem; }
+        .wsel-num { font-size: 15px; font-weight: 600; color: var(--foreground); flex: 0 0 auto; line-height: 1.7; }
+        .wsel-md { flex: 1; min-width: 0; }
+        .wsel-md :global(p) { margin: 0; }
+        .sel-quote { margin: 0.65rem 0 0; padding: 0 0 0 1.4rem; border: none; }
+        .sel-quote-text { font-family: 'Playfair Display', Georgia, serif; font-style: italic; font-size: 16px; line-height: 1.45; color: var(--foreground); margin: 0 0 0.3rem; max-width: 62ch; }
+        .sel-quote-src { font-family: 'Inter', sans-serif; font-size: 12px; color: var(--muted-foreground); margin: 0; }
+
+        /* Per-member "What X would do" action blocks inside the brief */
+        .bm-block { margin-bottom: 0.2rem; }
+        .bm-actions { background: var(--secondary, #ede4d3); border: 0.5px solid var(--border); border-radius: 4px; padding: 0.85rem 1.05rem; margin: 0.1rem 0 1.5rem; }
+        .bm-actions-label { font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--primary); font-weight: 600; margin-bottom: 0.6rem; }
+        .bm-action { display: flex; gap: 0.55rem; font-size: 14px; line-height: 1.5; color: var(--foreground); margin-bottom: 0.45rem; }
+        .bm-action:last-child { margin-bottom: 0; }
+        .bm-arrow { color: var(--primary); font-weight: 700; flex: 0 0 auto; }
         .detail-nudge { margin-top: 3rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border); font-family: 'Inter', sans-serif; font-size: 13px; color: var(--muted-foreground); text-align: center; }
         .detail-nudge > div { margin-bottom: 0.5rem; }
         .nudge-link, .nudge-link :global(*), .nudge-link:hover, .nudge-link:visited { color: var(--primary) !important; text-decoration: none !important; }
