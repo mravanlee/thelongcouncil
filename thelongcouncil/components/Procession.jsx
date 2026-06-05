@@ -208,7 +208,7 @@ function ShareQuoteLink({ name, sessionSlug }) {
     <button
       type="button"
       onClick={handleClick}
-      aria-label={`Share ${name}'s quote`}
+      aria-label={`Share ${name}`}
       className="ml-7 mt-3.5 inline-flex cursor-pointer items-center gap-2 border-0 bg-transparent p-0 text-[10.5px] uppercase tracking-[0.2em] text-primary transition-colors hover:text-foreground sm:ml-8"
     >
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -218,7 +218,7 @@ function ShareQuoteLink({ name, sessionSlug }) {
         <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
         <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
       </svg>
-      <span>{copied ? 'Quote copied' : 'Share this quote'}</span>
+      <span>{copied ? 'Link copied' : 'Share'}</span>
     </button>
   )
 }
