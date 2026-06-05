@@ -376,8 +376,8 @@ export default function ArchiveDetail({ session, memberQuery }) {
   const { verdict, reasoning } = parseVerdict(cards.verdict);
   // Rename the old "What only the policymaker can resolve" heading/label to the
   // clearer "What the policymaker must decide" for existing sessions too.
-  const PM_OLD = /What only the policymaker can resolve/gi;
-  const PM_NEW = 'What the policymaker must decide';
+  const PM_OLD = /What only the policymaker can resolve|What the policymaker must decide/gi;
+  const PM_NEW = 'For a policymaker to decide on';
   const deliberationText = cleanDeliberation(cards.deliberation).replace(PM_OLD, PM_NEW);
   const { cards: deliberationCards, convergence } = parseDeliberation(deliberationText);
   const briefText = (cards.brief || '').replace(PM_OLD, PM_NEW);
