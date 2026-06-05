@@ -641,16 +641,19 @@ export default function ArchiveDetail({ session, memberQuery }) {
         .md-body strong { font-weight: 600; color: var(--foreground); }
         .md-body hr { border: none; border-top: 0.5px solid var(--border); margin: 1.5rem 0; }
         .md-body ul, .md-body ol { padding-left: 1.25rem; margin: 0 0 12px; }
-        .md-body li { font-size: 15px; margin-bottom: 4px; }
+        .md-body li { font-size: 15px; margin-bottom: 6px; }
+        /* clear separation between the numbered members in "Who was selected" */
+        .md-body ol > li { margin-bottom: 1.9rem; }
+        .md-body ol > li:last-child { margin-bottom: 0.5rem; }
         /* one real quote under each member in "Who was selected" */
-        .md-body blockquote { margin: 0.7rem 0 0.2rem; padding: 0.1rem 0 0.1rem 0.95rem; border-left: 2px solid var(--border); }
+        .md-body blockquote { margin: 1.1rem 0 0.4rem; padding: 0.2rem 0 0.2rem 1.1rem; border-left: 2px solid var(--border); }
         .md-body blockquote p { font-family: 'Playfair Display', Georgia, serif; font-style: italic; font-size: 16px; line-height: 1.45; color: var(--foreground); margin: 0; max-width: 62ch; }
         .md-body blockquote p + p { font-family: 'Inter', sans-serif; font-style: normal; font-size: 12px; color: var(--muted-foreground); margin: 0.25rem 0 0; }
         /* per-member "What X would do" action box in the policy brief */
-        .bm-block { margin-bottom: 0.2rem; }
-        .bm-actions { background: var(--secondary, #ede4d3); border: 0.5px solid var(--border); border-radius: 4px; padding: 0.85rem 1.05rem; margin: 0.5rem 0 1.6rem; }
-        .bm-actions-label { font-family: 'Inter', sans-serif; font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--primary); font-weight: 600; margin-bottom: 0.6rem; }
-        .bm-action { display: flex; gap: 0.55rem; font-size: 14px; line-height: 1.5; color: var(--foreground); margin-bottom: 0.45rem; font-family: 'Inter', sans-serif; }
+        .bm-block { margin-bottom: 0.6rem; }
+        .bm-actions { background: var(--secondary, #ede4d3); border: 0.5px solid var(--border); border-radius: 4px; padding: 1.05rem 1.25rem; margin: 1rem 0 2.4rem; }
+        .bm-actions-label { font-family: 'Inter', sans-serif; font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--primary); font-weight: 600; margin-bottom: 0.85rem; }
+        .bm-action { display: flex; gap: 0.6rem; font-size: 14px; line-height: 1.55; color: var(--foreground); margin-bottom: 0.7rem; font-family: 'Inter', sans-serif; }
         .bm-action:last-child { margin-bottom: 0; }
         .bm-arrow { color: var(--primary); font-weight: 700; flex: 0 0 auto; }
         @media (min-width: 768px) {
