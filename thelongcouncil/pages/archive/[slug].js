@@ -101,57 +101,35 @@ function getInitials(name) {
   return stripTierSuffix(name).split(' ').filter(Boolean).map(p => p[0]).join('').toUpperCase().slice(0, 3);
 }
 
-// The redesigned "Who was selected" panel. Shows the central tension, the
-// balance of the table, the on-the-record trust signals, each member with one
-// line on why they are here AND their single strongest real quote, and who was
-// considered but left out. Falls back to raw markdown if the assembly text has
-// none of the expected structure.
-function MemberQuote({ info }) {
-  if (!info || !Array.isArray(info.quotes) || info.quotes.length === 0) return null;
-  const q = info.quotes[0]; // strongest / most relevant only
-  if (!q || !q.text) return null;
-  return (
-    <blockquote className="sel-quote">
-      <p className="sel-quote-text">{`“${q.text}”`}</p>
-      <p className="sel-quote-src">— {q.source}{q.translation ? `, ${q.translation}` : ''}</p>
-    </blockquote>
-  );
-}
-
+// "Who was selected" renders the original Prompt-1 assembly as a single markdown
+// block (exactly the original layout), with three light touches on the source
+// text: strip the tier labels (Framer/Practitioner/Leader/Thinker/Wildcard),
+// drop the internal [documented]/[inferred]/[extrapolated] coverage tag, and
+// inject each member's single strongest real quote as a blockquote under their
+// entry in SELECTED MEMBERS. Verified to keep the ordered list intact.
 function WhoWasSelected({ assembly, briefQuotes }) {
-  // Keep the original assembly content and layout exactly as before; only ADD
-  // each member's single strongest real quote under their entry in the
-  // SELECTED MEMBERS list. Everything before (issue, tension, poles) and after
-  // (members considered but not selected, confidence note) renders unchanged.
-  const hasQuotes = briefQuotes && Object.keys(briefQuotes).length > 0;
-  const m = hasQuotes
-    ? assembly.match(/^([\s\S]*?\n\s*SELECTED MEMBERS:[^\n]*\n+)([\s\S]*?)(\n\s*(?:MEMBERS CONSIDERED BUT NOT SELECTED|CONFIDENCE NOTE)\s*:[\s\S]*)$/i)
-    : null;
-  if (!m) return <div className="md-body"><ReactMarkdown>{assembly}</ReactMarkdown></div>;
-  const [, before, membersBlock, after] = m;
-  const entries = membersBlock.split(/\n(?=\s*\d+\.\s)/).map((e) => e.trim()).filter(Boolean);
-  return (
-    <div className="md-body">
-      <ReactMarkdown>{before}</ReactMarkdown>
-      {entries.map((entry, i) => {
-        const numM = entry.match(/^\s*(\d+)\.\s*/);
-        const num = numM ? numM[1] : String(i + 1);
-        const body = entry.replace(/^\s*\d+\.\s*/, '');
-        const nameM = body.match(/^\*{0,2}\s*([^\n*]+?)\s*\*{0,2}\s*(?:\n|$)/);
+  let text = assembly || '';
+  // Strip tier suffix inside the bolded member name (e.g. "**John Rawls — Framer**").
+  text = text.replace(/(\*\*[^*\n]*?)\s*[—–-]\s*(?:Practitioner|Framer|Leader|Thinker|Wildcard)(?:\s*\/\s*(?:Practitioner|Framer|Leader|Thinker|Wildcard))?(\*\*)/g, '$1$2');
+  // Drop the internal coverage tag, e.g. "[documented] — ".
+  text = text.replace(/\[(?:documented|inferred|extrapolated)\]\s*[—–-]?\s*/gi, '');
+  // Inject each member's strongest real quote as a blockquote inside their entry.
+  if (briefQuotes && Object.keys(briefQuotes).length > 0) {
+    const m = text.match(/(SELECTED MEMBERS:[^\n]*\n+)([\s\S]*?)(\n\s*(?:MEMBERS CONSIDERED BUT NOT SELECTED|CONFIDENCE NOTE)\s*:[\s\S]*|$)/i);
+    if (m) {
+      const entries = m[2].split(/\n(?=\s*\d+\.\s)/);
+      const withQuotes = entries.map((entry) => {
+        const nameM = entry.match(/\*\*\s*([^*\n]+?)\s*\*\*/);
         const info = nameM ? lookupByName(briefQuotes, nameM[1]) : null;
-        return (
-          <div className="wsel-entry" key={i}>
-            <div className="wsel-row">
-              <span className="wsel-num">{num}.</span>
-              <div className="wsel-md"><ReactMarkdown>{body}</ReactMarkdown></div>
-            </div>
-            <MemberQuote info={info} />
-          </div>
-        );
-      })}
-      <ReactMarkdown>{after}</ReactMarkdown>
-    </div>
-  );
+        const q = info && info.quotes && info.quotes[0];
+        if (!q || !q.text) return entry;
+        const src = q.source + (q.translation ? `, ${q.translation}` : '');
+        return entry.replace(/\s*$/, '') + `\n\n   > “${q.text}”\n   >\n   > — ${src}`;
+      }).join('\n');
+      text = text.slice(0, m.index) + m[1] + withQuotes + m[3];
+    }
+  }
+  return <div className="md-body"><ReactMarkdown>{text}</ReactMarkdown></div>;
 }
 
 // The policy brief, with each member's "What X would do" actions interleaved
@@ -645,48 +623,38 @@ export default function ArchiveDetail({ session, memberQuery }) {
         .debate-section { margin: 0 0 2.5rem; }
         .debate-label { font-family: 'Inter', sans-serif; font-size: 11px; color: var(--muted-foreground); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 0.5px solid var(--border); }
         .convergence-block { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border); }
-        .md-body { padding-top: 1rem; font-family: 'Inter', sans-serif; color: var(--foreground); line-height: 1.7; }
-        .md-body :global(h2) { font-family: 'Playfair Display', Georgia, serif; font-size: 20px; color: var(--foreground); font-weight: 600; margin: 1.75rem 0 0.5rem; line-height: 1.3; }
-        .md-body :global(h2:first-child) { margin-top: 0; }
-        .md-body :global(h3) { font-family: 'Playfair Display', Georgia, serif; font-size: 17px; color: var(--foreground); font-weight: 600; margin: 1.25rem 0 0.5rem; }
-        .md-body :global(p) { font-size: 15px; margin: 0 0 12px; max-width: 62ch; }
-        .md-body :global(em) { font-style: italic; color: var(--foreground); opacity: 0.85; }
-        .md-body :global(strong) { font-weight: 600; color: var(--foreground); }
-        .md-body :global(hr) { border: none; border-top: 0.5px solid var(--border); margin: 1.5rem 0; }
-        .md-body :global(ul), .md-body :global(ol) { padding-left: 1.25rem; margin: 0 0 12px; }
-        .md-body :global(li) { font-size: 15px; margin-bottom: 4px; }
-        .brief-quotes { margin-top: 2rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border); }
-        .bq-member { margin-bottom: 1.75rem; }
-        .bq-member:last-child { margin-bottom: 0; }
-        .bq-heading { font-family: 'Inter', sans-serif; font-size: 11px; color: var(--muted-foreground); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.85rem; }
-        .bq-item { margin: 0 0 1rem; padding: 0; border: none; }
-        .bq-item:last-child { margin-bottom: 0; }
-        .bq-quote { font-family: 'Playfair Display', Georgia, serif; font-size: 17px; line-height: 1.45; color: var(--foreground); margin: 0 0 0.35rem; max-width: 62ch; }
-        .bq-source { font-family: 'Inter', sans-serif; font-size: 12.5px; color: var(--muted-foreground); margin: 0; }
-
-        /* "Who was selected" — original assembly layout, plus one real quote per member */
-        .wsel-entry { margin: 0 0 1.4rem; }
-        .wsel-row { display: flex; gap: 0.5rem; }
-        .wsel-num { font-size: 15px; font-weight: 600; color: var(--foreground); flex: 0 0 auto; line-height: 1.7; }
-        .wsel-md { flex: 1; min-width: 0; }
-        .wsel-md :global(p) { margin: 0; }
-        .sel-quote { margin: 0.65rem 0 0; padding: 0 0 0 1.4rem; border: none; }
-        .sel-quote-text { font-family: 'Playfair Display', Georgia, serif; font-style: italic; font-size: 16px; line-height: 1.45; color: var(--foreground); margin: 0 0 0.3rem; max-width: 62ch; }
-        .sel-quote-src { font-family: 'Inter', sans-serif; font-size: 12px; color: var(--muted-foreground); margin: 0; }
-
-        /* Per-member "What X would do" action blocks inside the brief */
-        .bm-block { margin-bottom: 0.2rem; }
-        .bm-actions { background: var(--secondary, #ede4d3); border: 0.5px solid var(--border); border-radius: 4px; padding: 0.85rem 1.05rem; margin: 0.1rem 0 1.5rem; }
-        .bm-actions-label { font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--primary); font-weight: 600; margin-bottom: 0.6rem; }
-        .bm-action { display: flex; gap: 0.55rem; font-size: 14px; line-height: 1.5; color: var(--foreground); margin-bottom: 0.45rem; }
-        .bm-action:last-child { margin-bottom: 0; }
-        .bm-arrow { color: var(--primary); font-weight: 700; flex: 0 0 auto; }
         .detail-nudge { margin-top: 3rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border); font-family: 'Inter', sans-serif; font-size: 13px; color: var(--muted-foreground); text-align: center; }
         .detail-nudge > div { margin-bottom: 0.5rem; }
         .nudge-link, .nudge-link :global(*), .nudge-link:hover, .nudge-link:visited { color: var(--primary) !important; text-decoration: none !important; }
         .nudge-link:hover { opacity: 0.75; }
+      `}</style>
+      <style jsx global>{`
+        /* These render inside child components (WhoWasSelected, BriefWithActions),
+           which fall outside this page's styled-jsx scope, so their styles must
+           be global. */
+        .md-body { padding-top: 1rem; font-family: 'Inter', sans-serif; color: var(--foreground); line-height: 1.7; }
+        .md-body h2 { font-family: 'Playfair Display', Georgia, serif; font-size: 20px; color: var(--foreground); font-weight: 600; margin: 1.75rem 0 0.5rem; line-height: 1.3; }
+        .md-body h2:first-child { margin-top: 0; }
+        .md-body h3 { font-family: 'Playfair Display', Georgia, serif; font-size: 17px; color: var(--foreground); font-weight: 600; margin: 1.25rem 0 0.5rem; }
+        .md-body p { font-size: 15px; margin: 0 0 12px; max-width: 62ch; }
+        .md-body em { font-style: italic; color: var(--foreground); opacity: 0.85; }
+        .md-body strong { font-weight: 600; color: var(--foreground); }
+        .md-body hr { border: none; border-top: 0.5px solid var(--border); margin: 1.5rem 0; }
+        .md-body ul, .md-body ol { padding-left: 1.25rem; margin: 0 0 12px; }
+        .md-body li { font-size: 15px; margin-bottom: 4px; }
+        /* one real quote under each member in "Who was selected" */
+        .md-body blockquote { margin: 0.7rem 0 0.2rem; padding: 0.1rem 0 0.1rem 0.95rem; border-left: 2px solid var(--border); }
+        .md-body blockquote p { font-family: 'Playfair Display', Georgia, serif; font-style: italic; font-size: 16px; line-height: 1.45; color: var(--foreground); margin: 0; max-width: 62ch; }
+        .md-body blockquote p + p { font-family: 'Inter', sans-serif; font-style: normal; font-size: 12px; color: var(--muted-foreground); margin: 0.25rem 0 0; }
+        /* per-member "What X would do" action box in the policy brief */
+        .bm-block { margin-bottom: 0.2rem; }
+        .bm-actions { background: var(--secondary, #ede4d3); border: 0.5px solid var(--border); border-radius: 4px; padding: 0.85rem 1.05rem; margin: 0.5rem 0 1.6rem; }
+        .bm-actions-label { font-family: 'Inter', sans-serif; font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--primary); font-weight: 600; margin-bottom: 0.6rem; }
+        .bm-action { display: flex; gap: 0.55rem; font-size: 14px; line-height: 1.5; color: var(--foreground); margin-bottom: 0.45rem; font-family: 'Inter', sans-serif; }
+        .bm-action:last-child { margin-bottom: 0; }
+        .bm-arrow { color: var(--primary); font-weight: 700; flex: 0 0 auto; }
         @media (min-width: 768px) {
-          .md-body :global(p), .md-body :global(li) { font-size: 15.5px; }
+          .md-body p, .md-body li { font-size: 15.5px; }
         }
       `}</style>
     </>
