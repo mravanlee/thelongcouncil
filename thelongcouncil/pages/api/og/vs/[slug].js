@@ -5,22 +5,31 @@ export const config = {
   runtime: 'edge',
 };
 
-async function loadGoogleFont(family, weight, italic = false) {
-  const italicParam = italic ? '1' : '0';
-  const url = `https://fonts.googleapis.com/css2?family=${family.replace(/ /g, '+')}:ital,wght@${italicParam},${weight}&display=swap`;
-  const css = await fetch(url, {
-    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
-  }).then((res) => res.text());
-  const fontUrl = css.match(/src: url\((.+?)\) format/)?.[1];
-  if (!fontUrl) throw new Error(`Font URL not found for ${family} ${weight}${italic ? ' italic' : ''}`);
-  return fetch(fontUrl).then((res) => res.arrayBuffer());
-}
+// Self-hosted Playfair Display (TTF, latin + latin-ext) served from /public/fonts.
+// NB: @vercel/og's satori only parses TTF/OTF — NOT woff2 (it throws "Unsupported
+// OpenType signature wOF2"). Keep these as .ttf.
+// We deliberately do NOT fetch from Google Fonts at render time: that cross-origin
+// CSS+font round-trip made a cold render ~2.5s, which exceeds social-crawler timeouts
+// (Twitterbot etc.) on whatever Vercel region the crawler hits — so the card was cached
+// broken. Static assets from our own origin are on Vercel's global edge CDN, so even a
+// cold render fetches them in tens of ms. latin + latin-ext cover English + accented
+// member names (e.g. Atatürk); satori falls back per-glyph across the registered fonts.
+const FONT_FILES = [
+  { file: 'playfair-500.ttf', weight: 500, style: 'normal' },
+  { file: 'playfair-500-ext.ttf', weight: 500, style: 'normal' },
+  { file: 'playfair-600.ttf', weight: 600, style: 'normal' },
+  { file: 'playfair-600-ext.ttf', weight: 600, style: 'normal' },
+  { file: 'playfair-italic-500.ttf', weight: 500, style: 'italic' },
+  { file: 'playfair-italic-500-ext.ttf', weight: 500, style: 'italic' },
+];
 
-// Resilient wrapper: a font hiccup must never break the card. On failure we
-// render with the default font — the portrait and layout still come through.
-async function safeFont(family, weight, italic = false) {
+// Load one self-hosted font file. A hiccup must never break the card: on any
+// failure we return null and that weight renders with the default font.
+async function loadFont(baseUrl, file) {
   try {
-    return await loadGoogleFont(family, weight, italic);
+    const res = await fetch(`${baseUrl}/fonts/${file}`);
+    if (!res.ok) return null;
+    return await res.arrayBuffer();
   } catch {
     return null;
   }
@@ -86,11 +95,9 @@ export default async function handler(req) {
     const protocol = host && host.includes('localhost') ? 'http' : 'https';
     const baseUrl = `${protocol}://${host}`;
 
-    const [sessionRes, playfair500, playfair600, playfairItalic] = await Promise.all([
+    const [sessionRes, fontData] = await Promise.all([
       fetch(`${baseUrl}/api/session/${slug}`),
-      safeFont('Playfair Display', 500, false),
-      safeFont('Playfair Display', 600, false),
-      safeFont('Playfair Display', 500, true),
+      Promise.all(FONT_FILES.map((f) => loadFont(baseUrl, f.file))),
     ]);
 
     if (!sessionRes.ok) return new Response('Session not found', { status: 404 });
@@ -268,11 +275,9 @@ export default async function handler(req) {
       {
         width: 840,
         height: 441,
-        fonts: [
-          playfair500 && { name: 'Playfair Display', data: playfair500, style: 'normal', weight: 500 },
-          playfair600 && { name: 'Playfair Display', data: playfair600, style: 'normal', weight: 600 },
-          playfairItalic && { name: 'Playfair Display', data: playfairItalic, style: 'italic', weight: 500 },
-        ].filter(Boolean),
+        fonts: FONT_FILES
+          .map((f, i) => fontData[i] && { name: 'Playfair Display', data: fontData[i], style: f.style, weight: f.weight })
+          .filter(Boolean),
         headers: {
           'Cache-Control': 'public, max-age=31536000, s-maxage=31536000, immutable',
         },
