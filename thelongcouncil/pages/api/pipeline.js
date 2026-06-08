@@ -583,28 +583,28 @@ function findMemberCardText(deliberationOutput, name) {
 async function pickQuotesForMember(question, name, cardText, quotes) {
   try {
     const numbered = quotes.map((q, i) => `${i + 1}. "${q.text}"`).join('\n');
-    const prompt = `You are deciding which — if any — of a historical figure's REAL documented quotes belongs beside a specific policy debate, as a small sidebar of authentic quotations.
+    const prompt = `You are choosing which — if any — of a historical figure's REAL documented quotes deserves to sit beside a specific policy debate, as a small sidebar of authentic quotations. Think like an editor: the quote must illuminate THIS question, not merely come from this figure.
 
 FIGURE: ${name}
 
 THE DEBATE QUESTION:
 ${question}
 
-WHAT ${name} ARGUED HERE:
+${name}'S STANCE HERE (context only — do NOT match quotes to its wording):
 ${cardText || '(no card text available)'}
 
 ${name}'S REAL QUOTES:
 ${numbered}
 
-Strict rules:
-- A quote qualifies ONLY if it is clearly about the SAME SUBJECT as the question. Judge the quote against the QUESTION's subject ONLY — never pick one because it fits ${name}'s general theme or echoes an example, topic or word they used in their argument. And never pick a generic line that could sit beside almost any debate.
-- Be demanding: most of the time the right answer is NONE or a single quote. A loosely-related or generic quote is worse than showing nothing.
-- Choose the SINGLE best quote a knowledgeable reader would call clearly on-topic. Add a SECOND only if it is just as on-topic AND makes a genuinely different point.
-- If nothing is clearly on-topic, answer NONE.
+How to judge:
+- First settle the UNDERLYING SUBJECT the question turns on — the principle in contention, not its surface nouns. (A question about banning a harmful product is really about state authority over personal consumption, not about that product.)
+- A quote qualifies ONLY if its CLAIM is about that same subject. Merely sharing a noun with the debate ("food", "freedom", "market", "health") is NOT a match. Echoing a word or example from the stance above is NOT a match.
+- Showing nothing is the norm: NONE is the right answer most of the time. A loosely-related or generic line that could sit beside almost any debate is worse than an empty sidebar.
+- Return at most ONE quote — only one you would defend as unmistakably on-subject. Return a second only in the rare case it is equally on-subject AND makes a genuinely different point.
 
-Answer with ONLY the quote number(s), comma-separated, at most two (e.g. "3" or "3, 7"), or the single word NONE. No other text.`;
-    const responseText = await callClaude('', prompt, 20, 0.2, 'claude-sonnet-4-20250514');
-    if (/none/i.test(responseText)) return [];
+Answer with ONLY the quote number(s), comma-separated (at most two), or the single word NONE. No other text.`;
+    const responseText = await callClaude('', prompt, 30, 0.2, 'claude-sonnet-4-20250514');
+    if (/\bnone\b/i.test(responseText)) return [];
     const nums = (responseText.match(/\d+/g) || []).map(n => parseInt(n, 10)).filter(n => n >= 1 && n <= quotes.length);
     const seen = new Set();
     const picks = [];
