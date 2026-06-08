@@ -133,9 +133,14 @@ const boldAssemblyLabels = (s) => s.replace(/^(\s*)(ISSUE SUMMARY|TAXONOMY TAGS|
 // bold Relevance / Coverage / Will argue on their own lines, append the quote.
 function buildMemberContent(entry, briefQuotes) {
   let e = entry.replace(/^\s*\d+\.\s*/, '');
-  const nameM = e.match(/^\s*\*\*\s*([^*\n]+?)\s*\*\*/);
-  const name = nameM ? nameM[1].trim() : '';
-  e = e.replace(/^\s*\*\*\s*[^*\n]+?\s*\*\*\s*\n?/, '');
+  // The first line is the member name. The model formats it inconsistently
+  // ("**Name** — Tier", "**Name — Tier**", or bare "Name — Tier"), so don't
+  // match a fixed shape: take the whole first line, strip bold + tier to get
+  // the name, then drop the entire line (the name is shown in the row header).
+  // This keeps the tier from ever leaking into the body, in any format.
+  const firstLine = (e.split('\n')[0] || '');
+  const name = stripTierSuffix(firstLine.replace(/\*\*/g, '').trim());
+  e = e.replace(/^[^\n]*\n?/, '');
   e = e.replace(/(Relevance|Coverage|Will argue)\s*:/gi, '**$1:**');
   e = e.replace(/[ \t]*\n[ \t]*(\*\*(?:Relevance|Coverage|Will argue):\*\*)/g, '  \n$1');
   e = e.trim();
@@ -150,8 +155,12 @@ function buildMemberContent(entry, briefQuotes) {
 
 function WhoWasSelected({ assembly, briefQuotes }) {
   let text = assembly || '';
-  // Strip tier suffix inside the bolded member name (e.g. "**John Rawls — Framer**").
+  // Strip the tier label in any format the model emits: inside the bold
+  // ("**John Rawls — Framer**"), after the bold ("**John Rawls** — Framer"),
+  // or bare ("John Rawls — Framer"). This also cleans the names listed in the
+  // "Members considered but not selected" section.
   text = text.replace(/(\*\*[^*\n]*?)\s*[—–-]\s*(?:Practitioner|Framer|Leader|Thinker|Wildcard)(?:\s*\/\s*(?:Practitioner|Framer|Leader|Thinker|Wildcard))?(\*\*)/g, '$1$2');
+  text = text.replace(/(\*\*[^*\n]+?\*\*|[^\n—–-]+?)\s*[—–-]\s*(?:Practitioner|Framer|Leader|Thinker|Wildcard)(?:\s*\/\s*(?:Practitioner|Framer|Leader|Thinker|Wildcard))?(?=\s*$)/gim, '$1');
   // Drop the internal coverage tag, e.g. "[documented] — ".
   text = text.replace(/\[(?:documented|inferred|extrapolated)\]\s*[—–-]?\s*/gi, '');
   const m = text.match(/(SELECTED MEMBERS:[^\n]*\n+)([\s\S]*?)(\n\s*(?:MEMBERS CONSIDERED BUT NOT SELECTED|CONFIDENCE NOTE)\s*:[\s\S]*|$)/i);
