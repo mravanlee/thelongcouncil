@@ -2027,6 +2027,7 @@ export default async function handler(req, res) {
   };
 
   let preSlug = null;
+  let coreSaved = false;
 
   try {
     preSlug = await precreateSession(question);
@@ -2249,6 +2250,43 @@ Every card is first person. A member says "I" and "my" and never names themselve
     }
     send('actions', { data: actions });
 
+    // Extract the sharpened headline now (needed for the early save below).
+    let sharpenedIssue = null;
+    {
+      const summaryMatch = assemblyOutput.match(/ISSUE SUMMARY:\s*(.+?)(?:\n|$)/i);
+      if (summaryMatch) sharpenedIssue = summaryMatch[1].trim();
+    }
+
+    // ── Save-early ──────────────────────────────────────────────────────────
+    // Persist the CORE session (deliberation + verdict + actions) the moment it
+    // exists, BEFORE the enrichment tail (brief, featured quote, brief quotes,
+    // member actions) — which is several more Claude calls. If the function
+    // times out in that tail, we keep a complete, useful session instead of
+    // losing everything to the orphan cleanup. The final finalizeSession below
+    // re-saves the same row with the enrichment added.
+    if (preSlug) {
+      const core = await finalizeSession({
+        slug: preSlug,
+        sharpenedIssue,
+        assemblyOutput,
+        deliberationOutput,
+        verdictOutput,
+        briefOutput: '',
+        memberNames: metadata.names,
+        memberTypes: metadata.types,
+        featuredQuote: null,
+        featuredQuoteMember: null,
+        briefQuotes: {},
+        memberActions: {},
+        actions,
+        factualAnchors,
+        questionEnglish: translation.english,
+        questionLang: translation.lang,
+      });
+      coreSaved = !!core;
+      if (coreSaved) console.log('[pipeline] Core session saved early:', preSlug);
+    }
+
     const todayForBrief = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 
     send('progress', { step: 4, message: 'Writing the policy brief...' });
@@ -2259,9 +2297,7 @@ Every card is first person. A member says "I" and "my" and never names themselve
     );
     send('brief', { data: briefOutput });
 
-    let sharpenedIssue = null;
-    const summaryMatch = assemblyOutput.match(/ISSUE SUMMARY:\s*(.+?)(?:\n|$)/i);
-    if (summaryMatch) sharpenedIssue = summaryMatch[1].trim();
+    // (sharpenedIssue was already extracted before the early save above)
 
     // Extract featured quote for homepage display (best-effort, doesn't block save)
     const featured = await extractFeaturedQuote(sharpenedIssue || question, deliberationOutput);
@@ -2336,7 +2372,10 @@ Every card is first person. A member says "I" and "my" and never names themselve
   } catch (err) {
     console.error('Pipeline error:', err);
 
-    if (preSlug) {
+    // Only clean up the pre-created row if we never managed an early core save.
+    // If the core (deliberation + verdict) was saved, keep that complete session
+    // rather than deleting it on a tail-step failure or timeout.
+    if (preSlug && !coreSaved) {
       await deleteOrphanSession(preSlug);
     }
 
