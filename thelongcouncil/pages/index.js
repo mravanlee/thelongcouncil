@@ -899,7 +899,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
               <div className="mx-auto max-w-5xl px-6 pt-8 pb-16 lg:pt-10 lg:pb-20">
                 {/* Tagline — explains what the product is + leads into the question */}
                 <div
-                  className="mx-auto mb-10 w-fit text-[19px] italic leading-snug text-foreground/80 sm:mb-14 sm:text-[28px]"
+                  className="mb-10 w-fit text-[19px] italic leading-snug text-foreground/80 sm:mb-14 sm:text-[28px]"
                   style={SERIF}
                 >
                   <div className="whitespace-nowrap">
