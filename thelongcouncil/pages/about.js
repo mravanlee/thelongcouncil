@@ -206,7 +206,7 @@ export default function About() {
                 </a>
                 , a tech entrepreneur, investor, and political scientist
                 (University of Amsterdam). The Long Council is non-profit: no
-                accounts, no ads, no data collection.
+                accounts, no ads, no tracking.
               </p>
             </div>
 

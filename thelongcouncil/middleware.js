@@ -36,38 +36,58 @@ function detectAiBot(ua) {
   return null;
 }
 
+// Fire-and-forget insert into a Supabase table. Uses event.waitUntil so it
+// never blocks the response, and swallows all errors so logging can never
+// break a page load. The service-role key is server-only (never shipped to the
+// browser) and works in the Edge runtime.
+function logHit(event, table, row) {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key || !event) return;
+  event.waitUntil(
+    fetch(`${url}/rest/v1/${table}`, {
+      method: 'POST',
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal',
+      },
+      body: JSON.stringify(row),
+    }).catch(() => {})
+  );
+}
+
 export function middleware(req, event) {
   const ua = req.headers.get('user-agent') || '';
   const bot = detectAiBot(ua);
-  if (bot) {
-    const path = req.nextUrl.pathname;
-    const country = (req.geo && req.geo.country) || '-';
-    const ip = req.ip || '-';
-    // Single-line structured log. Search Vercel logs for "[ai-bot]" to
-    // see all hits. Format keeps the bot label early so eyeballing is fast.
-    console.log(`[ai-bot] ${bot} path=${path} country=${country} ip=${ip}`);
+  const path = req.nextUrl.pathname;
+  const country = (req.geo && req.geo.country) || '-';
 
-    // Persist the hit to Supabase so it survives Vercel's short log retention
-    // and becomes queryable for traffic analysis. Fire-and-forget via
-    // event.waitUntil so it never blocks the response. Best-effort: any error
-    // is swallowed so logging can never break a page load.
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (url && key && event) {
-      event.waitUntil(
-        fetch(`${url}/rest/v1/ai_bot_hits`, {
-          method: 'POST',
-          headers: {
-            apikey: key,
-            Authorization: `Bearer ${key}`,
-            'Content-Type': 'application/json',
-            Prefer: 'return=minimal',
-          },
-          body: JSON.stringify({ bot, path, country, ip }),
-        }).catch(() => {})
-      );
+  if (bot) {
+    const ip = req.ip || '-';
+    // Single-line structured log (search Vercel logs for "[ai-bot]") plus a
+    // durable, queryable row in ai_bot_hits.
+    console.log(`[ai-bot] ${bot} path=${path} country=${country} ip=${ip}`);
+    logHit(event, 'ai_bot_hits', { bot, path, country, ip });
+  } else {
+    // Anonymous page-view logging for real browser navigations only (requests
+    // that accept HTML, excluding API routes). Privacy-preserving by design:
+    // we store NO IP, NO cookies, NO user-agent, NO identifier — only path,
+    // referrer host, country, and timestamp. Aggregate, never personal.
+    const accept = req.headers.get('accept') || '';
+    if (accept.includes('text/html') && !path.startsWith('/api')) {
+      let referrer = null;
+      const referer = req.headers.get('referer');
+      if (referer) {
+        try {
+          referrer = new URL(referer).hostname;
+        } catch {}
+      }
+      logHit(event, 'page_views', { path, referrer, country });
     }
   }
+
   return NextResponse.next();
 }
 
