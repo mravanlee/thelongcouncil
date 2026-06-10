@@ -472,6 +472,34 @@ export default function Council({ debateCounts = {} }) {
                 different centuries, continents and traditions. Each one earned
                 their place through real decisions and lasting work.
               </p>
+
+              {/* Explanatory context: how a council session works, before the
+                  roster. Plain numbered steps, existing label idiom, no cards. */}
+              <div className="mt-12 border-t border-border/70 pt-10">
+                <div className="text-[11px] tracking-[0.22em] uppercase text-primary">
+                  How the council works
+                </div>
+                <ol className="mt-6 flex flex-col gap-3.5">
+                  {[
+                    'A question is submitted.',
+                    'Relevant historical figures are selected.',
+                    'Arguments are grounded in documented ideas, writings and actions.',
+                    'Council members challenge previous arguments before a verdict is reached.',
+                    'The council reaches a verdict.',
+                    'The session is archived publicly.',
+                  ].map((step, i) => (
+                    <li
+                      key={i}
+                      className="flex gap-3.5 text-[15px] leading-[1.6] text-foreground/85"
+                    >
+                      <span className="shrink-0 font-semibold tabular-nums text-primary">
+                        {i + 1}
+                      </span>
+                      <span>{step}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
             </div>
 
             <div className="mt-10 flex flex-wrap items-center gap-3">
