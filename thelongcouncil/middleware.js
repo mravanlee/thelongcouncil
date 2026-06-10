@@ -61,33 +61,18 @@ function logHit(event, table, row) {
 export function middleware(req, event) {
   const ua = req.headers.get('user-agent') || '';
   const bot = detectAiBot(ua);
-  const path = req.nextUrl.pathname;
-  const country = (req.geo && req.geo.country) || '-';
-
   if (bot) {
+    const path = req.nextUrl.pathname;
+    const country = (req.geo && req.geo.country) || '-';
     const ip = req.ip || '-';
     // Single-line structured log (search Vercel logs for "[ai-bot]") plus a
-    // durable, queryable row in ai_bot_hits.
+    // durable, queryable row in ai_bot_hits. Human page views are intentionally
+    // NOT logged here: Cloudflare Web Analytics already covers visitor traffic
+    // (cookieless), surfaced via scripts/site-stats.mjs. Do not re-add a
+    // page-view table — it would duplicate that.
     console.log(`[ai-bot] ${bot} path=${path} country=${country} ip=${ip}`);
     logHit(event, 'ai_bot_hits', { bot, path, country, ip });
-  } else {
-    // Anonymous page-view logging for real browser navigations only (requests
-    // that accept HTML, excluding API routes). Privacy-preserving by design:
-    // we store NO IP, NO cookies, NO user-agent, NO identifier — only path,
-    // referrer host, country, and timestamp. Aggregate, never personal.
-    const accept = req.headers.get('accept') || '';
-    if (accept.includes('text/html') && !path.startsWith('/api')) {
-      let referrer = null;
-      const referer = req.headers.get('referer');
-      if (referer) {
-        try {
-          referrer = new URL(referer).hostname;
-        } catch {}
-      }
-      logHit(event, 'page_views', { path, referrer, country });
-    }
   }
-
   return NextResponse.next();
 }
 
