@@ -888,6 +888,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
         />
       </Head>
 
+      <div className="min-h-screen bg-background text-foreground antialiased">
       <SiteHeader />
 
       {screen === 'landing' && (
@@ -1336,6 +1337,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
       )}
 
       <SiteFooter />
+      </div>
 
       <style jsx global>{`
         .issue-input {
