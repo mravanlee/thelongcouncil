@@ -577,6 +577,7 @@ export default function ArchiveDetail({ session, memberQuery }) {
         />
       </Head>
 
+      <div className="min-h-screen bg-background text-foreground antialiased">
       <SiteHeader />
 
       <section className="border-b border-border/70">
@@ -722,6 +723,7 @@ export default function ArchiveDetail({ session, memberQuery }) {
       </div>
 
       <SiteFooter />
+      </div>
 
       <style jsx>{`
         .detail-wrap { max-width: 680px; margin: 0 auto; padding: 0 1.25rem; }
