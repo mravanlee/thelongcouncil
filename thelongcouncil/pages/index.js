@@ -207,7 +207,7 @@ export async function getServerSideProps() {
 function heroTitleSize(len) {
   if (len <= 70) return 'text-[24px] sm:text-[36px] lg:text-[44px]';
   if (len <= 140) return 'text-[22px] sm:text-[30px] lg:text-[34px]';
-  return 'text-[20px] sm:text-[26px] lg:text-[28px]';
+  return 'text-[20px] sm:text-[30px] lg:text-[32px]';
 }
 
 function stripTier(name) {
@@ -896,7 +896,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
           {/* [1] Featured: today's council session */}
           {recentSessions.length > 0 && (
             <section className="border-b border-border/70">
-              <div className="mx-auto max-w-5xl px-6 pt-8 pb-16 lg:pt-10 lg:pb-20">
+              <div className="mx-auto max-w-4xl px-6 pt-8 pb-16 lg:pt-10 lg:pb-20">
                 {/* Tagline — explains what the product is + leads into the question */}
                 <div
                   className="mb-10 w-fit text-[19px] italic leading-snug text-foreground/80 sm:mb-14 sm:text-[28px]"
@@ -939,7 +939,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
                     “
                   </span>
                   <p
-                    className="relative max-w-3xl pl-6 text-[22px] leading-[1.3] text-foreground sm:pl-10 sm:text-[24px]"
+                    className="relative max-w-3xl pl-6 text-[22px] leading-[1.3] text-foreground sm:pl-10 sm:text-[28px]"
                     style={SERIF}
                   >
                     {recentSessions[0].teaser}
