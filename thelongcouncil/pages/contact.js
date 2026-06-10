@@ -3,7 +3,7 @@ import { SERIF, SiteFooter, SiteHeader } from '../components/SiteChrome';
 import ContactEmailButton from '../components/ContactEmailButton';
 
 const DESCRIPTION =
-  'Tell us what you think of The Long Council. Questions, suggestions, or a debate you want the council to take on are welcome.';
+  'Tell us what you think of The Long Council. Feedback, questions, and suggestions are welcome.';
 
 export default function Contact() {
   return (
@@ -30,8 +30,8 @@ export default function Contact() {
             Tell us what you think
           </h1>
           <p className="mx-auto mt-5 max-w-[30em] text-[16px] leading-[1.75] text-foreground/85">
-            We read everything. If you have a question, a suggestion, or a
-            debate you want the council to take on, write to us.
+            We read everything. If you have feedback, a question, or a
+            suggestion, write to us.
           </p>
           <div className="mt-8 flex justify-center">
             <ContactEmailButton />

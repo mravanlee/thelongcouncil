@@ -222,8 +222,8 @@ export default function About() {
                 Tell us what you think
               </h2>
               <p className="mt-4 text-[16px] leading-[1.75] text-foreground/85">
-                We read everything. If you have a question, a suggestion, or a
-                debate you want the council to take on, write to us.
+                We read everything. If you have feedback, a question, or a
+                suggestion, write to us.
               </p>
               <div className="mt-6">
                 <ContactEmailButton />
