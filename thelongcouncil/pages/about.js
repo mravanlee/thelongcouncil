@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { SERIF, SiteFooter, SiteHeader } from '../components/SiteChrome';
+import ContactEmailButton from '../components/ContactEmailButton';
 import { resolveAvatarSlug } from '../lib/avatarSlugs';
 
 function slugify(name) {
@@ -207,6 +208,26 @@ export default function About() {
                 (University of Amsterdam). The Long Council is non-profit: no
                 accounts, no ads, no data collection.
               </p>
+            </div>
+
+            {/* Contact */}
+            <div className="mt-14">
+              <div className="text-[10px] tracking-[0.22em] uppercase text-primary">
+                Get in touch
+              </div>
+              <h2
+                className="mt-3 text-[24px] tracking-tight text-foreground"
+                style={SERIF}
+              >
+                Tell us what you think
+              </h2>
+              <p className="mt-4 text-[16px] leading-[1.75] text-foreground/85">
+                We read everything. If you have a question, a suggestion, or a
+                debate you want the council to take on, write to us.
+              </p>
+              <div className="mt-6">
+                <ContactEmailButton />
+              </div>
             </div>
           </div>
         </article>

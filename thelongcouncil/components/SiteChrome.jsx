@@ -143,6 +143,9 @@ export function SiteFooter() {
           <Link href="/about" className="hover:text-foreground">
             About
           </Link>
+          <Link href="/contact" className="hover:text-foreground">
+            Contact
+          </Link>
         </div>
       </div>
     </footer>
