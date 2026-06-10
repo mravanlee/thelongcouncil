@@ -36,7 +36,7 @@ function detectAiBot(ua) {
   return null;
 }
 
-export function middleware(req) {
+export function middleware(req, event) {
   const ua = req.headers.get('user-agent') || '';
   const bot = detectAiBot(ua);
   if (bot) {
@@ -46,6 +46,27 @@ export function middleware(req) {
     // Single-line structured log. Search Vercel logs for "[ai-bot]" to
     // see all hits. Format keeps the bot label early so eyeballing is fast.
     console.log(`[ai-bot] ${bot} path=${path} country=${country} ip=${ip}`);
+
+    // Persist the hit to Supabase so it survives Vercel's short log retention
+    // and becomes queryable for traffic analysis. Fire-and-forget via
+    // event.waitUntil so it never blocks the response. Best-effort: any error
+    // is swallowed so logging can never break a page load.
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (url && key && event) {
+      event.waitUntil(
+        fetch(`${url}/rest/v1/ai_bot_hits`, {
+          method: 'POST',
+          headers: {
+            apikey: key,
+            Authorization: `Bearer ${key}`,
+            'Content-Type': 'application/json',
+            Prefer: 'return=minimal',
+          },
+          body: JSON.stringify({ bot, path, country, ip }),
+        }).catch(() => {})
+      );
+    }
   }
   return NextResponse.next();
 }
