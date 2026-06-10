@@ -916,7 +916,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
                 </div>
 
                 <h1
-                  className={`max-w-4xl ${heroTitleSize((recentSessions[0].original_issue || '').length)} leading-[1.15] tracking-tight text-foreground`}
+                  className={`max-w-4xl ${heroTitleSize((recentSessions[0].original_issue || '').length)} leading-[1.3] tracking-tight text-foreground`}
                   style={SERIF}
                 >
                   {recentSessions[0].original_issue}
@@ -939,7 +939,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
                     “
                   </span>
                   <p
-                    className="relative max-w-3xl pl-6 text-[22px] leading-[1.4] text-foreground sm:pl-10 sm:text-[24px]"
+                    className="relative max-w-3xl pl-6 text-[22px] leading-[1.3] text-foreground sm:pl-10 sm:text-[24px]"
                     style={SERIF}
                   >
                     {recentSessions[0].teaser}
