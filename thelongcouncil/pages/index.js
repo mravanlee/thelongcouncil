@@ -911,7 +911,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
                   <div className="whitespace-nowrap">Read their verdicts</div>
                 </div>
 
-                <div className="mb-4 text-[11px] tracking-[0.22em] uppercase text-muted-foreground">
+                <div className="mb-4 text-[11px] tracking-[0.22em] uppercase text-primary">
                   The most recent question
                 </div>
 
