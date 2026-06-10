@@ -320,14 +320,15 @@ export default function Archive({ sessions, error, initialFilters }) {
               The Archive
             </div>
             <h1
-              className="mt-4 text-4xl leading-[1.1] tracking-tight text-foreground sm:text-5xl"
+              className="mt-4 text-[32px] leading-[1.12] tracking-tight text-foreground [text-wrap:balance] sm:text-5xl sm:leading-[1.1]"
               style={SERIF}
             >
-              Every session of the council.
+              <span className="whitespace-nowrap">The questions.</span>{' '}
+              <span className="whitespace-nowrap">The debates.</span>{' '}
+              <span className="whitespace-nowrap">The verdicts.</span>
             </h1>
             <p className="mt-5 max-w-2xl text-[15px] leading-relaxed text-muted-foreground">
-              Browse the questions history's sharpest minds have debated. Filter
-              by theme or search for a topic.
+              Explore every session of The Long Council.
             </p>
           </div>
         </section>
