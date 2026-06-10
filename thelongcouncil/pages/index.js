@@ -895,21 +895,24 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
           {/* [1] Featured: today's council session */}
           {recentSessions.length > 0 && (
             <section className="border-b border-border/70">
-              <div className="mx-auto max-w-5xl px-6 py-16 lg:py-20">
+              <div className="mx-auto max-w-5xl px-6 pt-8 pb-16 lg:pt-10 lg:pb-20">
                 {/* Tagline — explains what the product is + leads into the question */}
-                <p
-                  className="mb-8 max-w-2xl text-[17px] italic leading-snug text-foreground/75 sm:mb-10 sm:text-[22px]"
+                <div
+                  className="mx-auto mb-10 w-fit text-[19px] italic leading-snug text-foreground/80 sm:mb-14 sm:text-[28px]"
                   style={SERIF}
                 >
-                  A council of history&apos;s greatest minds.
-                  <br />
-                  <span className="sm:hidden">Ask them a question.</span>
-                  <span className="hidden sm:inline">
-                    Ask them a question, on politics, society or the future.
-                  </span>
-                  <br />
-                  The most recent question they debated:
-                </p>
+                  <div className="whitespace-nowrap">
+                    History&apos;s leaders and thinkers,
+                  </div>
+                  <div className="whitespace-nowrap">
+                    debating questions we face today.
+                  </div>
+                  <div className="whitespace-nowrap">Read their verdicts</div>
+                </div>
+
+                <div className="mb-4 text-[11px] tracking-[0.22em] uppercase text-muted-foreground">
+                  The most recent question
+                </div>
 
                 <h1
                   className={`max-w-4xl ${heroTitleSize((recentSessions[0].original_issue || '').length)} leading-[1.15] tracking-tight text-foreground`}
@@ -968,6 +971,35 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
                   >
                     Read the full response →
                   </Link>
+                </div>
+
+                {/* Small explanatory block — what makes a session trustworthy.
+                    Compact and understated; reuses the uppercase-label idiom. */}
+                <div className="mt-12 grid gap-6 border-t border-border/70 pt-8 sm:mt-14 sm:grid-cols-3 sm:gap-8">
+                  <div>
+                    <div className="text-[11px] tracking-[0.18em] uppercase text-primary">
+                      Grounded in documented history
+                    </div>
+                    <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
+                      Every argument draws on documented writings, decisions or actions.
+                    </p>
+                  </div>
+                  <div>
+                    <div className="text-[11px] tracking-[0.18em] uppercase text-primary">
+                      Structured disagreement
+                    </div>
+                    <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
+                      Council members challenge one another before reaching a verdict.
+                    </p>
+                  </div>
+                  <div>
+                    <div className="text-[11px] tracking-[0.18em] uppercase text-primary">
+                      Public archive
+                    </div>
+                    <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
+                      Every session remains publicly available and reviewable.
+                    </p>
+                  </div>
                 </div>
               </div>
             </section>
