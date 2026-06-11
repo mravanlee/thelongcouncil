@@ -56,7 +56,7 @@ export default function About() {
         <title>About — The Long Council</title>
         <meta
           name="description"
-          content="The Long Council brings together leaders and thinkers from the past. They built states, governed through crises, left ideas that still shape how we think."
+          content="What would history's greatest statesmen, strategists and philosophers say about the decisions we face today? The Long Council brings them together to find out."
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
@@ -65,7 +65,7 @@ export default function About() {
         <meta property="og:title" content="About — The Long Council" />
         <meta
           property="og:description"
-          content="The Long Council brings together leaders and thinkers from the past. They built states, governed through crises, left ideas that still shape how we think."
+          content="What would history's greatest statesmen, strategists and philosophers say about the decisions we face today? The Long Council brings them together to find out."
         />
         <meta property="og:url" content="https://www.thelongcouncil.com/about" />
         <meta property="og:image" content="https://www.thelongcouncil.com/og-default.png" />
@@ -80,7 +80,7 @@ export default function About() {
         <meta name="twitter:title" content="About — The Long Council" />
         <meta
           name="twitter:description"
-          content="The Long Council brings together leaders and thinkers from the past. They built states, governed through crises, left ideas that still shape how we think."
+          content="What would history's greatest statesmen, strategists and philosophers say about the decisions we face today? The Long Council brings them together to find out."
         />
         <meta name="twitter:image" content="https://www.thelongcouncil.com/og-default.png" />
       </Head>
@@ -98,16 +98,17 @@ export default function About() {
               className="mt-6 text-[18px] leading-[1.5] tracking-tight text-foreground sm:text-[26px] sm:leading-[1.45]"
               style={SERIF}
             >
-              The Long Council brings together leaders and thinkers from the
-              past. They built states, governed through crises, left ideas that
-              still shape how we think.
+              Every age believes its problems are unprecedented. They rarely
+              are. The Long Council asks history&apos;s greatest statesmen,
+              strategists and philosophers what they would make of the
+              decisions we face today.
             </p>
 
             <p className="mt-6 text-[16px] leading-[1.75] text-foreground/85">
-              This project is a way of bringing them back into the room. The aim
-              is not to impersonate them, but to let their decisions speak to
-              the questions we face today. History does not repeat itself, but
-              it rhymes. Their voices are worth listening to.
+              They built states, governed through crises, and left ideas that
+              outlived them. Here their judgment is put to work on the questions
+              in front of us now. The technologies are new. Many of the dilemmas
+              are not.
             </p>
 
             {/* Council members preview */}
@@ -115,6 +116,10 @@ export default function About() {
               <div className="text-[10px] tracking-[0.22em] uppercase text-muted-foreground">
                 Among the voices
               </div>
+              <p className="mt-3 text-[15px] leading-[1.7] text-foreground/85">
+                Strategists, rulers, philosophers and institution-builders
+                spanning 2,500 years.
+              </p>
               <ul className="mt-5 flex flex-wrap gap-x-6 gap-y-5">
                 {ROSTER.map((m) => (
                   <li key={m.name} className="flex flex-col items-center text-center">
@@ -143,23 +148,49 @@ export default function About() {
             >
               How it works
             </h2>
+            <ol className="mt-6 flex flex-col gap-3.5">
+              {[
+                'Ask a question.',
+                'The council selects the voices whose work speaks to it.',
+                'Each answers from their own conviction.',
+                'They challenge one another.',
+                'A verdict emerges.',
+              ].map((step, i) => (
+                <li
+                  key={i}
+                  className="flex gap-3.5 text-[16px] leading-[1.6] text-foreground/85"
+                >
+                  <span className="shrink-0 font-semibold tabular-nums text-primary">
+                    {i + 1}
+                  </span>
+                  <span>{step}</span>
+                </li>
+              ))}
+            </ol>
+
+            <h2
+              className="mt-14 text-[24px] tracking-tight text-foreground"
+              style={SERIF}
+            >
+              Grounded in the record
+            </h2>
             <p className="mt-5 text-[16px] leading-[1.75] text-foreground/85">
-              You bring a question. The council selects the members whose work
-              speaks most directly to it. They debate one by one, building on
-              each other, pushing back, grounding every claim in what they
-              actually did or wrote.
+              Every argument is grounded in the historical record. The council
+              cannot invent views its members never held. It reasons from what
+              they actually wrote, decided, and defended.
             </p>
 
             <h2
               className="mt-14 text-[24px] tracking-tight text-foreground"
               style={SERIF}
             >
-              What to keep in mind
+              Why this exists
             </h2>
             <p className="mt-5 text-[16px] leading-[1.75] text-foreground/85">
-              The roster is carefully curated, but not fixed. To ensure quality
-              and relevance, the council can also bring in a voice from outside
-              it when a question calls for it.
+              Most AI answers a question by drawing on the whole internet. The
+              Long Council answers it through minds whose ideas survived
+              centuries of scrutiny. The difference is not more information. It
+              is better judgment.
             </p>
 
             {/* AI disclosure */}
