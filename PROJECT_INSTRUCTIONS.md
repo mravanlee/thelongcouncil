@@ -637,10 +637,12 @@ METHODOLOGY RULES
     antialiased">. Zonder die wrapper valt 'ie terug op de
     koudere body-kleur (#f8f6f2) i.p.v. de warme --background
     token. Uitzondering: brief/[slug].js (bewust wit document).
-39. (Jun 10) Tailwind v4: de UNLAYERED `a { color:inherit;
-    text-decoration:none }` in globals.css wint van utility-
-    classes. Link-kleur/underline op een <Link> forceren via
-    inline-style of een specifiekere selector (zoals .about a).
+39. (Jun 10 → GEFIXT Jun 11, commit a3ca061) Tailwind v4: de
+    UNLAYERED `a { color:inherit; text-decoration:none }` in
+    globals.css won van utility-classes, dus text-primary op
+    links rendde donker. Opgelost door de reset in `@layer base`
+    te zetten — utilities winnen nu. `text-primary` etc. werkt
+    voortaan gewoon op <Link>; geen inline-style meer nodig.
 40. (Jun 11) Koppen met meerdere zinnen (bv. "X. Y. Z."): zet
     elke zin in een whitespace-nowrap span zodat afbreken
     alleen op de punten gebeurt — schoon op 375/430/desktop.
