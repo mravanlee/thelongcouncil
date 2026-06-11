@@ -56,7 +56,7 @@ export default function About() {
         <title>About — The Long Council</title>
         <meta
           name="description"
-          content="What would history's greatest statesmen, strategists and philosophers say about the decisions we face today? The Long Council brings them together to find out."
+          content="What would history's greatest statesmen, economists, strategists and philosophers say about the decisions we face today? The Long Council brings them together to find out."
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
@@ -65,7 +65,7 @@ export default function About() {
         <meta property="og:title" content="About — The Long Council" />
         <meta
           property="og:description"
-          content="What would history's greatest statesmen, strategists and philosophers say about the decisions we face today? The Long Council brings them together to find out."
+          content="What would history's greatest statesmen, economists, strategists and philosophers say about the decisions we face today? The Long Council brings them together to find out."
         />
         <meta property="og:url" content="https://www.thelongcouncil.com/about" />
         <meta property="og:image" content="https://www.thelongcouncil.com/og-default.png" />
@@ -80,7 +80,7 @@ export default function About() {
         <meta name="twitter:title" content="About — The Long Council" />
         <meta
           name="twitter:description"
-          content="What would history's greatest statesmen, strategists and philosophers say about the decisions we face today? The Long Council brings them together to find out."
+          content="What would history's greatest statesmen, economists, strategists and philosophers say about the decisions we face today? The Long Council brings them together to find out."
         />
         <meta name="twitter:image" content="https://www.thelongcouncil.com/og-default.png" />
       </Head>
@@ -100,8 +100,8 @@ export default function About() {
             >
               Every age believes its problems are unprecedented. They rarely
               are. The Long Council asks history&apos;s greatest statesmen,
-              strategists and philosophers what they would make of the
-              decisions we face today.
+              economists, strategists and philosophers what they would make of
+              the decisions we face today.
             </p>
 
             <p className="mt-6 text-[16px] leading-[1.75] text-foreground/85">
@@ -117,7 +117,7 @@ export default function About() {
                 Among the voices
               </div>
               <p className="mt-3 text-[15px] leading-[1.7] text-foreground/85">
-                Strategists, rulers, philosophers and institution-builders
+                Rulers, economists, strategists and institution-builders
                 spanning 2,500 years.
               </p>
               <ul className="mt-5 flex flex-wrap gap-x-6 gap-y-5">
