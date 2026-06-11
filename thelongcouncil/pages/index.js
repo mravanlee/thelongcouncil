@@ -816,6 +816,10 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
     setBriefOpen(false);
     setLoadingStep(0);
     setError(null);
+    // Pull fresh recent-sessions data so a session you just created shows up
+    // as the most recent. getServerSideProps only re-runs on a real
+    // navigation, so force one via a changing query while keeping the URL "/".
+    router.replace({ pathname: '/', query: { r: Date.now() } }, '/', { scroll: false });
   }
 
   function handleErrorRetry() {
