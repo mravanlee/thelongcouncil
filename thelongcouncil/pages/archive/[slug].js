@@ -584,7 +584,7 @@ export default function ArchiveDetail({ session, memberQuery }) {
         <div className="mx-auto max-w-[680px] px-5 pt-10 pb-10">
           <Link
             href="/archive"
-            className="inline-flex items-center gap-2 text-[11px] tracking-[0.22em] uppercase text-muted-foreground transition hover:text-foreground"
+            className="inline-flex items-center gap-2 text-[11px] tracking-[0.22em] uppercase text-primary transition hover:text-foreground"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
             The Archive

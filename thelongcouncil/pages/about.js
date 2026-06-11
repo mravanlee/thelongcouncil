@@ -136,8 +136,7 @@ export default function About() {
               </ul>
               <Link
                 href="/council"
-                className="mt-6 inline-flex text-[11px] tracking-[0.18em] uppercase transition hover:opacity-70"
-                style={{ color: '#6b1a1a' }}
+                className="mt-6 inline-flex text-[11px] tracking-[0.18em] uppercase text-primary hover:text-foreground transition"
               >
                 See the full council →
               </Link>
