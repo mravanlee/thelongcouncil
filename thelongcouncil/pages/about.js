@@ -113,7 +113,7 @@ export default function About() {
 
             {/* Council members preview */}
             <div className="mt-10 border-t border-border/70 pt-8">
-              <div className="text-[10px] tracking-[0.22em] uppercase text-muted-foreground">
+              <div className="text-[10px] tracking-[0.22em] uppercase text-primary">
                 Among the voices
               </div>
               <p className="mt-3 text-[15px] leading-[1.7] text-foreground/85">
@@ -136,7 +136,8 @@ export default function About() {
               </ul>
               <Link
                 href="/council"
-                className="mt-6 inline-flex text-[11px] tracking-[0.18em] uppercase text-primary hover:text-foreground transition"
+                className="mt-6 inline-flex text-[11px] tracking-[0.18em] uppercase transition hover:opacity-70"
+                style={{ color: '#6b1a1a' }}
               >
                 See the full council →
               </Link>
