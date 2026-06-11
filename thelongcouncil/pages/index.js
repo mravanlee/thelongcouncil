@@ -539,9 +539,12 @@ function parseVerdict(verdictText) {
 }
 
 // ── Main component ──────────────────────────────────────────────────────
-export default function Home({ recentSessions = [], sessionCount = 0 }) {
+export default function Home({ recentSessions: initialRecentSessions = [], sessionCount = 0 }) {
   const router = useRouter();
 
+  // Recent sessions start from the server render but can be updated client-side
+  // (e.g. prepend a session the user just created) without a full refetch.
+  const [recentSessions, setRecentSessions] = useState(initialRecentSessions);
   const [screen, setScreen] = useState('landing');
   const [question, setQuestion] = useState('');
 
@@ -722,6 +725,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
       let buffer = '';
       let currentEvent = '';
       const result = {};
+      let completedSlug = null;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -737,7 +741,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
             try {
               const data = JSON.parse(line.slice(6));
               if (currentEvent === 'session-started') {
-                if (data.slug) setSessionSlug(data.slug);
+                if (data.slug) { setSessionSlug(data.slug); completedSlug = data.slug; }
               } else if (currentEvent === 'progress') {
                 setLoadingMessage(data.message);
                 if (data.step) setLoadingStep(data.step);
@@ -754,7 +758,7 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
               } else if (currentEvent === 'brief') {
                 result.brief = data.data;
               } else if (currentEvent === 'complete') {
-                if (data.slug) setSessionSlug(data.slug);
+                if (data.slug) { setSessionSlug(data.slug); completedSlug = data.slug; }
               } else if (currentEvent === 'error') {
                 throw new Error(data.message);
               }
@@ -784,6 +788,30 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
       });
 
       setScreen('session');
+
+      // Surface the just-created session as the most recent on the homepage
+      // immediately (no refetch needed), and drop the #ask anchor from the URL.
+      if (completedSlug) {
+        const teaserText =
+          extractTeaser({ verdict: result.verdict }) ||
+          (summary || verdict || '').replace(/\s+/g, ' ').slice(0, 200);
+        setRecentSessions((prev) => [
+          {
+            id: completedSlug,
+            slug: completedSlug,
+            original_issue: finalQuestion,
+            created_at: new Date().toISOString(),
+            teaser: teaserText,
+            featured_quote: null,
+            featured_quote_member: null,
+            member_names: (memberNames || []).slice(0, 5),
+          },
+          ...prev.filter((s) => s.slug !== completedSlug),
+        ]);
+      }
+      if (typeof window !== 'undefined' && window.location.hash) {
+        window.history.replaceState(window.history.state, '', '/');
+      }
     } catch (err) {
       setScreen('finalizing');
       const slug = await pollForCompletedSession(finalQuestion);
@@ -816,10 +844,10 @@ export default function Home({ recentSessions = [], sessionCount = 0 }) {
     setBriefOpen(false);
     setLoadingStep(0);
     setError(null);
-    // Pull fresh recent-sessions data so a session you just created shows up
-    // as the most recent. getServerSideProps only re-runs on a real
-    // navigation, so force one via a changing query while keeping the URL "/".
-    router.replace({ pathname: '/', query: { r: Date.now() } }, '/', { scroll: false });
+    // Drop the #ask anchor so the URL is a clean "/" when returning to landing.
+    if (typeof window !== 'undefined' && window.location.hash) {
+      window.history.replaceState(window.history.state, '', '/');
+    }
   }
 
   function handleErrorRetry() {
