@@ -166,6 +166,19 @@ thelongcouncil/
                          session counter (Supabase count).
                          ShareButton on live session view
                          after SSE complete (May 7).
+                         (Jun 10-11) Hero rebuilt: left-aligned
+                         3-line italic dek ("History's leaders
+                         and thinkers, / debating questions we
+                         face today. / Read their verdicts"),
+                         eyebrow "The most recent question",
+                         question (heroTitleSize) + verdict
+                         28px desktop, equal line-height 1.3.
+                         Trust explainer block below verdict
+                         (Grounded in documented history /
+                         Structured disagreement / Public
+                         archive). Featured column narrowed to
+                         max-w-4xl. Page wrapped in min-h-screen
+                         bg-background (was cooler body colour).
     council.js           Council members overview (37).
                          Full rebuild May 8: 88px portrait,
                          bordeauxrood top border, 3 positions,
@@ -174,10 +187,22 @@ thelongcouncil/
                          hover effect added, AVATAR_NAME_
                          EXPANSIONS added, tier label fix in
                          getServerSideProps debateCounts.
+                         (Jun 11) "How the council works"
+                         explainer section added ABOVE the
+                         roster: eyebrow label + 6 numbered
+                         steps (no icons/cards). Intro +
+                         roster grid unchanged.
     about.js             Rewritten April 30.
     archive/
       index.js           Archive list page.
                          extractTeaser uses .replace(/\s+/g, ' ')
+                         (Jun 11) Header copy: label THE ARCHIVE,
+                         H1 "The questions. The debates. The
+                         verdicts." (each phrase whitespace-
+                         nowrap → breaks only at the periods;
+                         32px mobile / text-5xl desktop), intro
+                         "Explore every session of The Long
+                         Council." Filters/search/cards unchanged.
       [slug].js          Archive detail page.
                          Debate section open by default (May 11)
                          — no CollapsibleSection wrapper.
@@ -189,6 +214,9 @@ thelongcouncil/
                          Contains AVATAR_NAME_EXPANSIONS map
                          and nameToAvatarSlug().
                          stripTierSuffix handles slash variants.
+                         (Jun 11) Page wrapped in min-h-screen
+                         bg-background (was falling back to the
+                         cooler body colour, looked "whiter").
     api/
       sharpen.js         Prompt 0 — question sharpener.
                          May 11: compression for long questions.
@@ -425,7 +453,14 @@ DESIGN
 - Tagline: "History's counsel on today's questions"
 - Typography: Playfair Display (serif) + Inter (sans-serif)
 - Color palette:
-  - Cream background: #f8f6f2
+  - Page surface = token --background (class bg-background):
+    oklch(0.972 0.012 85), warm cream. THIS is the real page
+    background. Body fallback is #f8f6f2 (cooler/greyer) — every
+    page MUST wrap its content in <div className="min-h-screen
+    bg-background text-foreground antialiased"> or it shows the
+    colder body colour. Exception: brief/[slug].js is a
+    deliberate white document. (Jun 10-11: homepage and
+    archive/[slug] were missing the wrapper — fixed.)
   - Bordeauxrood: #6b1a1a
   - Verdict block surface: #f0ede3
   - Textarea surface: #f3eeea
@@ -589,3 +624,16 @@ METHODOLOGY RULES
 37. (May 11) Bij prompt voorbeeld lekkage: vervang het
     voorbeeld, schoon de prompt zelf op. Niet alleen de
     output-regels aanscherpen.
+38. (Jun 10) Elke pagina moet z'n inhoud wikkelen in
+    <div className="min-h-screen bg-background text-foreground
+    antialiased">. Zonder die wrapper valt 'ie terug op de
+    koudere body-kleur (#f8f6f2) i.p.v. de warme --background
+    token. Uitzondering: brief/[slug].js (bewust wit document).
+39. (Jun 10) Tailwind v4: de UNLAYERED `a { color:inherit;
+    text-decoration:none }` in globals.css wint van utility-
+    classes. Link-kleur/underline op een <Link> forceren via
+    inline-style of een specifiekere selector (zoals .about a).
+40. (Jun 11) Koppen met meerdere zinnen (bv. "X. Y. Z."): zet
+    elke zin in een whitespace-nowrap span zodat afbreken
+    alleen op de punten gebeurt — schoon op 375/430/desktop.
+    Eyebrow-labels op één pagina dezelfde kleur geven (oxbloed).
