@@ -179,6 +179,16 @@ thelongcouncil/
                          archive). Featured column narrowed to
                          max-w-4xl. Page wrapped in min-h-screen
                          bg-background (was cooler body colour).
+                         (Jun 11) recentSessions lifted to client
+                         state; on pipeline completion the new
+                         session is PREPENDED (teaser via
+                         extractTeaser(verdict)) so it shows as
+                         "most recent" without a refetch. reset()
+                         + completion strip the #ask hash via
+                         history.replaceState so the URL returns
+                         to a clean "/". Fixes: new session not
+                         appearing until a full nav, and the logo
+                         appearing to "do nothing" on the homepage.
     council.js           Council members overview (37).
                          Full rebuild May 8: 88px portrait,
                          bordeauxrood top border, 3 positions,
