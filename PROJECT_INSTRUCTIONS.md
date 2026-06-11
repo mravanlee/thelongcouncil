@@ -193,6 +193,14 @@ thelongcouncil/
                          steps (no icons/cards). Intro +
                          roster grid unchanged.
     about.js             Rewritten April 30.
+                         (Jun 11) Copy strengthened: lead opens
+                         with the core question + "The
+                         technologies are new. Many of the
+                         dilemmas are not." (cliche removed),
+                         "Among the voices" intro line, "How it
+                         works" = 5 numbered steps, new
+                         "Grounded in the record" + "Why this
+                         exists" sections. Founder unchanged.
     archive/
       index.js           Archive list page.
                          extractTeaser uses .replace(/\s+/g, ' ')
