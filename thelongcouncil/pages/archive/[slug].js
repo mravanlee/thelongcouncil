@@ -456,15 +456,17 @@ export default function ArchiveDetail({ session, memberQuery }) {
 
   const baseShareUrl = `https://www.thelongcouncil.com/archive/${session.slug}`;
   const canonicalUrl = memberQuery ? `${baseShareUrl}?member=${encodeURIComponent(memberQuery)}` : baseShareUrl;
-  // Per-member shares (?member=) get THAT member's card; the canonical card
-  // otherwise. BOTH are pre-warmed at session creation (pipeline.js
-  // prewarmOgImage warms the canonical + every member variant with the same
-  // cleaned name the share buttons use), so neither is cold on a crawler's first
-  // fetch — that cold render is what made X cache an empty card. If you touch
-  // either side, keep them in sync: archive ogImageUrl ⇄ prewarmOgImage.
-  const ogImageUrl = memberQuery
+  // Durable share cards. og:image points at a PNG stored ONCE in Supabase
+  // Storage (session.og_images, written by lib/ogCards.mjs at creation/backfill,
+  // keyed by the same cleaned member name the share buttons use). A static file
+  // is always fast and never evicted, so crawlers (X/LinkedIn) never time out on
+  // a cold @vercel/og render → no more empty share cards. Falls back to the
+  // on-demand endpoint only if a stored card is somehow missing.
+  const og = session.og_images || {};
+  const onDemandOgImage = memberQuery
     ? `https://www.thelongcouncil.com/api/og/vs/${session.slug}?member=${encodeURIComponent(memberQuery)}`
     : `https://www.thelongcouncil.com/api/og/vs/${session.slug}`;
+  const ogImageUrl = (memberQuery ? og[memberQuery] : og.__canonical__) || onDemandOgImage;
 
   // Structured data for AI search engines (Google AI Overview, Perplexity, ChatGPT Search, etc).
   // We expose two graphs:
