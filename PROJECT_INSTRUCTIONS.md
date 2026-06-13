@@ -364,9 +364,14 @@ All share entry points live and validated.
 | Council /council     | /og-default.png                       |
 | About /about         | /og-default.png                       |
 | Archive list /archive| /og-default.png                       |
-| Archive /{slug}      | /api/og/vs/{slug} (default member[0]) |
-| Archive /{slug}?     | /api/og/vs/{slug}?member={x}          |
-|   member={x}         | (member-specific VS card)             |
+| Archive /{slug}      | /api/og/vs/{slug} (canonical card)    |
+| Archive /{slug}?     | /api/og/vs/{slug}  ← STILL canonical   |
+|   member={x}         | (Jun 12: og:image is ALWAYS the       |
+|                      |  member-less card. Per-member cards   |
+|                      |  rendered cold on first crawl → X     |
+|                      |  cached an empty card. Canonical is   |
+|                      |  pre-warmed at creation, so reliable. |
+|                      |  ?member= still deep-links the page.) |
 
 Share entry-points live:
 - Live session ShareButton (index.js, after SSE complete)
