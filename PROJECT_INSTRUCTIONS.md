@@ -365,13 +365,19 @@ All share entry points live and validated.
 | About /about         | /og-default.png                       |
 | Archive list /archive| /og-default.png                       |
 | Archive /{slug}      | /api/og/vs/{slug} (canonical card)    |
-| Archive /{slug}?     | /api/og/vs/{slug}  ← STILL canonical   |
-|   member={x}         | (Jun 12: og:image is ALWAYS the       |
-|                      |  member-less card. Per-member cards   |
-|                      |  rendered cold on first crawl → X     |
-|                      |  cached an empty card. Canonical is   |
-|                      |  pre-warmed at creation, so reliable. |
-|                      |  ?member= still deep-links the page.) |
+| Archive /{slug}?     | /api/og/vs/{slug}?member={x}           |
+|   member={x}         | (member-specific card)                |
+
+OG pre-warm (CRITICAL — read before touching share cards):
+crawlers (X/LinkedIn) time out on a cold @vercel/og render, so
+prewarmOgImage(slug, names) in pipeline.js warms the canonical card
+AND every member variant at creation (commit a2818fb, Jun 13). The
+member value MUST equal the share buttons' cleanName (stripTier) — the
+same regex lives in prewarmOgImage, archive/[slug].js ogImageUrl and
+Procession.jsx; keep them in sync (one contract). Existing sessions:
+scripts/prewarm-all-og.mjs (one-off backfill). Do NOT point og:image at
+a non-pre-warmed card. (52d2dbb briefly dropped per-member cards — wrong,
+reverted: per-member quote shares must keep showing that member.)
 
 Share entry-points live:
 - Live session ShareButton (index.js, after SSE complete)
