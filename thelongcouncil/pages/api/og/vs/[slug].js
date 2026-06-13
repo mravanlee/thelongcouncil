@@ -63,14 +63,19 @@ function normaliseName(name) {
 }
 
 // Resolve a member name to a known avatar slug (naive slug → resolver).
+// Naive slug MUST match the other callers (archive/[slug].js, council.js,
+// Procession.jsx): a run of any non-alphanumerics → "_". The old version used
+// [^a-z0-9\s] which DELETED hyphens (Ben-Gurion → "bengurion", Jean-Jacques →
+// "jeanjacques"), so hyphenated members failed KNOWN_AVATAR_SLUGS and rendered a
+// silhouette instead of their portrait.
 function avatarSlugFor(name) {
   const naive = (name || '')
-    .toLowerCase()
+    .replace(/\s*\([^)]*\)/g, '')
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-z0-9\s]/g, '')
-    .trim()
-    .replace(/\s+/g, '_');
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
   return resolveAvatarSlug(naive);
 }
 

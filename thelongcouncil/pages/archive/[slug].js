@@ -295,70 +295,38 @@ function VerdictCast({ names }) {
   );
 }
 
-// Sharing the card IMAGE as media — not the link — is what makes the preview
-// reliable. A link preview depends on X/WhatsApp asynchronously crawling a
-// brand-new URL, which loses a race when you share a just-created session
-// (especially in a reply), so the card silently fails to appear. Attaching the
-// PNG as media removes that dependency entirely: the image always shows,
-// standalone or reply, fresh or not. Each tier below degrades safely to the
-// next, so the worst case is exactly the old link-copy behaviour.
-async function fetchCardFile(imageUrl) {
-  if (!imageUrl) return null;
-  const res = await fetch(imageUrl);
-  if (!res.ok) return null;
-  const blob = await res.blob();
-  return new File([blob], 'the-long-council.png', { type: blob.type || 'image/png' });
-}
-
-function ShareButton({ url, question, imageUrl }) {
-  const [status, setStatus] = useState('idle'); // 'idle' | 'img' | 'link'
+// Share the LINK (not the image as media). The destination — WhatsApp / X /
+// LinkedIn — fetches the OG card itself, which is now a durable STATIC image
+// (lib/ogCards.mjs), so the preview is reliable. Attaching the PNG as media (the
+// old workaround for flaky OG cards) broke the clickable link: desktop pasted an
+// image only, and the mobile copy/paste flow did nothing useful.
+function ShareButton({ url, question }) {
+  const [copied, setCopied] = useState(false);
   const cleanQuestion = (question || '').trim().replace(/\s+/g, ' ');
   const shareText = `"${cleanQuestion}" — debated by The Long Council`;
   const linkText = `${shareText}\n\n${url}`;
 
   async function handleClick() {
-    // 1) Native share sheet with the card image attached — touch devices only.
-    //    On desktop the OS sheet often lacks X as a target, so desktop skips to
-    //    the clipboard path (paste into the composer). Image rides along as
-    //    media either way, so the preview never depends on a crawl.
+    // Touch devices: native share sheet → pick WhatsApp/X/etc., which receives
+    // the link and renders the OG card preview.
     const isTouch = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
-    if (isTouch && typeof navigator !== 'undefined' && navigator.canShare && imageUrl) {
+    if (isTouch && typeof navigator !== 'undefined' && navigator.share) {
       try {
-        const file = await fetchCardFile(imageUrl);
-        if (file && navigator.canShare({ files: [file] })) {
-          await navigator.share({ files: [file], text: shareText, url });
-          return;
-        }
+        await navigator.share({ text: shareText, url });
+        return;
       } catch (e) { if (e && e.name === 'AbortError') return; }
     }
-
-    // 2) Desktop: copy the card image to the clipboard so it can be pasted
-    //    straight into the post composer (⌘/Ctrl+V) as an always-visible image.
-    //    The promise form keeps Safari's user-activation valid through the fetch.
-    if (typeof navigator !== 'undefined' && navigator.clipboard && typeof window !== 'undefined' && window.ClipboardItem && imageUrl) {
-      try {
-        const item = new window.ClipboardItem({ 'image/png': fetch(imageUrl).then((r) => r.blob()) });
-        await navigator.clipboard.write([item]);
-        setStatus('img');
-        setTimeout(() => setStatus('idle'), 3000);
-        return;
-      } catch (e) {}
-    }
-
-    // 3) Last resort: copy the link (the preview then waits on the crawl).
+    // Otherwise copy the link text to paste into the composer.
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
       try {
         await navigator.clipboard.writeText(linkText);
-        setStatus('link');
-        setTimeout(() => setStatus('idle'), 2000);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
         return;
       } catch (e) {}
     }
     if (typeof window !== 'undefined') window.prompt('Copy this link:', linkText);
   }
-
-  const done = status !== 'idle';
-  const label = status === 'img' ? 'Card image copied' : status === 'link' ? 'Link copied' : 'Share this session';
 
   return (
     <div className="flex flex-col items-center my-8">
@@ -367,10 +335,10 @@ function ShareButton({ url, question, imageUrl }) {
         aria-label="Share this session"
         className="group inline-flex min-w-[200px] items-center justify-center gap-2 rounded-sm border border-primary px-6 py-3 text-[13px] tracking-wide text-primary transition hover:bg-primary"
       >
-        {done ? (
+        {copied ? (
           <>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="transition group-hover:[stroke:var(--color-primary-foreground)]"><polyline points="20 6 9 17 4 12" /></svg>
-            <span className="transition group-hover:[color:var(--color-primary-foreground)]">{label}</span>
+            <span className="transition group-hover:[color:var(--color-primary-foreground)]">Link copied</span>
           </>
         ) : (
           <>
@@ -379,9 +347,6 @@ function ShareButton({ url, question, imageUrl }) {
           </>
         )}
       </button>
-      {status === 'img' && (
-        <div className="mt-2 text-[12px] text-muted-foreground">Paste it into your post (⌘/Ctrl+V) — the preview always shows.</div>
-      )}
     </div>
   );
 }
@@ -686,7 +651,7 @@ export default function ArchiveDetail({ session, memberQuery }) {
           </div>
         )}
 
-        <ShareButton url={baseShareUrl} question={englishQuestion || 'The Long Council'} imageUrl={ogImageUrl} />
+        <ShareButton url={baseShareUrl} question={englishQuestion || 'The Long Council'} />
 
         {deliberationText && (
           <div className="debate-section">
