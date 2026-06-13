@@ -686,21 +686,36 @@ async function notifyIndexNow(slug) {
 // crawlers' timeout (X/Twitter, etc.), which makes them cache an imageless
 // card for ~7 days. One GET here primes Vercel's CDN (the image is immutable,
 // 1y cache) before anyone shares the link, so cards reliably show the image.
-async function prewarmOgImage(slug) {
+async function prewarmOgImage(slug, memberNames = []) {
   if (!slug) return;
   if (process.env.VERCEL_ENV && process.env.VERCEL_ENV !== 'production') {
     console.log('[prewarm-og] skipped (non-production env)');
     return;
   }
-  try {
-    const imageUrl = `https://${INDEXNOW_HOST}/api/og/vs/${slug}`;
-    const res = await fetch(imageUrl, { headers: { 'User-Agent': 'TLC-Prewarm/1.0' } });
-    // Drain the body so the CDN fully stores the rendered PNG.
-    await res.arrayBuffer().catch(() => {});
-    console.log(`[prewarm-og] warmed ${imageUrl} (HTTP ${res.status})`);
-  } catch (err) {
-    console.warn('[prewarm-og] failed:', err.message);
+  // Warm the canonical card AND one card per member, so per-member quote shares
+  // (?member=) are never cold on first crawl (otherwise X/LinkedIn time out and
+  // cache an EMPTY card). Use the SAME cleaned name the share buttons use
+  // (Procession.jsx ShareQuoteLink) so the warmed URL == the exact ?member= URL
+  // crawlers hit. Keep this strip in sync with that one and with the
+  // archive/[slug].js ogImageUrl — they form one contract.
+  const stripTier = (n) =>
+    String(n || '').replace(/\s*[—–-]\s*(Practitioner|Framer|Leader|Thinker|Wildcard)\s*$/i, '').trim();
+  const urls = [`https://${INDEXNOW_HOST}/api/og/vs/${slug}`];
+  for (const n of memberNames || []) {
+    const clean = stripTier(n);
+    if (clean) urls.push(`https://${INDEXNOW_HOST}/api/og/vs/${slug}?member=${encodeURIComponent(clean)}`);
   }
+  await Promise.all(
+    urls.map(async (imageUrl) => {
+      try {
+        const res = await fetch(imageUrl, { headers: { 'User-Agent': 'TLC-Prewarm/1.0' } });
+        await res.arrayBuffer().catch(() => {}); // drain so the CDN stores the PNG
+        console.log(`[prewarm-og] warmed ${imageUrl} (HTTP ${res.status})`);
+      } catch (err) {
+        console.warn('[prewarm-og] failed:', imageUrl, err.message);
+      }
+    }),
+  );
 }
 
 async function generateFactualAnchors(question) {
@@ -2362,7 +2377,7 @@ Every card is first person. A member says "I" and "my" and never names themselve
     // ~100-300ms typical; never blocks save or breaks the session.
     // Awaited (concurrently) for the same reason as IndexNow: Vercel cuts off
     // execution once the response is sent, so fire-and-forget would be killed.
-    if (saved) await Promise.all([notifyIndexNow(finalSlug), prewarmOgImage(finalSlug)]);
+    if (saved) await Promise.all([notifyIndexNow(finalSlug), prewarmOgImage(finalSlug, metadata?.names || [])]);
 
     send('complete', {
       message: 'Session complete',

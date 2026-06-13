@@ -456,12 +456,15 @@ export default function ArchiveDetail({ session, memberQuery }) {
 
   const baseShareUrl = `https://www.thelongcouncil.com/archive/${session.slug}`;
   const canonicalUrl = memberQuery ? `${baseShareUrl}?member=${encodeURIComponent(memberQuery)}` : baseShareUrl;
-  // OG image is ALWAYS the canonical (member-less) card. That one is pre-warmed
-  // at session creation, so crawlers (X / LinkedIn / WhatsApp) fetch it instantly.
-  // The per-member variant (?member=) renders cold on first crawl, so the crawler
-  // timed out and cached an EMPTY card — a recurring bug. So OG never points at it,
-  // even when the shared URL has ?member= (that param still deep-links the page).
-  const ogImageUrl = `https://www.thelongcouncil.com/api/og/vs/${session.slug}`;
+  // Per-member shares (?member=) get THAT member's card; the canonical card
+  // otherwise. BOTH are pre-warmed at session creation (pipeline.js
+  // prewarmOgImage warms the canonical + every member variant with the same
+  // cleaned name the share buttons use), so neither is cold on a crawler's first
+  // fetch — that cold render is what made X cache an empty card. If you touch
+  // either side, keep them in sync: archive ogImageUrl ⇄ prewarmOgImage.
+  const ogImageUrl = memberQuery
+    ? `https://www.thelongcouncil.com/api/og/vs/${session.slug}?member=${encodeURIComponent(memberQuery)}`
+    : `https://www.thelongcouncil.com/api/og/vs/${session.slug}`;
 
   // Structured data for AI search engines (Google AI Overview, Perplexity, ChatGPT Search, etc).
   // We expose two graphs:
