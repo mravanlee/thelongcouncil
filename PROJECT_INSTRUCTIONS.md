@@ -364,20 +364,23 @@ All share entry points live and validated.
 | Council /council     | /og-default.png                       |
 | About /about         | /og-default.png                       |
 | Archive list /archive| /og-default.png                       |
-| Archive /{slug}      | /api/og/vs/{slug} (canonical card)    |
-| Archive /{slug}?     | /api/og/vs/{slug}?member={x}           |
-|   member={x}         | (member-specific card)                |
+| Archive /{slug}      | stored PNG (og_images.__canonical__)  |
+| Archive /{slug}?     | stored PNG (og_images["<cleanName>"]) |
+|   member={x}         | static Supabase Storage file          |
 
-OG pre-warm (CRITICAL — read before touching share cards):
-crawlers (X/LinkedIn) time out on a cold @vercel/og render, so
-prewarmOgImage(slug, names) in pipeline.js warms the canonical card
-AND every member variant at creation (commit a2818fb, Jun 13). The
-member value MUST equal the share buttons' cleanName (stripTier) — the
-same regex lives in prewarmOgImage, archive/[slug].js ogImageUrl and
-Procession.jsx; keep them in sync (one contract). Existing sessions:
-scripts/prewarm-all-og.mjs (one-off backfill). Do NOT point og:image at
-a non-pre-warmed card. (52d2dbb briefly dropped per-member cards — wrong,
-reverted: per-member quote shares must keep showing that member.)
+OG share cards — DURABLE design (CRITICAL, commit d232bce, Jun 13):
+@vercel/og renders on demand and Vercel's edge cache is volatile
+(evicts / per-PoP), so a card can be cold when a crawler arrives →
+timeout → X caches an EMPTY card. Fix: render each card ONCE at creation
+and STORE the PNG in the public Supabase Storage bucket `og-cards`;
+og:image points at that static file (sessions.og_images jsonb, keyed by
+"__canonical__" + each cleanName). lib/ogCards.mjs storeOgCards() does
+render→upload→write og_images and is used by BOTH pipeline.js (new
+sessions) and scripts/backfill-og-cards.mjs (existing). archive/[slug].js
+ogImageUrl = og_images[member]||og_images.__canonical__||on-demand
+fallback. ONE CONTRACT: the stripTier/cleanName must be identical in
+lib/ogCards.mjs, Procession.jsx and archive/[slug].js (else the
+og_images key ≠ the ?member= value). Do NOT revert to on-demand-only.
 
 Share entry-points live:
 - Live session ShareButton (index.js, after SSE complete)
