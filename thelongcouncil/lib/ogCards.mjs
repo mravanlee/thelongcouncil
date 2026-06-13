@@ -30,13 +30,17 @@ const safeKey = (s) =>
 export async function storeOgCards({ slug, memberNames, supabaseUrl, serviceKey }) {
   if (!slug || !supabaseUrl || !serviceKey) return {};
 
-  const targets = [{ key: '__canonical__', src: `${HOST}/api/og/vs/${slug}`, path: `${slug}/canonical.png` }];
+  // Cache-bust the SOURCE render so we never copy a stale @vercel/og response
+  // (its CDN caches 1y; a re-run must re-render with current code). Does not
+  // affect the Storage path — that stays deterministic per member.
+  const cb = Date.now();
+  const targets = [{ key: '__canonical__', src: `${HOST}/api/og/vs/${slug}?cb=${cb}`, path: `${slug}/canonical.png` }];
   for (const n of memberNames || []) {
     const clean = stripTier(n);
     if (clean) {
       targets.push({
         key: clean,
-        src: `${HOST}/api/og/vs/${slug}?member=${encodeURIComponent(clean)}`,
+        src: `${HOST}/api/og/vs/${slug}?member=${encodeURIComponent(clean)}&cb=${cb}`,
         path: `${slug}/${safeKey(clean)}.png`,
       });
     }
