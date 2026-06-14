@@ -1,5 +1,4 @@
 import Head from 'next/head';
-import { useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { supabase } from '../../lib/supabase';
 
@@ -11,6 +10,9 @@ export async function getServerSideProps(context) {
     .eq('slug', slug)
     .single();
   if (error || !session) return { notFound: true };
+  // No brief yet (pre-created / unfinished session) → 404, so we never index a
+  // thin/empty Policy Brief page.
+  if (!session.cards || !session.cards.brief) return { notFound: true };
   return { props: { session } };
 }
 
@@ -94,23 +96,57 @@ export default function BriefPrint({ session }) {
   let briefText = (cards.brief || '').replace(/What only the policymaker can resolve|What the policymaker must decide/gi, 'For a policymaker to decide on');
   briefText = briefText.replace(/^[\s\S]*?(\*\*Confidence summary:\*\*)/i, '$1');
 
-  // Auto-open the print dialog once the page has settled (fonts loaded).
-  useEffect(() => {
-    const t = setTimeout(() => { try { window.print(); } catch (e) {} }, 700);
-    return () => clearTimeout(t);
-  }, []);
+  // ── Standalone, indexable Policy Brief page (SEO) ──────────────────────
+  const baseUrl = 'https://www.thelongcouncil.com';
+  const debateUrl = `${baseUrl}/archive/${session.slug}`;
+  const canonicalUrl = `${baseUrl}/brief/${session.slug}`;
+  const pageTitle = `${question} | Policy Brief | The Long Council`;
+  // Positioning-aligned: a brief that EXAMINES the question (competing views +
+  // what it leaves for policymakers), framed around the verdict — not a claim of
+  // a single definitive answer.
+  const aboutPhrase = `A policy brief from The Long Council on ${question}`.replace(/[?.!]+\s*$/, '');
+  let metaDescription = `${aboutPhrase}. ${verdict}`.replace(/\s+/g, ' ').trim();
+  if (metaDescription.length > 158) metaDescription = metaDescription.slice(0, 158).replace(/\s+\S*$/, '') + '…';
+  const ogImage = (session.og_images && session.og_images.__canonical__) || `${baseUrl}/api/og/vs/${session.slug}`;
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: `${question} — Policy Brief`.slice(0, 110),
+    description: metaDescription,
+    about: question,
+    articleSection: 'Policy Brief',
+    url: canonicalUrl,
+    mainEntityOfPage: canonicalUrl,
+    datePublished: session.created_at,
+    inLanguage: 'en',
+    author: { '@type': 'Organization', name: 'The Long Council', url: baseUrl },
+    publisher: { '@type': 'Organization', name: 'The Long Council', url: baseUrl },
+    isPartOf: { '@type': 'WebSite', name: 'The Long Council', url: baseUrl },
+  };
 
   return (
     <>
       <Head>
-        <title>{(question || 'Policy brief').slice(0, 70)} — The Long Council</title>
-        <meta name="robots" content="noindex" />
+        <title>{pageTitle}</title>
+        <meta name="description" content={metaDescription} />
+        <link rel="canonical" href={canonicalUrl} />
+        <meta property="og:type" content="article" />
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={metaDescription} />
+        <meta property="og:url" content={canonicalUrl} />
+        <meta property="og:image" content={ogImage} />
+        <meta property="og:site_name" content="The Long Council" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={pageTitle} />
+        <meta name="twitter:description" content={metaDescription} />
+        <meta name="twitter:image" content={ogImage} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       </Head>
 
       <div className="page">
         <div className="toolbar no-print">
+          <a href={debateUrl} className="debatelink">← View the full debate</a>
           <button type="button" onClick={() => window.print()} className="savebtn">Save as PDF</button>
-          <span className="hint">Choose “Save as PDF” as the destination.</span>
         </div>
 
         <article className="doc">
@@ -139,7 +175,7 @@ export default function BriefPrint({ session }) {
           <BriefBody briefText={briefText} memberActions={memberActions} />
 
           <footer className="doc-foot">
-            thelongcouncil.com/archive/{session.slug}
+            <a href={debateUrl} className="foot-link">View the full debate →</a>
           </footer>
         </article>
       </div>
@@ -151,7 +187,8 @@ export default function BriefPrint({ session }) {
         .toolbar { max-width: 720px; margin: 0 auto 18px; display: flex; align-items: center; gap: 14px; }
         .savebtn { font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; letter-spacing: 0.02em; color: #fff; background: var(--primary); border: none; border-radius: 5px; padding: 9px 16px; cursor: pointer; }
         .savebtn:hover { opacity: 0.9; }
-        .hint { font-family: 'Inter', sans-serif; font-size: 12px; color: var(--muted-foreground); }
+        .debatelink { margin-right: auto; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; letter-spacing: 0.02em; color: var(--primary); text-decoration: none; }
+        .debatelink:hover { text-decoration: underline; }
 
         .doc { max-width: 720px; margin: 0 auto; background: #fff; color: #1c1714; padding: 46px 52px 40px; box-shadow: 0 1px 14px rgba(0,0,0,0.10); }
         .doc-head { border-bottom: 1px solid rgba(28,23,20,0.14); padding-bottom: 18px; margin-bottom: 22px; }
@@ -179,7 +216,9 @@ export default function BriefPrint({ session }) {
         .act:last-child { margin-bottom: 0; }
         .arr { color: var(--primary); font-weight: 700; flex: 0 0 auto; }
 
-        .doc-foot { margin-top: 30px; padding-top: 14px; border-top: 1px solid rgba(28,23,20,0.14); font-family: 'Inter', sans-serif; font-size: 11px; color: #8a7d70; }
+        .doc-foot { margin-top: 30px; padding-top: 14px; border-top: 1px solid rgba(28,23,20,0.14); font-family: 'Inter', sans-serif; font-size: 12px; color: #8a7d70; }
+        .foot-link { color: var(--primary); text-decoration: none; font-weight: 600; }
+        .foot-link:hover { text-decoration: underline; }
 
         @media print {
           .page { background: #fff; padding: 0; }
