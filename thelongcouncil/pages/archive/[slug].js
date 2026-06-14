@@ -509,6 +509,24 @@ export default function ArchiveDetail({ session, memberQuery }) {
           </div>
         )}
 
+        {/* Related Debates — precomputed in sessions.related (offline embedding
+            job, see scripts/refresh-related.py). Server-rendered, crawlable
+            <a> links that pass internal link equity between debates. */}
+        {Array.isArray(session.related) && session.related.length > 0 && (
+          <section className="related-debates">
+            <h2 className="related-title">Related Debates</h2>
+            <p className="related-dek">Other questions that turn on the same tensions.</p>
+            <div className="related-grid">
+              {session.related.map((r) => (
+                <a key={r.slug} href={`/archive/${r.slug}`} className="related-card">
+                  <span className="related-card-title">{r.title}</span>
+                  {r.blurb && <span className="related-card-blurb">{r.blurb}</span>}
+                </a>
+              ))}
+            </div>
+          </section>
+        )}
+
         <div className="detail-nudge">
           <div>Does this not quite answer your question?</div>
           <Link href="/" className="nudge-link">Ask your own question →</Link>
@@ -532,6 +550,15 @@ export default function ArchiveDetail({ session, memberQuery }) {
         .debate-section { margin: 0 0 2.5rem; }
         .debate-label { font-family: 'Inter', sans-serif; font-size: 11px; color: var(--muted-foreground); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 0.5px solid var(--border); }
         .convergence-block { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border); }
+        .related-debates { margin-top: 3rem; }
+        .related-title { font-family: 'Playfair Display', Georgia, serif; font-size: 20px; font-weight: 600; color: var(--foreground); margin: 0; line-height: 1.3; }
+        .related-dek { font-family: 'Inter', sans-serif; font-size: 13px; color: var(--muted-foreground); margin: 0.3rem 0 1.25rem; }
+        .related-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+        .related-card { display: flex; flex-direction: column; gap: 6px; padding: 16px 18px; border: 0.5px solid var(--border); border-radius: 4px; background: var(--card); text-decoration: none; transition: border-color 0.15s, background 0.15s; }
+        .related-card:hover { border-color: var(--primary); background: var(--secondary); }
+        .related-card-title { font-family: 'Playfair Display', Georgia, serif; font-size: 16px; font-weight: 600; line-height: 1.3; color: var(--foreground); }
+        .related-card-blurb { font-family: 'Inter', sans-serif; font-size: 13px; line-height: 1.5; color: var(--muted-foreground); }
+        @media (max-width: 640px) { .related-grid { grid-template-columns: 1fr; } }
         .detail-nudge { margin-top: 3rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border); font-family: 'Inter', sans-serif; font-size: 13px; color: var(--muted-foreground); text-align: center; }
         .detail-nudge > div { margin-bottom: 0.5rem; }
         .nudge-link, .nudge-link :global(*), .nudge-link:hover, .nudge-link:visited { color: var(--primary) !important; text-decoration: none !important; }
