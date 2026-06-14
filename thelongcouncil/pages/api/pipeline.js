@@ -3,6 +3,7 @@ import path from 'path';
 import { getServiceSupabase, generateSlug } from '../../lib/supabase';
 import { getMemberQuotes } from '../../lib/memberQuotes';
 import { storeOgCards } from '../../lib/ogCards.mjs';
+import { refreshRelated } from '../../lib/related.mjs';
 
 export const config = { maxDuration: 300 };
 
@@ -2357,6 +2358,16 @@ Every card is first person. A member says "I" and "my" and never names themselve
           supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
           serviceKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
         }),
+        // Related Debates: embed this new debate (Gemini), then re-rank + write
+        // sessions.related for the whole corpus so links are bidirectional.
+        // Best-effort; skipped if no Gemini key. See lib/related.mjs.
+        process.env.GEMINI_API_KEY
+          ? refreshRelated({
+              supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
+              serviceKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+              geminiKey: process.env.GEMINI_API_KEY,
+            }).catch((e) => console.error('[pipeline] refreshRelated failed:', e?.message))
+          : Promise.resolve(),
       ]);
     }
 
