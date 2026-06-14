@@ -36,9 +36,9 @@ function buildSitemap(staticPages, sessions) {
   const sessionEntries = sessions.map(({ slug, created_at }) => {
     const lastmod = new Date(created_at).toISOString().split('T')[0];
     const esc = escapeXml(slug);
-    // Each session has two indexable pages: the debate and its standalone
-    // Policy Brief. The debate is the primary asset (0.7); the brief is a
-    // focused policy-analysis page (0.6).
+    // Each session has three indexable pages: the debate (primary, 0.7), its
+    // standalone Policy Brief (0.6), and the panel page "Who was selected, and
+    // why" (0.6).
     return `
   <url>
     <loc>${SITE_URL}/archive/${esc}</loc>
@@ -48,6 +48,12 @@ function buildSitemap(staticPages, sessions) {
   </url>
   <url>
     <loc>${SITE_URL}/brief/${esc}</loc>
+    <lastmod>${lastmod}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>${SITE_URL}/who/${esc}</loc>
     <lastmod>${lastmod}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>

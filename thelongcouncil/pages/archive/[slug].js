@@ -351,7 +351,7 @@ function ShareButton({ url, question }) {
   );
 }
 
-function CollapsibleSection({ title, subtitle, children, defaultOpen = false }) {
+function CollapsibleSection({ title, subtitle, children, footerLink, defaultOpen = false }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
     <div className="mb-4 overflow-hidden rounded-sm border border-border bg-card">
@@ -379,6 +379,18 @@ function CollapsibleSection({ title, subtitle, children, defaultOpen = false }) 
       </button>
       {open && (
         <div className="border-t border-border/70 px-5 pb-6">{children}</div>
+      )}
+      {/* Always-rendered (outside the open-gate) so it sits in the crawlable HTML
+          and gives the standalone /brief and /who pages an internal link, while
+          the section body itself stays in __NEXT_DATA__ only (no duplicate
+          content). */}
+      {footerLink && (
+        <a
+          href={footerLink.href}
+          className="flex items-center border-t border-border/70 px-5 py-3 text-[13px] font-medium text-primary transition hover:bg-secondary"
+        >
+          {footerLink.label}
+        </a>
       )}
     </div>
   );
@@ -666,21 +678,21 @@ export default function ArchiveDetail({ session, memberQuery }) {
         )}
 
         {briefText && (
-          <CollapsibleSection title="The policy brief" subtitle="The analyst's synthesis — what would change the verdict">
-            <a href={`/brief/${session.slug}`} target="_blank" rel="noopener noreferrer" className="brief-save">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-              </svg>
-              <span>Save policy brief</span>
-            </a>
+          <CollapsibleSection
+            title="The policy brief"
+            subtitle="The analyst's synthesis — what would change the verdict"
+            footerLink={{ href: `/brief/${session.slug}`, label: 'Read the full policy brief →' }}
+          >
             <BriefWithActions briefText={briefText} memberActions={cards.member_actions || {}} />
           </CollapsibleSection>
         )}
 
         {assemblyText && (
-          <CollapsibleSection title="Who was selected, and why" subtitle="The table — who was at it, who wasn't, and in their own words">
+          <CollapsibleSection
+            title="Who was selected, and why"
+            subtitle="The table — who was at it, who wasn't, and in their own words"
+            footerLink={{ href: `/who/${session.slug}`, label: 'See who was selected →' }}
+          >
             <WhoWasSelected assembly={assemblyText} briefQuotes={cards.brief_quotes || {}} />
           </CollapsibleSection>
         )}
