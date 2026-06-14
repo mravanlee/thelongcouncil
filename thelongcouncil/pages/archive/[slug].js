@@ -677,24 +677,31 @@ export default function ArchiveDetail({ session, memberQuery }) {
           </div>
         )}
 
-        {briefText && (
-          <CollapsibleSection
-            title="The policy brief"
-            subtitle="The analyst's synthesis — what would change the verdict"
-            footerLink={{ href: `/brief/${session.slug}`, label: 'Read the full policy brief →' }}
-          >
-            <BriefWithActions briefText={briefText} memberActions={cards.member_actions || {}} />
-          </CollapsibleSection>
-        )}
-
-        {assemblyText && (
-          <CollapsibleSection
-            title="Who was selected, and why"
-            subtitle="The table — who was at it, who wasn't, and in their own words"
-            footerLink={{ href: `/who/${session.slug}`, label: 'See who was selected →' }}
-          >
-            <WhoWasSelected assembly={assemblyText} briefQuotes={cards.brief_quotes || {}} />
-          </CollapsibleSection>
+        {/* The brief and the panel each live on their own standalone, indexable
+            page now. Instead of expanding inline (which duplicated the content
+            and read as redundant next to the page link), each section is a
+            single crawlable link to its dedicated page. */}
+        {(briefText || assemblyText) && (
+          <div className="mb-4 flex flex-col gap-3">
+            {briefText && (
+              <a
+                href={`/brief/${session.slug}`}
+                className="flex items-center justify-between gap-4 rounded-sm border border-border bg-card px-5 py-4 text-[15px] font-medium text-primary transition hover:bg-secondary"
+              >
+                <span>Read the full policy brief</span>
+                <span aria-hidden="true">→</span>
+              </a>
+            )}
+            {assemblyText && (
+              <a
+                href={`/who/${session.slug}`}
+                className="flex items-center justify-between gap-4 rounded-sm border border-border bg-card px-5 py-4 text-[15px] font-medium text-primary transition hover:bg-secondary"
+              >
+                <span>Who was selected, and why</span>
+                <span aria-hidden="true">→</span>
+              </a>
+            )}
+          </div>
         )}
 
         <div className="detail-nudge">
