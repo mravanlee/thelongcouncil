@@ -227,14 +227,42 @@ thelongcouncil/
                          Procession with instant={true} AND
                          scrollReveal={true} AND sessionSlug.
                          "The debate" label above procession.
-                         Policy brief + assembly still behind
-                         CollapsibleSection.
                          Contains AVATAR_NAME_EXPANSIONS map
                          and nameToAvatarSlug().
                          stripTierSuffix handles slash variants.
                          (Jun 11) Page wrapped in min-h-screen
                          bg-background (was falling back to the
                          cooler body colour, looked "whiter").
+                         (Jun 14) Policy brief + "who was selected"
+                         are no longer inline. Each is a single
+                         crawlable link CARD to its own indexable
+                         page (/brief, /who) — the CollapsibleSection
+                         + its helpers (BriefWithActions,
+                         WhoWasSelected, MemberAvatar, etc.) were
+                         removed. The brief/assembly text now lives
+                         ONLY on those pages (no duplicate content).
+                         (Jun 14) "Related Debates" section near the
+                         bottom: 1-6 server-rendered crawlable cards
+                         from sessions.related (see Related Debates
+                         note). VerdictCast avatar row unchanged.
+    brief/
+      [slug].js          (Jun 14) Standalone, INDEXABLE Policy Brief
+                         page. White "document" on cream. Own title/
+                         meta/canonical/OG/Twitter + Article JSON-LD,
+                         NO noindex; 404 if cards.brief missing.
+                         Verdict + §1-5 (core argument, what each
+                         member would do, agreement, disagreement,
+                         key decision). "Save as PDF" button. SEO
+                         layer for the brief that was previously
+                         only inside the debate page's __NEXT_DATA__.
+    who/
+      [slug].js          (Jun 14) Standalone, INDEXABLE "Who was
+                         selected, and why" page. Same document
+                         style. Parses cards.assembly into central
+                         tension + the two poles (with avatars) +
+                         selected members (relevance/argument) +
+                         considered-but-not-selected. Own SEO head
+                         (Article JSON-LD), 404 if no assembly.
     api/
       sharpen.js         Prompt 0 — question sharpener.
                          May 11: compression for long questions.
@@ -386,6 +414,48 @@ Share entry-points live:
 - Live session ShareButton (index.js, after SSE complete)
 - Sessie-niveau ShareButton op archive/[slug]
 - Per-member ShareIcon in elke deliberation card (archive only)
+
+==============================================================
+INDEXABLE SUBPAGES + RELATED DEBATES (Jun 14)
+==============================================================
+
+Per debate there are now THREE indexable, server-rendered pages:
+/archive/{slug} (debate, primary), /brief/{slug} (Policy Brief),
+/who/{slug} ("Who was selected, and why"). Each has its own
+title/meta/canonical/OG/Twitter + Article JSON-LD and is in
+sitemap.xml (archive 0.7, brief/who 0.6). 404 for unfinished/empty
+sessions (no thin pages).
+
+NO DUPLICATE CONTENT: the debate page links to /brief and /who via
+crawlable link CARDS (plain <a href>), but the full brief/assembly
+text lives ONLY on those dedicated pages — it is NOT rendered in the
+debate page's HTML (only in __NEXT_DATA__ props, which Google does not
+index as content). When checking, strip the __NEXT_DATA__ script before
+grepping (a grep over full HTML false-positives on the props).
+
+RELATED DEBATES (sessions.related, sessions.embedding):
+- lib/related.mjs — ONE CONTRACT (like ogCards.mjs), shared by the
+  pipeline AND scripts/backfill-related.mjs.
+- Embeddings: Gemini gemini-embedding-001 (768d, taskType
+  SEMANTIC_SIMILARITY) of question + verdict + central tension, stored
+  in sessions.embedding. GEMINI_API_KEY env (Vercel + .env.local +
+  ~/.claude/secrets/gemini.env). Free AI-Studio tier.
+- Scoring: MEAN-CENTERED cosine (Gemini raw cosines are uniformly high,
+  so centering is essential) + structured re-rank (tags Jaccard +
+  IDF-weighted capped members) + an ADAPTIVE per-debate relevance floor
+  (cc >= best_match * 0.55) so isolated topics show only their genuine
+  twin and spread-out topics show their whole cluster. Top-6,
+  near-dup excluded (centered cos > 0.80).
+- Automatic: a best-effort step at the END of pipeline.js (next to
+  storeOgCards) embeds the new debate + re-ranks the whole corpus +
+  writes sessions.related (bidirectional). Never breaks the session.
+- sessions.related = [{slug,title,blurb}], denormalized → archive page
+  renders the "Related Debates" cards with no extra query.
+- Full rebuild: node scripts/backfill-related.mjs (idempotent; reuses
+  stored embeddings, so only embeds new debates).
+- NOTE: thresholds are calibrated to Gemini's score distribution. If the
+  embedding model ever changes, RE-CALIBRATE (inspect the score spread).
+  The old local BGE/fastembed/launchd approach was dropped (brittle).
 
 ==============================================================
 KEY FIXES APPLIED (CUMULATIVE)
