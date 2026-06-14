@@ -58,25 +58,6 @@ function stripTierSuffix(name) {
   return name.replace(/\s*[—–-]\s*(Practitioner|Framer|Leader|Thinker|Wildcard)(\/\w+)?\s*$/i, '').trim();
 }
 
-const normName = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z]/g, '');
-
-// Match a name against the keys of a {name: value} object, tolerant of tier
-// suffixes, accents and last-name-only references. Returns the value or null.
-function lookupByName(map, name) {
-  if (!map || !name) return null;
-  const want = normName(stripTierSuffix(name));
-  const wantLast = normName(stripTierSuffix(name).split(/\s+/).pop());
-  for (const key of Object.keys(map)) {
-    const k = normName(stripTierSuffix(key));
-    if (k === want) return map[key];
-  }
-  for (const key of Object.keys(map)) {
-    const kLast = normName(stripTierSuffix(key).split(/\s+/).pop());
-    if (kLast && kLast.length >= 3 && kLast === wantLast) return map[key];
-  }
-  return null;
-}
-
 // The headline size follows the question length so short questions stay
 // dramatic and long ones stay readable. Tiers: <=70, 71-140, >140 chars.
 function detailTitleSize(len) {
@@ -99,137 +80,6 @@ function splitNameForCast(name) {
 
 function getInitials(name) {
   return stripTierSuffix(name).split(' ').filter(Boolean).map(p => p[0]).join('').toUpperCase().slice(0, 3);
-}
-
-// "Who was selected" renders the original Prompt-1 assembly as a single markdown
-// block (exactly the original layout), with three light touches on the source
-// text: strip the tier labels (Framer/Practitioner/Leader/Thinker/Wildcard),
-// drop the internal [documented]/[inferred]/[extrapolated] coverage tag, and
-// inject each member's single strongest real quote as a blockquote under their
-// entry in SELECTED MEMBERS. Verified to keep the ordered list intact.
-// A member avatar that links to their profile on the council page. Falls back
-// to a monogram (no link) for wildcard / off-roster members without an avatar.
-function MemberAvatar({ name }) {
-  const slug = nameToAvatarSlug(name);
-  const clean = stripTierSuffix(name);
-  const known = KNOWN_AVATAR_SLUGS.has(slug);
-  const inner = known
-    ? <img src={`/avatars/avatar_${slug}.webp`} alt={clean} className="mav-img" />
-    : <span className="mav-mono">{getInitials(name)}</span>;
-  if (!known) return <span className="mav mav-static" aria-hidden="true">{inner}</span>;
-  return (
-    <Link href={`/council#m-${slug}`} className="mav" title={`${clean} — bekijk profiel`} aria-label={`${clean} profiel`}>
-      {inner}
-    </Link>
-  );
-}
-
-// Bold the top-level scaffolding labels so the section has clear hierarchy
-// (these structural markers should read above the member names/field labels).
-const boldAssemblyLabels = (s) => s.replace(/^(\s*)(ISSUE SUMMARY|TAXONOMY TAGS|CENTRAL TENSION|POLES & BALANCE|SELECTED MEMBERS|MEMBERS CONSIDERED BUT NOT SELECTED|CONFIDENCE NOTE)(\s*:)/gim, '$1**$2$3**');
-
-// Format one SELECTED MEMBERS entry into the markdown shown beside the avatar:
-// drop the leading number and the bold name line (the name is in the row header),
-// bold Relevance / Coverage / Will argue on their own lines, append the quote.
-function buildMemberContent(entry, briefQuotes) {
-  let e = entry.replace(/^\s*\d+\.\s*/, '');
-  // The first line is the member name. The model formats it inconsistently
-  // ("**Name** — Tier", "**Name — Tier**", or bare "Name — Tier"), so don't
-  // match a fixed shape: take the whole first line, strip bold + tier to get
-  // the name, then drop the entire line (the name is shown in the row header).
-  // This keeps the tier from ever leaking into the body, in any format.
-  const firstLine = (e.split('\n')[0] || '');
-  const name = stripTierSuffix(firstLine.replace(/\*\*/g, '').trim());
-  e = e.replace(/^[^\n]*\n?/, '');
-  e = e.replace(/(Relevance|Coverage|Will argue)\s*:/gi, '**$1:**');
-  e = e.replace(/[ \t]*\n[ \t]*(\*\*(?:Relevance|Coverage|Will argue):\*\*)/g, '  \n$1');
-  e = e.trim();
-  const info = (briefQuotes && name) ? lookupByName(briefQuotes, name) : null;
-  const q = info && info.quotes && info.quotes[0];
-  if (q && q.text) {
-    const src = q.source + (q.translation ? `, ${q.translation}` : '');
-    e += `\n\n> “${q.text}”\n>\n> — ${src}`;
-  }
-  return { name, md: e };
-}
-
-function WhoWasSelected({ assembly, briefQuotes }) {
-  let text = assembly || '';
-  // Strip the tier label in any format the model emits: inside the bold
-  // ("**John Rawls — Framer**"), after the bold ("**John Rawls** — Framer"),
-  // or bare ("John Rawls — Framer"). This also cleans the names listed in the
-  // "Members considered but not selected" section.
-  text = text.replace(/(\*\*[^*\n]*?)\s*[—–-]\s*(?:Practitioner|Framer|Leader|Thinker|Wildcard)(?:\s*\/\s*(?:Practitioner|Framer|Leader|Thinker|Wildcard))?(\*\*)/g, '$1$2');
-  text = text.replace(/(\*\*[^*\n]+?\*\*|[^\n—–-]+?)\s*[—–-]\s*(?:Practitioner|Framer|Leader|Thinker|Wildcard)(?:\s*\/\s*(?:Practitioner|Framer|Leader|Thinker|Wildcard))?(?=\s*$)/gim, '$1');
-  // Drop the internal coverage tag, e.g. "[documented] — ".
-  text = text.replace(/\[(?:documented|inferred|extrapolated)\]\s*[—–-]?\s*/gi, '');
-  const m = text.match(/(SELECTED MEMBERS:[^\n]*\n+)([\s\S]*?)(\n\s*(?:MEMBERS CONSIDERED BUT NOT SELECTED|CONFIDENCE NOTE)\s*:[\s\S]*|$)/i);
-  if (!m) return <div className="md-body"><ReactMarkdown>{boldAssemblyLabels(text)}</ReactMarkdown></div>;
-  const before = boldAssemblyLabels(text.slice(0, m.index) + m[1]);
-  const after = boldAssemblyLabels(m[3]);
-  const entries = m[2].split(/\n(?=\s*\d+\.\s)/).map((e) => e.trim()).filter(Boolean);
-  return (
-    <div className="md-body">
-      <ReactMarkdown>{before}</ReactMarkdown>
-      {entries.map((entry, i) => {
-        const { name, md } = buildMemberContent(entry, briefQuotes);
-        return (
-          <div className="member-row" key={i}>
-            <MemberAvatar name={name} />
-            <div className="member-content">
-              <div className="member-name">{name}</div>
-              <ReactMarkdown>{md}</ReactMarkdown>
-            </div>
-          </div>
-        );
-      })}
-      <ReactMarkdown>{after}</ReactMarkdown>
-    </div>
-  );
-}
-
-// The policy brief, with each member's "What X would do" actions interleaved
-// directly under their paragraph in section 2. Falls back to a plain render if
-// the brief lacks the expected section structure or has no member actions.
-function MemberActionBlock({ name, actions }) {
-  if (!actions || actions.length === 0) return null;
-  return (
-    <div className="bm-actions">
-      <div className="bm-actions-label">What {stripTierSuffix(name)} would do</div>
-      {actions.map((act, i) => (
-        <div className="bm-action" key={i}><span className="bm-arrow">→</span><span>{act}</span></div>
-      ))}
-    </div>
-  );
-}
-
-function BriefWithActions({ briefText, memberActions }) {
-  const hasActions = memberActions && Object.keys(memberActions).length > 0;
-  const m = hasActions ? briefText.match(/^([\s\S]*?##\s*2\.[^\n]*\n)([\s\S]*?)(\n##\s*3\.[\s\S]*)$/) : null;
-  if (!m) return <div className="md-body"><ReactMarkdown>{briefText}</ReactMarkdown></div>;
-  const [, before, section2, after] = m;
-  const paragraphs = section2.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
-  return (
-    <div className="md-body">
-      <ReactMarkdown>{before}</ReactMarkdown>
-      {paragraphs.map((p, i) => {
-        const nm = p.match(/^\*\*([^*]+)\*\*/);
-        const name = nm ? nm[1] : '';
-        const acts = name ? lookupByName(memberActions, name) : null;
-        if (!name) return <div className="bm-block" key={i}><ReactMarkdown>{p}</ReactMarkdown></div>;
-        return (
-          <div className="member-row" key={i}>
-            <MemberAvatar name={name} />
-            <div className="member-content">
-              <ReactMarkdown>{p}</ReactMarkdown>
-              {acts && <MemberActionBlock name={name} actions={acts} />}
-            </div>
-          </div>
-        );
-      })}
-      <ReactMarkdown>{after}</ReactMarkdown>
-    </div>
-  );
 }
 
 function VerdictCast({ names }) {
@@ -347,51 +197,6 @@ function ShareButton({ url, question }) {
           </>
         )}
       </button>
-    </div>
-  );
-}
-
-function CollapsibleSection({ title, subtitle, children, footerLink, defaultOpen = false }) {
-  const [open, setOpen] = useState(defaultOpen);
-  return (
-    <div className="mb-4 overflow-hidden rounded-sm border border-border bg-card">
-      <button
-        onClick={() => setOpen(!open)}
-        aria-expanded={open}
-        className="flex w-full items-center justify-between px-5 py-4 text-left transition hover:bg-secondary"
-      >
-        <div className="flex flex-col">
-          <div
-            className="text-[16px] font-medium leading-tight text-foreground"
-            style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
-          >
-            {title}
-          </div>
-          {subtitle && (
-            <div className="mt-1 text-[13px] text-muted-foreground">
-              {subtitle}
-            </div>
-          )}
-        </div>
-        <span className="ml-3 whitespace-nowrap text-[13px] text-primary">
-          {open ? 'Close ↑' : 'Open ↓'}
-        </span>
-      </button>
-      {open && (
-        <div className="border-t border-border/70 px-5 pb-6">{children}</div>
-      )}
-      {/* Always-rendered (outside the open-gate) so it sits in the crawlable HTML
-          and gives the standalone /brief and /who pages an internal link, while
-          the section body itself stays in __NEXT_DATA__ only (no duplicate
-          content). */}
-      {footerLink && (
-        <a
-          href={footerLink.href}
-          className="flex items-center border-t border-border/70 px-5 py-3 text-[13px] font-medium text-primary transition hover:bg-secondary"
-        >
-          {footerLink.label}
-        </a>
-      )}
     </div>
   );
 }
@@ -733,9 +538,8 @@ export default function ArchiveDetail({ session, memberQuery }) {
         .nudge-link:hover { opacity: 0.75; }
       `}</style>
       <style jsx global>{`
-        /* These render inside child components (WhoWasSelected, BriefWithActions),
-           which fall outside this page's styled-jsx scope, so their styles must
-           be global. */
+        /* Markdown rendered via react-markdown lands outside this page's
+           styled-jsx scope, so the .md-body styles must be global. */
         .md-body { padding-top: 1.5rem; font-family: 'Inter', sans-serif; color: var(--foreground); line-height: 1.7; }
         .md-body h2 { font-family: 'Playfair Display', Georgia, serif; font-size: 20px; color: var(--foreground); font-weight: 600; margin: 1.75rem 0 0.5rem; line-height: 1.3; }
         .md-body h2:first-child { margin-top: 0; }
@@ -746,32 +550,11 @@ export default function ArchiveDetail({ session, memberQuery }) {
         .md-body hr { border: none; border-top: 0.5px solid var(--border); margin: 1.5rem 0; }
         .md-body ul, .md-body ol { padding-left: 1.25rem; margin: 0 0 12px; }
         .md-body li { font-size: 15px; margin-bottom: 6px; }
-        /* clear separation between the numbered members in "Who was selected" */
         .md-body ol > li { margin-bottom: 1.9rem; }
         .md-body ol > li:last-child { margin-bottom: 0.5rem; }
-        /* one real quote under each member in "Who was selected" */
         .md-body blockquote { margin: 1.1rem 0 0.4rem; padding: 0.2rem 0 0.2rem 1.1rem; border-left: 2px solid var(--border); }
         .md-body blockquote p { font-family: 'Playfair Display', Georgia, serif; font-style: italic; font-size: 16px; line-height: 1.45; color: var(--foreground); margin: 0; max-width: 62ch; }
         .md-body blockquote p + p { font-family: 'Inter', sans-serif; font-style: normal; font-size: 12px; color: var(--muted-foreground); margin: 0.25rem 0 0; }
-        /* per-member "What X would do" action box in the policy brief */
-        .bm-block { margin-bottom: 0.6rem; }
-        .bm-actions { background: var(--secondary, #ede4d3); border: 0.5px solid var(--border); border-radius: 4px; padding: 1.05rem 1.25rem; margin: 1rem 0 2.4rem; }
-        .bm-actions-label { font-family: 'Inter', sans-serif; font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--primary); font-weight: 600; margin-bottom: 0.85rem; }
-        .bm-action { display: flex; gap: 0.6rem; font-size: 14px; line-height: 1.55; color: var(--foreground); margin-bottom: 0.7rem; font-family: 'Inter', sans-serif; }
-        .bm-action:last-child { margin-bottom: 0; }
-        .bm-arrow { color: var(--primary); font-weight: 700; flex: 0 0 auto; }
-        /* Member rows with a clickable avatar (brief section 2 + who-was-selected) */
-        .member-row { display: flex; gap: 0.9rem; align-items: flex-start; margin-top: 1.7rem; padding-top: 1.7rem; border-top: 0.5px solid var(--border); }
-        .member-row:last-of-type { margin-bottom: 0.4rem; }
-        .member-content { flex: 1; min-width: 0; }
-        .member-content > p:first-child { margin-top: 0; }
-        .member-content .bm-actions:last-child { margin-bottom: 0; }
-        .member-name { font-family: 'Inter', sans-serif; font-weight: 600; font-size: 16px; color: var(--foreground); margin: 0.1rem 0 0.45rem; }
-        .mav { flex: 0 0 auto; display: block; width: 42px; height: 42px; border-radius: 9999px; overflow: hidden; border: 0.5px solid var(--border); background: var(--secondary, #ede4d3); text-decoration: none; }
-        .mav-img { width: 100%; height: 100%; object-fit: cover; display: block; }
-        .mav-mono { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; font-family: 'Playfair Display', Georgia, serif; font-size: 14px; font-weight: 600; color: var(--primary); }
-        a.mav { transition: border-color 0.15s, box-shadow 0.15s; }
-        a.mav:hover { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(107,26,26,0.15); }
         @media (min-width: 768px) {
           .md-body p, .md-body li { font-size: 15.5px; }
         }
