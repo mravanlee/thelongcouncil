@@ -2,6 +2,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { supabase } from '../../lib/supabase';
 import { resolveAvatarSlug, KNOWN_AVATAR_SLUGS } from '../../lib/avatarSlugs';
+import { doctrineTagsForSlug } from '../../lib/doctrineTags';
 
 export async function getServerSideProps(context) {
   const { slug } = context.params;
@@ -221,18 +222,24 @@ export default function WhoPage({ session }) {
           {selected.length > 0 && (
             <section>
               <div className="sec-label">Selected members</div>
-              {selected.map((m, i) => (
+              {selected.map((m, i) => {
+                const tags = doctrineTagsForSlug(nameToAvatarSlug(m.name));
+                return (
                 <div className="mrow" key={i}>
                   <Avatar name={m.name} />
                   <div className="mbody">
                     <div className="m-name">{m.name}</div>
+                    {tags && tags.length > 0 && (
+                      <div className="m-tags">{tags.map((t, j) => <span key={j} className="m-tag">{t}</span>)}</div>
+                    )}
                     {m.willArgue && <div className="m-arg"><span className="lbl">Will argue: </span>{m.willArgue}</div>}
                     {(m.relevance || m.coverage) && (
                       <div className="m-rel">{[m.relevance, m.coverage].filter(Boolean).join(' · ')}</div>
                     )}
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </section>
           )}
 
@@ -241,7 +248,7 @@ export default function WhoPage({ session }) {
               <div className="sec-label">Considered but not selected</div>
               {notSelected.map((n, i) => (
                 <div className="notsel-item" key={i}>
-                  <b>{n.name}</b>{n.reason ? <span> — {n.reason}</span> : null}
+                  <b>{n.name}</b>{n.reason ? <span>: {n.reason}</span> : null}
                 </div>
               ))}
             </section>
@@ -281,6 +288,9 @@ export default function WhoPage({ session }) {
         .mrow { display: flex; gap: 14px; margin: 0 0 20px; }
         .mbody { flex: 1; }
         .m-name { font-family: 'Playfair Display', serif; font-size: 17px; font-weight: 600; color: #16110e; }
+        .m-tags { margin-top: 3px; line-height: 1.5; }
+        .m-tag { font-family: 'Inter', sans-serif; font-size: 10px; letter-spacing: 0.09em; text-transform: uppercase; color: #8a7d70; }
+        .m-tag:not(:last-child)::after { content: '·'; margin: 0 7px; opacity: 0.5; }
         .m-arg { font-family: 'Inter', sans-serif; font-size: 13.5px; line-height: 1.55; color: #1c1714; margin-top: 4px; }
         .m-arg .lbl { color: #8a7d70; }
         .m-rel { font-family: 'Inter', sans-serif; font-size: 12px; line-height: 1.5; color: #6a5d52; margin-top: 6px; }

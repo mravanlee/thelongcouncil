@@ -413,6 +413,11 @@ export default function ArchiveDetail({ session, memberQuery }) {
       <div className="detail-wrap">
         <VerdictCast names={session.member_names} />
 
+        <p className="-mt-5 mb-9 max-w-[80ch] text-[12px] leading-[1.6] text-muted-foreground">
+          Built from documented writings, speeches, decisions and historical records.
+          Council members argue from documented positions, applied to today's question.
+        </p>
+
         {verdict && (
           <div className="bg-secondary border border-border p-6 sm:p-8 mb-8">
             <div className="text-[10px] tracking-[0.22em] uppercase text-primary">
