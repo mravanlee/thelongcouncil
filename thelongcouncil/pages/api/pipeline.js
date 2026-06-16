@@ -53,7 +53,7 @@ function normalizeName(name) {
 // ── Member extraction from Prompt 1 output ──────────────────────────────
 function extractSelectedMembers(assemblyOutput) {
   const selectedMatch = assemblyOutput.match(
-    /SELECTED MEMBERS:\s*\n([\s\S]*?)(?=\n\s*(?:MEMBERS CONSIDERED|CONFIDENCE NOTE|$))/i
+    /SELECTED MEMBERS:\s*\n([\s\S]*?)(?=\n\s*(?:MEMBERS CONSIDERED|CONFIDENCE NOTE)|$)/i
   );
   if (!selectedMatch) {
     console.warn('[pipeline] Could not locate "SELECTED MEMBERS:" section in Prompt 1 output.');
@@ -102,7 +102,7 @@ function validateSelectedMembers(selectedNames) {
 // ── Member metadata extraction (name + type) from Prompt 1 output ──────
 function extractMemberMetadata(assemblyOutput) {
   const selectedMatch = assemblyOutput.match(
-    /SELECTED MEMBERS:\s*\n([\s\S]*?)(?=\n\s*(?:MEMBERS CONSIDERED|CONFIDENCE NOTE|$))/i
+    /SELECTED MEMBERS:\s*\n([\s\S]*?)(?=\n\s*(?:MEMBERS CONSIDERED|CONFIDENCE NOTE)|$)/i
   );
   if (!selectedMatch) return { names: [], types: [] };
 
@@ -2046,7 +2046,10 @@ export default async function handler(req, res) {
     const assemblyOutput = await callClaude(
       PROMPT1_SYSTEM,
       `${contextBlock}MEMBER PROFILES:\n${allProfiles}\n\nTHE ISSUE:\n${question}`,
-      2000
+      // claude-sonnet-4-6 writes longer per-member justifications; 2000 tokens
+      // truncated 5-member assemblies mid-output, dropping the closing sections
+      // the SELECTED MEMBERS parser anchors on. 4000 leaves headroom.
+      4000
     );
     send('assembly', { data: assemblyOutput });
 
