@@ -983,14 +983,17 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
                     {recentSessions[0].member_names.map((rawName) => {
                       const name = stripTier(rawName);
                       return (
-                        <li
-                          key={name}
-                          className="flex w-14 flex-col items-center text-center sm:w-20"
-                        >
-                          <RecentSessionAvatar name={name} />
-                          <div className="mt-2 text-[10px] leading-tight text-muted-foreground sm:text-[11px]">
-                            {name}
-                          </div>
+                        <li key={name} className="flex w-14 sm:w-20">
+                          <Link
+                            href={`/archive/${recentSessions[0].slug}#speaker-${memberSlug(name)}`}
+                            className="group flex w-full flex-col items-center text-center"
+                            aria-label={`Read ${name}'s contribution`}
+                          >
+                            <RecentSessionAvatar name={name} />
+                            <div className="mt-2 text-[10px] leading-tight text-muted-foreground transition-colors group-hover:text-primary sm:text-[11px]">
+                              {name}
+                            </div>
+                          </Link>
                         </li>
                       );
                     })}

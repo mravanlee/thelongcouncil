@@ -306,7 +306,7 @@ function Seat({ card, tier, state, sessionSlug, scrollReveal = false }) {
         .seat {
           position: relative;
           margin-bottom: 32px;
-          scroll-margin-top: 24px;
+          scroll-margin-top: 40px;
           opacity: 0;
           transform: translateX(-6px);
           transition: opacity 0.6s ease-out, transform 0.6s ease-out;

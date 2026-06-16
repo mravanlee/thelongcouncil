@@ -22,7 +22,7 @@ function PreviewAvatar({ initial, name }) {
   const [failed, setFailed] = useState(false);
   const slug = slugify(name);
   return (
-    <div className="relative grid h-14 w-14 place-items-center overflow-hidden rounded-full border border-border bg-card">
+    <div className="relative grid h-14 w-14 place-items-center overflow-hidden rounded-full border border-border bg-card transition-colors group-hover:border-primary/70">
       <span className="text-[17px] text-foreground" style={SERIF}>
         {initial}
       </span>
@@ -122,15 +122,21 @@ export default function About() {
               </p>
               <ul className="mt-5 flex flex-wrap gap-x-6 gap-y-5">
                 {ROSTER.map((m) => (
-                  <li key={m.name} className="flex flex-col items-center text-center">
-                    <PreviewAvatar initial={m.initial} name={m.name} />
-                    <div className="mt-2.5 max-w-[72px] text-[11px] leading-tight text-muted-foreground">
-                      {m.name.split(' ').slice(0, -1).join(' ')}
-                      <br />
-                      <span className="text-foreground/80">
-                        {m.name.split(' ').slice(-1)}
-                      </span>
-                    </div>
+                  <li key={m.name} className="flex">
+                    <Link
+                      href={`/council#m-${slugify(m.name)}`}
+                      className="group flex flex-col items-center text-center"
+                      aria-label={`${m.name} on the council page`}
+                    >
+                      <PreviewAvatar initial={m.initial} name={m.name} />
+                      <div className="mt-2.5 max-w-[72px] text-[11px] leading-tight text-muted-foreground transition-colors group-hover:text-primary">
+                        {m.name.split(' ').slice(0, -1).join(' ')}
+                        <br />
+                        <span className="text-foreground/80 group-hover:text-primary">
+                          {m.name.split(' ').slice(-1)}
+                        </span>
+                      </div>
+                    </Link>
                   </li>
                 ))}
               </ul>
