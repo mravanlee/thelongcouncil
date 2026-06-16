@@ -109,8 +109,11 @@ function extractMemberMetadata(assemblyOutput) {
   const section = selectedMatch[1];
   const dashChars = '[—–\\-―]';
   const tierPattern = '(Practitioner|Framer|Leader|Thinker|Wildcard)';
+  // Tolerate the header line being fully bold, e.g. "**1. Milton Friedman — Thinker**"
+  // (claude-sonnet-4-6 sometimes does this): allow an optional leading and trailing
+  // ** so the name AND the tier are still captured.
   const regex = new RegExp(
-    `^\\s*\\d+\\.\\s+(.+?)(?:\\s+${dashChars}\\s+${tierPattern}(?:[/]${tierPattern})?)?\\s*$`,
+    `^\\s*(?:\\*\\*)?\\s*\\d+\\.\\s+(.+?)(?:\\s+${dashChars}\\s+${tierPattern}(?:[/]${tierPattern})?)?\\s*(?:\\*\\*)?\\s*$`,
     'gm'
   );
 
