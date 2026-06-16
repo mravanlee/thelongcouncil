@@ -61,7 +61,9 @@ function extractSelectedMembers(assemblyOutput) {
   }
   const section = selectedMatch[1];
   const names = [];
-  const regex = /^\s*\d+\.\s+(.+?)\s*$/gm;
+  // Tolerate the whole header line being bold, e.g. "**1. Milton Friedman — Thinker**"
+  // (claude-sonnet-4-6 formats it this way) as well as the bare "1. Name" form.
+  const regex = /^\s*(?:\*\*)?\s*\d+\.\s+(.+?)\s*$/gm;
   const stripTierSuffix = (s) =>
     s.replace(/\s*[—–\-―]\s*(Practitioner|Framer|Leader|Thinker)\s*$/i, '').trim();
   let match;
