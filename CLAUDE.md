@@ -18,7 +18,7 @@
 ## Stack
 
 - Next.js on Vercel
-- Anthropic API: `claude-sonnet-4-20250514` for pipeline prompts 1-4 + quote extraction, `claude-haiku-4-5-20251001` for sharpener
+- Anthropic API: `claude-sonnet-4-6` for pipeline prompts 1-4 + quote extraction, `claude-haiku-4-5-20251001` for sharpener (was `claude-sonnet-4-20250514`, retired by Anthropic Jun 2026 → caused full pipeline outage; verify model IDs are current if the pipeline fails pre-save)
 - Supabase (Frankfurt) for session storage
 - 5-step pipeline via SSE: assembly → deliberation → verdict → brief → featured quote extraction
 

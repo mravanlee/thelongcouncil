@@ -494,7 +494,7 @@ async function deleteOrphanSession(slug) {
 }
 
 // ── Claude API call ─────────────────────────────────────────────────────
-async function callClaude(system, user, maxTokens = 4000, temperature = 1.0, model = 'claude-sonnet-4-20250514') {
+async function callClaude(system, user, maxTokens = 4000, temperature = 1.0, model = 'claude-sonnet-4-6') {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -605,7 +605,7 @@ How to judge:
 - Return at most ONE quote — only one you would defend as unmistakably on-subject. Return a second only in the rare case it is equally on-subject AND makes a genuinely different point.
 
 Answer with ONLY the quote number(s), comma-separated (at most two), or the single word NONE. No other text.`;
-    const responseText = await callClaude('', prompt, 30, 0.2, 'claude-sonnet-4-20250514');
+    const responseText = await callClaude('', prompt, 30, 0.2, 'claude-sonnet-4-6');
     if (/\bnone\b/i.test(responseText)) return [];
     const nums = (responseText.match(/\d+/g) || []).map(n => parseInt(n, 10)).filter(n => n >= 1 && n <= quotes.length);
     const seen = new Set();
