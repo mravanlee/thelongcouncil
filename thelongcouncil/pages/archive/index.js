@@ -6,24 +6,9 @@ import { Search } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { resolveAvatarSlug } from '../../lib/avatarSlugs';
 import { SERIF, SiteFooter, SiteHeader } from '../../components/SiteChrome';
-import { ARCHIVE_THEMES, SESSION_THEMES } from '../../lib/archiveThemes';
 
 const PAGE_SIZE = 25;
 const SCROLL_KEY = 'archive_scroll_y';
-
-// "Featured Debates" — a manually curated, representative selection shown as the
-// "Start Here" section. Edit this list to recurate. Slugs only; rendered with
-// the existing card. Missing slugs are silently skipped.
-const FEATURED_SLUGS = [
-  'hoe-versterken-we-democratie-aqkx',
-  'eu-reduce-dependency-us-chinese-ai-4594',
-  'china-surpass-us-economic-output-technological-0x1t',
-  'china-invades-taiwan-us-protect-taiwan-dlbh',
-  'hoe-zou-de-welvaart-tussen-burgers-vmyl',
-  'ai-regulated-hmhh',
-  'eu-build-unified-military-force-vj6s',
-  'rise-trump-predicted-before-happened-history-mrq5',
-];
 
 export async function getServerSideProps(ctx) {
   const { data: sessions, error } = await supabase
@@ -99,11 +84,46 @@ function memberToCouncilSlug(name) {
   return resolveAvatarSlug(base);
 }
 
-// Themes are derived from the archive's own embeddings (semantic clusters,
-// multi-label per debate) — see scripts/generate-themes.mjs → lib/archiveThemes.js.
-// This just reads the precomputed assignment; not hardcoded keywords.
-function themesForSession(session) {
-  return SESSION_THEMES[session.slug] || [];
+// Theme → keywords for the tag-chip filter. Each keyword is matched at word-start
+// (\b<kw>) so "democra" hits "democracy"/"democratic" but not "epidemic".
+const THEMES = [
+  { label: 'Democracy', keywords: ['democra', 'polaris', 'polariser', 'election', 'electie', 'verkiezing', 'parlement', 'citizen', 'voter', 'vote', 'debate', 'civic', 'rechtsstaat', 'jetten'] },
+  { label: 'Geopolitics', keywords: ['geopoli', 'foreign policy', 'sanction', 'alliance', 'autonom', 'sovereign', 'diplomacy', 'kissinger', 'henry kissinger'], acronyms: ['NATO', 'UN'] },
+  { label: 'Economy', keywords: ['econom', 'trade', 'handel', 'tariff', 'wealth', 'recession', 'inflation', 'export', 'import', 'monetary', 'fiscal', 'market', 'capital', 'industrial'], acronyms: ['GDP'] },
+  { label: 'Europe', keywords: ['europe', 'europ', 'brussels', 'eurozone', 'britain', 'german', 'french', 'italy', 'spain', 'adenauer', 'schmidt', 'monnet', 'de gaulle'], acronyms: ['EU'] },
+  { label: 'China', keywords: ['china', 'chinese', 'asia', 'asian', 'beijing', 'taiwan', 'japan', 'korea', 'singapore', 'india', 'mahathir', 'lee kuan', 'deng', 'confucius', 'sun tzu'] },
+  { label: 'War', keywords: ['military', 'conflict', 'security', 'defense', 'defence', 'ukraine', 'russia', 'israel', 'gaza', 'warfare', 'sun tzu', 'churchill'], acronyms: ['NATO'] },
+  { label: 'Climate', keywords: ['climat', 'energy', 'oil', 'renewable', 'emission', 'carbon', 'fossil', 'groningen', 'sustainab', 'green', 'maathai'] },
+  { label: 'AI', keywords: ['artificial intelligence', 'algorithm', 'machine learning', 'silicon'], acronyms: ['AI', 'ASML'] },
+  { label: 'Technology', keywords: ['technolog', 'semiconduct', 'internet', 'social media', 'platform', 'innovation'] },
+  { label: 'Governance', keywords: ['governance', 'institution', 'regulat', 'rule of law', 'bureaucra', 'public administration', 'oversight'] },
+  { label: 'Netherlands', keywords: ['nederland', 'dutch', 'netherlands', 'jetten', 'groningen', 'curaçao', 'rutte', 'amsterdam', 'haag', 'wilders'], acronyms: ['ASML'] },
+];
+
+function escapeRegex(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+const THEME_REGEX = Object.fromEntries(
+  THEMES.map((t) => {
+    const parts = [];
+    (t.keywords || []).forEach((k) => parts.push('\\b' + escapeRegex(k.toLowerCase())));
+    (t.acronyms || []).forEach((a) => parts.push('\\b' + escapeRegex(a.toLowerCase()) + '\\b'));
+    return [t.label, new RegExp('(' + parts.join('|') + ')', 'i')];
+  }),
+);
+
+// Topic-only haystack: question + verdict + quote. Excludes member_names so
+// that a session debated by Lee Kuan Yew does not auto-match the China theme
+// just because his name is on the panel.
+function topicHaystack(session) {
+  return [session.display_issue, session.original_issue, session.sharpened_issue, session.teaser, session.featured_quote]
+    .filter(Boolean).join(' ').toLowerCase();
+}
+
+function matchingThemes(session) {
+  const hay = topicHaystack(session);
+  return THEMES.filter((t) => THEME_REGEX[t.label].test(hay)).map((t) => t.label);
 }
 
 export default function Archive({ sessions, error, initialFilters }) {
@@ -216,24 +236,11 @@ export default function Archive({ sessions, error, initialFilters }) {
       const searchHay = [s.display_issue, s.original_issue, s.sharpened_issue, s.teaser, s.featured_quote, ...(s.member_names || [])]
         .filter(Boolean).join(' ').toLowerCase();
       if (q && !searchHay.includes(q)) return false;
-      // Theme filter uses the derived multi-label assignment.
-      if (activeTheme && !(SESSION_THEMES[s.slug] || []).includes(activeTheme)) return false;
+      // Theme filter only matches against topic content (no member names).
+      if (activeTheme && !THEME_REGEX[activeTheme]?.test(topicHaystack(s))) return false;
       return true;
     });
   }, [sessions, search, activeTheme]);
-
-  // Curated "Featured Debates", in the order listed, skipping any missing slug.
-  const featured = useMemo(() => {
-    const bySlug = new Map(sessions.map((s) => [s.slug, s]));
-    return FEATURED_SLUGS.map((slug) => bySlug.get(slug)).filter(Boolean);
-  }, [sessions]);
-
-  // Debate count per theme (a debate can count toward several).
-  const themeCounts = useMemo(() => {
-    const counts = Object.fromEntries(ARCHIVE_THEMES.map((l) => [l, 0]));
-    sessions.forEach((s) => (SESSION_THEMES[s.slug] || []).forEach((l) => { if (l in counts) counts[l]++; }));
-    return counts;
-  }, [sessions]);
 
   const paginated = visible.slice(0, page * PAGE_SIZE);
   const hasMore = visible.length > paginated.length;
@@ -254,9 +261,6 @@ export default function Archive({ sessions, error, initialFilters }) {
     } else {
       setActiveTheme(label);
       setSearch('');
-      if (typeof document !== 'undefined') {
-        document.getElementById('full-archive')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
     }
   }
 
@@ -329,51 +333,41 @@ export default function Archive({ sessions, error, initialFilters }) {
           </div>
         </section>
 
-        {/* SECTION 2: Featured Debates — the "Start Here" layer */}
-        {featured.length > 0 && (
-          <section className="border-b border-border/70">
-            <div className="mx-auto max-w-5xl px-6 py-12">
-              <div className="text-[11px] tracking-[0.22em] uppercase text-primary">Featured Debates</div>
-              <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-muted-foreground">
-                A curated selection of some of the council&apos;s most important and representative debates.
-              </p>
-              <ol className="mt-6 divide-y divide-border/70 border-y border-border/70">
-                {featured.map((session) => (
-                  <ArchiveEntry
-                    key={session.id}
-                    session={session}
-                    themes={themesForSession(session)}
-                    onMemberClick={onMemberClick}
-                  />
-                ))}
-              </ol>
+        {/* Filters */}
+        <section className="border-b border-border/70 bg-background/95 backdrop-blur sm:sticky sm:top-0 sm:z-10">
+          <div className="mx-auto max-w-5xl px-6 py-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="relative flex-1">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => onSearchChange(e.target.value)}
+                  placeholder="Search sessions"
+                  className="h-10 w-full rounded-sm border border-border bg-card pl-9 pr-3 text-[14px] text-foreground placeholder:text-muted-foreground/70 focus:border-primary focus:outline-none"
+                  aria-label="Search archive"
+                />
+              </div>
+              <div className="text-[11px] tracking-[0.22em] uppercase text-muted-foreground whitespace-nowrap">
+                {countLabel}
+              </div>
             </div>
-          </section>
-        )}
-
-        {/* SECTION 3: Explore by Theme — derived clusters; clicking filters the archive */}
-        <section className="border-b border-border/70">
-          <div className="mx-auto max-w-5xl px-6 py-12">
-            <div className="text-[11px] tracking-[0.22em] uppercase text-primary">Explore by Theme</div>
-            <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-muted-foreground">
-              Navigate the archive by the ideas and tensions that recur across debates.
-            </p>
-            <div className="mt-6 flex flex-wrap gap-2">
-              {ARCHIVE_THEMES.map((label) => {
-                const active = activeTheme === label;
+            <div className="mt-4 flex flex-wrap gap-2">
+              {THEMES.map((t) => {
+                const active = activeTheme === t.label;
                 return (
                   <button
-                    key={label}
+                    key={t.label}
                     type="button"
-                    onClick={() => onThemeClick(label)}
+                    onClick={() => onThemeClick(t.label)}
                     aria-pressed={active}
-                    className={`rounded-sm border px-3 py-1.5 text-[11px] tracking-[0.14em] uppercase transition ${
+                    className={`rounded-sm border px-2.5 py-1 text-[10px] tracking-[0.18em] uppercase transition ${
                       active
                         ? 'border-primary bg-primary text-primary-foreground'
                         : 'border-border bg-card text-muted-foreground hover:text-foreground hover:border-foreground/40'
                     }`}
                   >
-                    {label} <span className="ml-1 opacity-60">{themeCounts[label] || 0}</span>
+                    {t.label}
                   </button>
                 );
               })}
@@ -381,30 +375,8 @@ export default function Archive({ sessions, error, initialFilters }) {
           </div>
         </section>
 
-        {/* SECTION 4: Full Archive — search + every session */}
-        <section id="full-archive" className="scroll-mt-4">
-          <div className="border-b border-border/70 bg-background/95 backdrop-blur sm:sticky sm:top-0 sm:z-10">
-            <div className="mx-auto max-w-5xl px-6 py-4">
-              <div className="mb-3 text-[11px] tracking-[0.22em] uppercase text-primary">Full Archive</div>
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <div className="relative flex-1">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <input
-                    type="text"
-                    value={search}
-                    onChange={(e) => onSearchChange(e.target.value)}
-                    placeholder="Search sessions"
-                    className="h-10 w-full rounded-sm border border-border bg-card pl-9 pr-3 text-[14px] text-foreground placeholder:text-muted-foreground/70 focus:border-primary focus:outline-none"
-                    aria-label="Search archive"
-                  />
-                </div>
-                <div className="text-[11px] tracking-[0.22em] uppercase text-muted-foreground whitespace-nowrap">
-                  {countLabel}
-                </div>
-              </div>
-            </div>
-          </div>
-
+        {/* Results */}
+        <section>
           <div className="mx-auto max-w-5xl px-6 py-12">
             {error && (
               <p className="py-20 text-center text-[14px] text-muted-foreground">
@@ -442,7 +414,7 @@ export default function Archive({ sessions, error, initialFilters }) {
                     <ArchiveEntry
                       key={session.id}
                       session={session}
-                      themes={themesForSession(session)}
+                      themes={matchingThemes(session)}
                       onMemberClick={onMemberClick}
                     />
                   ))}
