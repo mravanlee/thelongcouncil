@@ -21,6 +21,7 @@
 - Anthropic API: `claude-sonnet-4-6` for pipeline prompts 1-4 + quote extraction, `claude-haiku-4-5-20251001` for sharpener (was `claude-sonnet-4-20250514`, retired by Anthropic Jun 2026 → caused full pipeline outage; verify model IDs are current if the pipeline fails pre-save)
 - Supabase (Frankfurt) for session storage
 - 5-step pipeline via SSE: assembly → deliberation → verdict → brief → featured quote extraction
+- **Assembly call (prompt 1) uses `maxTokens: 4000`.** `claude-sonnet-4-6` writes long per-member justifications; the previous 2000 cap truncated 5-member assemblies mid-output, dropping the closing sections the `SELECTED MEMBERS` parser anchors on → "The council could not assemble" on verbose questions (outage Jun 16 2026, fixed in 44f92da). The section regex also tolerates truncation (end-of-string boundary). When swapping models, re-check every `maxTokens` cap against the new model's verbosity, not just the model IDs.
 
 ## Local dev setup
 
@@ -40,6 +41,7 @@
 ## Critical sync rules
 
 - **`AVATAR_NAME_EXPANSIONS`** and `KNOWN_AVATAR_SLUGS` live in `lib/avatarSlugs.js`. When adding/removing council members, update `KNOWN_AVATAR_SLUGS` to match the new `/public/avatars/*.webp` filenames. `resolveAvatarSlug()` does exact match → expansion lookup → fuzzy last-name match against the known-slugs set. The 4 callers (`Procession.jsx`, `archive/[slug].js`, `council.js`, `archive/index.js`) each compute a naive slug from a member name and pass it through `resolveAvatarSlug()`.
+- **Avatar deep-link anchors.** `pages/council.js` renders `id="m-<slug>"` per member; `Procession.jsx` renders `id="speaker-<slug>"` per deliberation card (`slug = resolveAvatarSlug(...)`). Consumers: about-page "Among the voices" avatars → `/council#m-<slug>`; homepage recent-question avatars and the debate-page `VerdictCast` → `/archive/<session>#speaker-<slug>`. If any caller changes how it slugifies names, these cross-page deep links silently break — keep them all on `resolveAvatarSlug`. `Procession` seat has `scroll-margin-top` for breathing room on hash landing.
 - **`ALL_COUNCIL_MEMBERS`** in `pages/api/pipeline.js` must match current 37-member roster.
 - **`stripTierSuffix`** handles old ("Framer", "Practitioner") + new ("Leader", "Thinker") + slash variants ("Framer/Practitioner").
 - **Bestandsnaam-valkuil:** `pages/archive/[slug].js` en `pages/api/og/vs/[slug].js` eindigen beide op `[slug].js`. Bevestig eerste 5 regels voor elke commit.
