@@ -2352,7 +2352,7 @@ Every card is first person. A member says "I" and "my" and never names themselve
 
     const todayForBrief = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 
-    send('progress', { step: 4, message: 'Writing the policy brief and why each voice was chosen...' });
+    send('progress', { step: 4, message: 'Writing the verdict, the full policy brief, and why each voice was chosen...' });
     const briefOutput = await callClaude(
       PROMPT4_SYSTEM,
       `${contextBlock}ISSUE:\n${question}\n\nTODAY'S DATE: ${todayForBrief}\n\nPROMPT 2 OUTPUT — REASONING CARDS AND CONVERGENCE NOTE:\n${deliberationOutput}\n\nPROMPT 3 OUTPUT — VERDICT:\n${verdictOutput}`,
