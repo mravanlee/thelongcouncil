@@ -446,8 +446,8 @@ function StreamingDebate({ text, members = [], statusMessage }) {
                 <div className="sc-name">{c.name}</div>
                 {c.role && <div className="sc-role">{c.role}</div>}
                 {tags && tags.length > 0 && (
-                  <div className="sc-tags">{tags.map((t, j) => (
-                    <span key={j}>{j > 0 ? ' · ' : ''}<b>{t}</b></span>
+                  <div className="sc-tags">{tags.slice(0, 2).map((t, j) => (
+                    <span key={j}>{j > 0 ? ' · ' : ''}{t}</span>
                   ))}</div>
                 )}
               </div>
@@ -483,7 +483,6 @@ function StreamingDebate({ text, members = [], statusMessage }) {
         .sc-name { font-family: 'Playfair Display', Georgia, serif; font-size: 18px; font-weight: 600; line-height: 1.2; color: var(--foreground); }
         .sc-role { font-size: 12px; color: var(--muted-foreground); margin-top: 2px; }
         .sc-tags { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted-foreground); margin-top: 5px; line-height: 1.5; }
-        .sc-tags b { color: var(--primary); font-weight: 600; }
         .sc-framing { font-family: 'Playfair Display', Georgia, serif; font-weight: 500; font-size: 19px; line-height: 1.35; letter-spacing: -0.005em; color: var(--foreground); margin: 12px 0 8px; }
         .sc-body { font-size: 14.5px; line-height: 1.7; color: var(--foreground); }
         .sc-caret { display: inline-block; width: 2px; height: 1.05em; background: var(--primary); vertical-align: -2px; margin-left: 2px; animation: scblink .9s steps(1) infinite; }
