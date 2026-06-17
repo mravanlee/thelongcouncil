@@ -609,6 +609,15 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
     return () => clearTimeout(t);
   }, [showConclusion]);
 
+  // When the debate result mounts, jump to the top so the council unfolds in
+  // view. Without this the viewer keeps the loading screen's scroll position
+  // and lands at the bottom on a seemingly blank page.
+  useEffect(() => {
+    if (screen === 'session' && typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'auto' });
+    }
+  }, [screen]);
+
   // Hide the pill once the user has scrolled the verdict into view themselves.
   useEffect(() => {
     if (!showVerdictPill) return;
