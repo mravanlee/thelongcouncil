@@ -56,7 +56,7 @@ const HOMEPAGE_JSON_LD = {
         url: 'https://www.thelongcouncil.com/favicon.svg',
       },
       description: 'The Long Council — an AI deliberation tool that brings the reasoning of historic leaders and thinkers to bear on today\'s policy questions.',
-      sameAs: ['https://x.com/thelongcouncil'],
+      sameAs: ['https://x.com/thelongcouncil', 'https://www.linkedin.com/company/thelongcouncil'],
     },
     {
       '@type': 'WebSite',
