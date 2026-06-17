@@ -763,7 +763,7 @@ async function generateFactualAnchors(question) {
 
 function buildContextBlock(factualAnchors) {
   if (!factualAnchors) return '';
-  return `CURRENT CONTEXT (May 2026), members must reason from these facts. If a member's natural framing conflicts with an anchor, the member must address the conflict explicitly, not bypass it:\n\n${factualAnchors}\n\n`;
+  return `CURRENT CONTEXT (May 2026): background facts the council is aware of. Reason in light of them so no member argues from an outdated or purely abstract version of the issue. But treat them as context, not as the subject: reference an anchor only where it genuinely bears on your argument, and never let a single recent event, deal or company become the focus of the debate. The question, not the anchor, is what the council answers.\n\n${factualAnchors}\n\n`;
 }
 
 // The Long Council is English-first. When a question is asked in another
