@@ -373,6 +373,106 @@ function VerdictCast({ names }) {
   );
 }
 
+// ── Live deliberation (streaming) ───────────────────────────────────────
+// Renders the deliberation as it streams in from the pipeline: one card per
+// speaker, parsed from the raw buffer (blocks split on '---'). The last,
+// in-progress card shows a blinking caret. The final, authoritative cards are
+// rendered later by <Procession> in the session view; this is the live view.
+function StreamingDebate({ text, statusMessage }) {
+  const endRef = useRef(null);
+  const blocks = (text || '').split(/(?:^|\n)\s*---\s*\n/).map((b) => b.trim()).filter(Boolean);
+  const cards = blocks
+    .map((b) => {
+      const m = b.match(/^##\s+(.+)$/m);
+      if (!m) return null;
+      const name = stripTier(m[1].trim());
+      const after = b.slice(b.indexOf(m[0]) + m[0].length);
+      const lines = after.split('\n').map((l) => l.trim()).filter(Boolean);
+      let role = '';
+      let framing = '';
+      const bodyParts = [];
+      for (const ln of lines) {
+        if (/^\*\*\s*Challenge/i.test(ln)) continue; // challenge line is internal; hide in stream
+        if (!framing && /^\*[^*].+[^*]\*$/.test(ln)) { framing = ln.slice(1, -1).trim(); continue; }
+        if (!role && !framing && bodyParts.length === 0) { role = ln.replace(/\*\*/g, ''); continue; } // meta line after the name
+        bodyParts.push(ln.replace(/\*\*/g, '').replace(/^\*|\*$/g, ''));
+      }
+      return { name, role, framing, body: bodyParts.join(' ').trim() };
+    })
+    .filter((c) => c && c.name && c.name.length > 1
+      && !/^(the\s+)?convergence/i.test(c.name)
+      && !/^speaking order/i.test(c.name));
+
+  useEffect(() => {
+    if (endRef.current) endRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }, [text]);
+
+  return (
+    <div className="stream">
+      <div className="stream-live"><span className="sl-dot" /> Live</div>
+      {cards.map((c, i) => {
+        const last = i === cards.length - 1;
+        const slug = memberSlug(c.name);
+        return (
+          <div key={i} className={`stream-card${last ? ' speaking' : ''}`}>
+            <div className="sc-head">
+              <div className="sc-disc">
+                <span className="sc-mono">{memberMonogram(c.name)}</span>
+                {KNOWN_AVATAR_SLUGS.has(slug) && (
+                  <img src={`/avatars/avatar_${slug}.webp`} alt="" onError={(e) => { e.target.style.display = 'none'; }} />
+                )}
+              </div>
+              <div>
+                <div className="sc-name">{c.name}</div>
+                {c.role && <div className="sc-role">{c.role}</div>}
+              </div>
+            </div>
+            {c.framing && <div className="sc-framing">{c.framing}</div>}
+            {c.body && <div className="sc-body">{c.body}{last && <span className="sc-caret" />}</div>}
+          </div>
+        );
+      })}
+      {statusMessage && (
+        <div className="sc-status"><span className="sc-status-dot" />{statusMessage}</div>
+      )}
+      <div ref={endRef} />
+      <style jsx>{`
+        .stream { max-width: 640px; margin: 2.5rem auto 0; padding-bottom: 56px; }
+        .stream-live { display: inline-flex; align-items: center; gap: 7px; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted-foreground); margin-bottom: 1.6rem; }
+        .sl-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--primary); animation: slpulse 1.2s ease-in-out infinite; }
+        @keyframes slpulse { 0%, 100% { opacity: .3; } 50% { opacity: 1; } }
+        .stream-card { border-left: 2px solid var(--border); padding: 2px 0 2px 18px; margin-bottom: 22px; }
+        .stream-card.speaking { border-left-color: var(--primary); }
+        .sc-head { display: flex; align-items: center; gap: 12px; }
+        .sc-disc { width: 44px; height: 44px; border-radius: 50%; background: var(--secondary); border: 1.5px solid var(--border); position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; flex: none; }
+        .stream-card.speaking .sc-disc { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(122, 31, 31, .12); }
+        .sc-mono { font-family: 'Playfair Display', Georgia, serif; font-weight: 600; font-size: 14px; color: var(--primary); }
+        .sc-disc img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+        .sc-name { font-family: 'Playfair Display', Georgia, serif; font-size: 18px; font-weight: 600; line-height: 1.2; color: var(--foreground); }
+        .sc-role { font-size: 12px; color: var(--muted-foreground); margin-top: 2px; }
+        .sc-framing { font-family: 'Playfair Display', Georgia, serif; font-weight: 500; font-size: 19px; line-height: 1.35; letter-spacing: -0.005em; color: var(--foreground); margin: 12px 0 8px; }
+        .sc-body { font-size: 14.5px; line-height: 1.7; color: var(--foreground); }
+        .sc-caret { display: inline-block; width: 2px; height: 1.05em; background: var(--primary); vertical-align: -2px; margin-left: 2px; animation: scblink .9s steps(1) infinite; }
+        @keyframes scblink { 50% { opacity: 0; } }
+        .sc-status { display: flex; align-items: center; gap: 12px; font-family: 'Playfair Display', Georgia, serif; font-style: italic; font-size: 18px; color: var(--foreground); margin-top: 40px; padding: 26px 0 4px 20px; border-top: 1px solid var(--border); }
+        .sc-status-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--primary); flex: none; animation: slpulse 1.2s ease-in-out infinite; }
+        @media (max-width: 480px) {
+          .stream { margin-top: 1.75rem; padding-bottom: 44px; }
+          .stream-card { padding-left: 14px; margin-bottom: 20px; }
+          .sc-head { gap: 10px; }
+          .sc-disc { width: 38px; height: 38px; }
+          .sc-mono { font-size: 12px; }
+          .sc-name { font-size: 16px; }
+          .sc-role { font-size: 11px; }
+          .sc-framing { font-size: 17px; margin: 10px 0 7px; }
+          .sc-body { font-size: 14px; }
+          .sc-status { font-size: 16px; margin-top: 32px; padding: 22px 0 4px 14px; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
 // ── ShareButton component ───────────────────────────────────────────────
 function ShareButton({ url, question }) {
   const [copied, setCopied] = useState(false);
@@ -559,6 +659,7 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
   const [confirmedQuestion, setConfirmedQuestion] = useState('');
   const [loadingStep, setLoadingStep] = useState(0);
   const [loadingMessage, setLoadingMessage] = useState('');
+  const [liveDebate, setLiveDebate] = useState(''); // raw deliberation buffer while it streams in
 
   const [sessionData, setSessionData] = useState(null);
   const [sessionSlug, setSessionSlug] = useState(null);
@@ -735,6 +836,8 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
       let currentEvent = '';
       const result = {};
       let completedSlug = null;
+      let liveBuf = '';   // accumulates deliberation deltas
+      let lastFlush = 0;  // throttle live-view re-renders
 
       while (true) {
         const { done, value } = await reader.read();
@@ -756,9 +859,22 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
                 if (data.step) setLoadingStep(data.step);
               } else if (currentEvent === 'assembly') {
                 result.assembly = data.data;
+              } else if (currentEvent === 'delib-start') {
+                liveBuf = '';
+                lastFlush = 0;
+                setLoadingStep(2);
+                setLiveDebate('');
+              } else if (currentEvent === 'delib-delta') {
+                liveBuf += data.text || '';
+                const now = Date.now();
+                if (now - lastFlush > 60) { setLiveDebate(liveBuf); lastFlush = now; }
+              } else if (currentEvent === 'delib-reset') {
+                liveBuf = '';
+                setLiveDebate('');
               } else if (currentEvent === 'deliberation') {
                 result.deliberation = data.data;
                 setLoadingStep(3);
+                setLiveDebate(liveBuf); // flush any remaining tail
               } else if (currentEvent === 'verdict') {
                 result.verdict = data.data;
                 setLoadingStep(4);
@@ -847,6 +963,7 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
     setConfirmedQuestion('');
     setSessionData(null);
     setSessionSlug(null);
+    setLiveDebate('');
     setShowConclusion(false);
     setShowBriefToggle(false);
     setShowVerdictPill(false);
@@ -1202,6 +1319,10 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
               &ldquo;{confirmedQuestion}&rdquo;
             </h1>
 
+            {liveDebate ? (
+              <StreamingDebate text={liveDebate} statusMessage={loadingMessage} />
+            ) : (
+            <>
             <ol className="mt-14 relative">
               <div className="pointer-events-none absolute left-[19px] top-2 bottom-2 w-px bg-border" aria-hidden />
               <div
@@ -1246,6 +1367,8 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
             >
               This takes 1–2 minutes. The council does not rush.
             </p>
+            </>
+            )}
           </div>
         </main>
       )}

@@ -523,6 +523,62 @@ async function callClaude(system, user, maxTokens = 4000, temperature = 1.0, mod
   return data.content[0].text;
 }
 
+// Streaming variant: same call but with `stream: true`, invoking onDelta(textChunk)
+// for each text delta as it arrives, and returning the full accumulated text at the
+// end. Used for the deliberation so the client can render speakers live. On any
+// network/parse hiccup it still returns whatever text accumulated; the caller runs
+// the same validation it would on a non-streamed result.
+async function callClaudeStream(system, user, maxTokens, temperature, model = 'claude-sonnet-4-6', onDelta = null) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': process.env.ANTHROPIC_API_KEY,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: maxTokens,
+      temperature,
+      system,
+      messages: [{ role: 'user', content: user }],
+      stream: true,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Anthropic API error ${res.status}: ${err}`);
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let full = '';
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop(); // keep the last, possibly-incomplete line
+    for (const line of lines) {
+      const t = line.trim();
+      if (!t.startsWith('data:')) continue;
+      const payload = t.slice(5).trim();
+      if (!payload || payload === '[DONE]') continue;
+      try {
+        const evt = JSON.parse(payload);
+        if (evt.type === 'content_block_delta' && evt.delta && evt.delta.type === 'text_delta') {
+          const chunk = evt.delta.text || '';
+          if (chunk) {
+            full += chunk;
+            if (onDelta) onDelta(chunk);
+          }
+        }
+      } catch { /* ignore keep-alive / non-JSON lines */ }
+    }
+  }
+  return full;
+}
+
 // ── Featured quote extraction ───────────────────────────────────────────
 // Picks one short pull-quote from the deliberation for the homepage display.
 // Best-effort: returns null on any failure — session still saves, quote stays NULL.
@@ -2078,11 +2134,18 @@ export default async function handler(req, res) {
 
     send('progress', { step: 2, message: 'The council is deliberating...' });
     const deliberationUserBase = `${contextBlock}ISSUE:\n${question}\n\n${rosterLine}PROMPT 1 OUTPUT:\n${assemblyOutput}\n\nMEMBER PROFILES:\n${profilesForDeliberation}\n\nFINAL REMINDER: Each card is exactly ONE paragraph, 60-100 words total. Framing line ≤ 12 words AND must answer THIS specific issue (not generic philosophy). Challenge line ≤ 8 words ending in ? (chain forward to next speaker; never on the final card). Zero em-dashes anywhere. No exceptions.`;
-    let deliberationOutput = await callClaude(
+    // Stream the first deliberation attempt so the client can render speakers live.
+    // The closing 'deliberation' event below still carries the final, validated and
+    // post-processed text; if a guard regenerates, a 'delib-reset' tells the client
+    // to clear the live view and fall back to the progress timeline.
+    send('delib-start', {});
+    let deliberationOutput = await callClaudeStream(
       PROMPT2_SYSTEM,
       deliberationUserBase,
       2500,
-      0.7
+      0.7,
+      'claude-sonnet-4-6',
+      (chunk) => send('delib-delta', { text: chunk })
     );
 
     // First-card guard: PROMPT2 says the opening card names no other
@@ -2092,6 +2155,7 @@ export default async function handler(req, res) {
     if (!p1Check.ok) {
       console.warn('[pipeline] FIRST-CARD VIOLATION on first attempt — opener:', p1Check.firstMember, '— mentioned:', p1Check.mentions);
       send('progress', { step: 2, message: 'Refining the opening voice...' });
+      send('delib-reset', {});
       const retryMessage = `${deliberationUserBase}
 
 REGENERATION CONSTRAINT — CRITICAL:
@@ -2124,6 +2188,7 @@ Your previous attempt opened with ${p1Check.firstMember}'s card, but the BODY of
       }).join('\n');
       console.warn('[pipeline] CHALLENGE-CHAIN VIOLATION on first attempt:\n' + violationList);
       send('progress', { step: 2, message: 'Fixing the challenge chain...' });
+      send('delib-reset', {});
       const chainRetryMessage = `${deliberationUserBase}
 
 REGENERATION CONSTRAINT, CRITICAL:
@@ -2161,6 +2226,7 @@ Rewrite the full deliberation so that:
       ).join('\n');
       console.warn('[pipeline] SELF-REFERENCE VIOLATION on first attempt:\n' + list);
       send('progress', { step: 2, message: 'Fixing a speaker voice slip...' });
+      send('delib-reset', {});
       const selfRefRetry = `${deliberationUserBase}
 
 REGENERATION CONSTRAINT, CRITICAL:
@@ -2282,7 +2348,7 @@ Every card is first person. A member says "I" and "my" and never names themselve
 
     const todayForBrief = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 
-    send('progress', { step: 4, message: 'Writing the policy brief...' });
+    send('progress', { step: 4, message: 'Writing the policy brief and why each voice was chosen...' });
     const briefOutput = await callClaude(
       PROMPT4_SYSTEM,
       `${contextBlock}ISSUE:\n${question}\n\nTODAY'S DATE: ${todayForBrief}\n\nPROMPT 2 OUTPUT — REASONING CARDS AND CONVERGENCE NOTE:\n${deliberationOutput}\n\nPROMPT 3 OUTPUT — VERDICT:\n${verdictOutput}`,
