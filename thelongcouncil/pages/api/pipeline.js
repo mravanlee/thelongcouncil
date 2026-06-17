@@ -2121,6 +2121,10 @@ export default async function handler(req, res) {
       return;
     }
 
+    // Tell the client who was selected so it can reveal the council (avatars)
+    // before the deliberation streams in.
+    send('members', { names: selectedNames });
+
     const metadata = extractMemberMetadata(assemblyOutput);
 
     const loadInfo = loadSelectedProfiles(selectedNames);

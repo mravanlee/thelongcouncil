@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Procession from '../components/Procession';
 import { supabase } from '../lib/supabase';
 import { resolveAvatarSlug, KNOWN_AVATAR_SLUGS } from '../lib/avatarSlugs';
+import { doctrineTagsForSlug } from '../lib/doctrineTags';
 import { SiteFooter, SiteHeader, SERIF } from '../components/SiteChrome';
 import { Check, FileText, MessagesSquare, Scale, Users } from 'lucide-react';
 
@@ -378,7 +379,7 @@ function VerdictCast({ names }) {
 // speaker, parsed from the raw buffer (blocks split on '---'). The last,
 // in-progress card shows a blinking caret. The final, authoritative cards are
 // rendered later by <Procession> in the session view; this is the live view.
-function StreamingDebate({ text, statusMessage }) {
+function StreamingDebate({ text, members = [], statusMessage }) {
   const endRef = useRef(null);
   const blocks = (text || '').split(/(?:^|\n)\s*---\s*\n/).map((b) => b.trim()).filter(Boolean);
   const cards = blocks
@@ -409,10 +410,29 @@ function StreamingDebate({ text, statusMessage }) {
 
   return (
     <div className="stream">
-      <div className="stream-live"><span className="sl-dot" /> Live</div>
+      <div className="stream-live"><span className="sl-dot" /> {text ? 'Council in session' : 'The council convenes'}</div>
+      {members && members.length > 0 && (
+        <div className="cast-row">
+          {members.map((name, i) => {
+            const cslug = memberSlug(name);
+            return (
+              <div className="cast-m" key={name} style={{ animationDelay: `${i * 0.14}s` }}>
+                <div className="cast-disc">
+                  <span className="sc-mono">{memberMonogram(name)}</span>
+                  {KNOWN_AVATAR_SLUGS.has(cslug) && (
+                    <img src={`/avatars/avatar_${cslug}.webp`} alt="" onError={(e) => { e.target.style.display = 'none'; }} />
+                  )}
+                </div>
+                <div className="cast-nm">{stripTier(name)}</div>
+              </div>
+            );
+          })}
+        </div>
+      )}
       {cards.map((c, i) => {
         const last = i === cards.length - 1;
         const slug = memberSlug(c.name);
+        const tags = doctrineTagsForSlug(slug);
         return (
           <div key={i} className={`stream-card${last ? ' speaking' : ''}`}>
             <div className="sc-head">
@@ -425,6 +445,11 @@ function StreamingDebate({ text, statusMessage }) {
               <div>
                 <div className="sc-name">{c.name}</div>
                 {c.role && <div className="sc-role">{c.role}</div>}
+                {tags && tags.length > 0 && (
+                  <div className="sc-tags">{tags.map((t, j) => (
+                    <span key={j}>{j > 0 ? ' · ' : ''}<b>{t}</b></span>
+                  ))}</div>
+                )}
               </div>
             </div>
             {c.framing && <div className="sc-framing">{c.framing}</div>}
@@ -441,6 +466,13 @@ function StreamingDebate({ text, statusMessage }) {
         .stream-live { display: inline-flex; align-items: center; gap: 7px; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted-foreground); margin-bottom: 1.6rem; }
         .sl-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--primary); animation: slpulse 1.2s ease-in-out infinite; }
         @keyframes slpulse { 0%, 100% { opacity: .3; } 50% { opacity: 1; } }
+        .cast-row { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 2.25rem; }
+        .cast-m { display: flex; flex-direction: column; align-items: center; gap: 7px; width: 66px; opacity: 0; transform: translateY(6px); animation: castIn .5s ease forwards; }
+        @keyframes castIn { to { opacity: 1; transform: none; } }
+        .cast-disc { width: 46px; height: 46px; border-radius: 50%; background: var(--secondary); border: 1.5px solid var(--border); position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .cast-disc .sc-mono { font-size: 13px; }
+        .cast-disc img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+        .cast-nm { font-size: 10.5px; line-height: 1.25; color: var(--muted-foreground); text-align: center; }
         .stream-card { border-left: 2px solid var(--border); padding: 2px 0 2px 18px; margin-bottom: 22px; }
         .stream-card.speaking { border-left-color: var(--primary); }
         .sc-head { display: flex; align-items: center; gap: 12px; }
@@ -450,6 +482,8 @@ function StreamingDebate({ text, statusMessage }) {
         .sc-disc img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
         .sc-name { font-family: 'Playfair Display', Georgia, serif; font-size: 18px; font-weight: 600; line-height: 1.2; color: var(--foreground); }
         .sc-role { font-size: 12px; color: var(--muted-foreground); margin-top: 2px; }
+        .sc-tags { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted-foreground); margin-top: 5px; line-height: 1.5; }
+        .sc-tags b { color: var(--primary); font-weight: 600; }
         .sc-framing { font-family: 'Playfair Display', Georgia, serif; font-weight: 500; font-size: 19px; line-height: 1.35; letter-spacing: -0.005em; color: var(--foreground); margin: 12px 0 8px; }
         .sc-body { font-size: 14.5px; line-height: 1.7; color: var(--foreground); }
         .sc-caret { display: inline-block; width: 2px; height: 1.05em; background: var(--primary); vertical-align: -2px; margin-left: 2px; animation: scblink .9s steps(1) infinite; }
@@ -458,6 +492,11 @@ function StreamingDebate({ text, statusMessage }) {
         .sc-status-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--primary); flex: none; animation: slpulse 1.2s ease-in-out infinite; }
         @media (max-width: 480px) {
           .stream { margin-top: 1.75rem; padding-bottom: 44px; }
+          .cast-row { gap: 12px; margin-bottom: 1.75rem; }
+          .cast-m { width: 56px; }
+          .cast-disc { width: 40px; height: 40px; }
+          .cast-disc .sc-mono { font-size: 12px; }
+          .cast-nm { font-size: 10px; }
           .stream-card { padding-left: 14px; margin-bottom: 20px; }
           .sc-head { gap: 10px; }
           .sc-disc { width: 38px; height: 38px; }
@@ -660,6 +699,7 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
   const [loadingStep, setLoadingStep] = useState(0);
   const [loadingMessage, setLoadingMessage] = useState('');
   const [liveDebate, setLiveDebate] = useState(''); // raw deliberation buffer while it streams in
+  const [selectedMembers, setSelectedMembers] = useState([]); // selected member names, for the pre-deliberation reveal
 
   const [sessionData, setSessionData] = useState(null);
   const [sessionSlug, setSessionSlug] = useState(null);
@@ -817,6 +857,8 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
     setConfirmedQuestion(finalQuestion);
     setError(null);
     setSessionSlug(null);
+    setSelectedMembers([]);
+    setLiveDebate('');
     setScreen('loading');
     setLoadingStep(1);
     setLoadingMessage('Assembling the council...');
@@ -859,6 +901,8 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
                 if (data.step) setLoadingStep(data.step);
               } else if (currentEvent === 'assembly') {
                 result.assembly = data.data;
+              } else if (currentEvent === 'members') {
+                setSelectedMembers(Array.isArray(data.names) ? data.names : []);
               } else if (currentEvent === 'delib-start') {
                 liveBuf = '';
                 lastFlush = 0;
@@ -964,6 +1008,7 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
     setSessionData(null);
     setSessionSlug(null);
     setLiveDebate('');
+    setSelectedMembers([]);
     setShowConclusion(false);
     setShowBriefToggle(false);
     setShowVerdictPill(false);
@@ -1319,8 +1364,8 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
               &ldquo;{confirmedQuestion}&rdquo;
             </h1>
 
-            {liveDebate ? (
-              <StreamingDebate text={liveDebate} statusMessage={loadingMessage} />
+            {(selectedMembers.length > 0 || liveDebate) ? (
+              <StreamingDebate text={liveDebate} members={selectedMembers} statusMessage={loadingMessage} />
             ) : (
             <>
             <ol className="mt-14 relative">
