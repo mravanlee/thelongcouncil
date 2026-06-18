@@ -2466,9 +2466,14 @@ Every card is first person. A member says "I" and "my" and never names themselve
 
     const isOverloaded = err.message && err.message.includes('529');
     const userMessage = isOverloaded
-      ? 'The AI service is under high demand right now. Please try again in a few minutes.'
+      ? 'The council is very busy right now. Please try again in a few minutes.'
       : (err.message || 'Something went wrong. Please try again.');
-    send('error', { message: userMessage });
+    // If the core session was saved early (deliberation + verdict + actions),
+    // hand the client its slug so it can open the complete debate instead of a
+    // dead-end error. When nothing usable was saved, slug is null and the client
+    // shows the message immediately rather than polling for a session that was
+    // already cleaned up.
+    send('error', { message: userMessage, slug: coreSaved ? preSlug : null });
   }
 
   res.end();

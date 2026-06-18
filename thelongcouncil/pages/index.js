@@ -929,10 +929,14 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
               } else if (currentEvent === 'complete') {
                 if (data.slug) { setSessionSlug(data.slug); completedSlug = data.slug; }
               } else if (currentEvent === 'error') {
-                throw new Error(data.message);
+                const e = new Error(data.message);
+                e.serverError = true;            // explicit server failure, not a dropped connection
+                e.recoverySlug = data.slug || null; // set when a complete core session was saved
+                throw e;
               }
             } catch (parseErr) {
-              if (currentEvent === 'error') throw new Error('Pipeline failed');
+              if (parseErr.serverError) throw parseErr; // our tagged error — propagate message + slug intact
+              if (currentEvent === 'error') { const e = new Error('Pipeline failed'); e.serverError = true; throw e; }
             }
           }
         }
@@ -982,6 +986,22 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
         window.history.replaceState(window.history.state, '', '/');
       }
     } catch (err) {
+      // The server saved a complete core session before failing on a tail step:
+      // open the finished debate directly instead of polling or erroring.
+      if (err.recoverySlug) {
+        router.push(`/archive/${err.recoverySlug}`);
+        return;
+      }
+      // An explicit server error means the pipeline gave up and saved nothing.
+      // Show the message immediately — polling would just stall on "Still
+      // working..." for the full recovery window before surfacing the same error.
+      if (err.serverError) {
+        setError({ title: 'The council could not convene', message: err.message || 'Something went wrong while preparing the debate.', action: 'pipeline' });
+        setScreen('error');
+        return;
+      }
+      // No server error reached us: the connection dropped mid-stream while the
+      // function may still be running. Poll briefly for the completed session.
       setScreen('finalizing');
       const slug = await pollForCompletedSession(finalQuestion);
       if (slug) {
