@@ -239,7 +239,7 @@ export default function WhoPage({ session }) {
 
           {poles.length >= 2 && (
             <section>
-              <div className="sec-label">The two poles</div>
+              <div className="sec-label">{poles.length === 2 ? 'The two poles' : 'Where they stand'}</div>
               <div className="poles">
                 {poles.map((p, i) => (
                   <div className="pole" key={i}>
@@ -273,9 +273,7 @@ export default function WhoPage({ session }) {
                       <div className="m-tags">{tags.map((t, j) => <span key={j} className="m-tag">{t}</span>)}</div>
                     )}
                     {m.willArgue && <div className="m-arg"><span className="lbl">Will argue: </span>{m.willArgue}</div>}
-                    {(m.relevance || m.coverage) && (
-                      <div className="m-rel">{[m.relevance, m.coverage].filter(Boolean).join(' · ')}</div>
-                    )}
+                    {m.relevance && <div className="m-rel">{m.relevance}</div>}
                   </div>
                 </div>
                 );
