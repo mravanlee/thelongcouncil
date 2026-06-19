@@ -833,8 +833,9 @@ function parseActions(actionsOutput) {
   for (const line of actionsOutput.split('\n')) {
     const trimmed = line.trim();
     if (!trimmed) continue;
-    const match = trimmed.match(/^\d+\.\s*(.+)$/);
-    if (match) actions.push(match[1].trim());
+    // Tolerate a bold-wrapped header, e.g. "**1. Do X**" (claude-sonnet-4-6).
+    const match = trimmed.match(/^(?:\*\*)?\s*\d+\.\s*(.+)$/);
+    if (match) actions.push(match[1].trim().replace(/\*+$/, '').trim());
   }
   return actions;
 }
@@ -888,9 +889,9 @@ function parseMemberActions(output, memberNames) {
     if (!name || result[name]) continue;
     const actions = [];
     for (const line of block.split('\n')) {
-      const lm = line.trim().match(/^(?:[-*]|\d+\.)\s+(.+)$/);
+      const lm = line.trim().match(/^(?:\*\*)?\s*(?:[-*]|\d+\.)\s+(.+)$/);
       if (!lm) continue;
-      const a = stripEmDashes(lm[1].trim().replace(/\s+/g, ' '));
+      const a = stripEmDashes(lm[1].trim().replace(/\*+$/, '').replace(/\s+/g, ' '));
       if (!a) continue;
       const words = a.split(/\s+/).length;
       if (words < 3 || words > 30) continue;
