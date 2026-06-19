@@ -1010,16 +1010,16 @@ ISSUE SUMMARY: [One sentence restating the issue as a specific decision]
 
 TAXONOMY TAGS: [2–3 tags]
 
-CENTRAL TENSION: [One sentence identifying the core analytical conflict]
+CENTRAL TENSION: [ONE plain sentence, maximum 20 words. State the real disagreement in everyday language a smart teenager would follow. No parentheses, no semicolons, no dashes, no academic jargon such as "constitutive", "instrumental", "dialectic", "register".]
 
-POLES & BALANCE: [List each pole of the central tension with the members assigned and the count, e.g. "Markets: Friedman (1) | Redistribution: Rawls, Sen, Palme (3)". If any pole with a credible roster defender is outnumbered more than 2:1, rebalance the selection or state the imbalance and the reason here.]
+POLES & BALANCE: [List each pole with its members and count. Label each pole with 2–4 plain words naming what that camp wants, e.g. "Markets: Friedman (1) | Redistribution: Rawls, Sen, Palme (3)". A label must be a short plain phrase ("Free markets", "State control", "Local control"), NEVER a full clause like "Culture as constitutive of democracy". If any pole with a credible roster defender is outnumbered more than 2:1, rebalance the selection or state the imbalance and the reason here.]
 
 SELECTED MEMBERS:
 
 1. [Name] — [Leader/Thinker]
-   Relevance: [One sentence on why this member is selected]
+   Relevance: [ONE plain sentence, maximum 25 words, on why this member is selected. No semicolons, no parentheticals, no dashes.]
    Coverage: [documented / inferred / extrapolated] — [Which specific T1/T2/T3 entries are most relevant]
-   Will argue: [One sentence on the direction of their expected position]
+   Will argue: [ONE plain sentence, maximum 25 words, on the direction of their expected position. Plain language. No semicolons, no parentheticals, no dashes.]
 
 [Repeat for each selected member]
 
