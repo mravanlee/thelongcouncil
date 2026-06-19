@@ -53,7 +53,9 @@ export function buildDoc(session) {
 
 export function itemFromSession(session) {
   const c = session.cards || {};
-  const title = (c.question_en || session.sharpened_issue || session.original_issue || '').trim();
+  // Display title is the natural question (translated, if foreign-language), NOT the
+  // verbose internal sharpened_issue — that reads as an instruction, not a question.
+  const title = (c.question_en || session.original_issue || session.sharpened_issue || '').trim();
   return {
     slug: session.slug,
     title,
