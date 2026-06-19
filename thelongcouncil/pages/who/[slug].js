@@ -62,7 +62,7 @@ function Avatar({ name, size }) {
     : <span className="av-mono">{getInitials(name)}</span>;
   if (!known) return <span className={cls} aria-hidden="true">{inner}</span>;
   return (
-    <Link href={`/council#m-${slug}`} className={cls} title={`${clean} — view profile`} aria-label={`${clean} profile`}>
+    <Link href={`/council#m-${slug}`} className={cls} title={`${clean} · view profile`} aria-label={`${clean} profile`}>
       {inner}
     </Link>
   );
@@ -89,8 +89,28 @@ function parseAssembly(raw) {
   // Render targets are plain text, so drop any leftover markdown emphasis (* / **).
   const stripMd = (v) => (v || '').replace(/\*+/g, '').replace(/\s+/g, ' ').trim();
 
-  const tension = stripMd(grab('CENTRAL TENSION'));
-  const issue = stripMd(grab('ISSUE SUMMARY'));
+  // House style: never show em/en dashes in copy — they read as broken on this
+  // page when the model uses them as parenthetical pauses. Swap for a comma and
+  // tidy the resulting spacing/duplicate punctuation. Applied AFTER parsing, since
+  // the tier-strip and pole-splitting rely on detecting the original dashes.
+  const deDash = (v) => (v || '')
+    .replace(/\s*[—–]\s*/g, ', ')
+    .replace(/\s+([,.;:)])/g, '$1')
+    .replace(/,\s*([,.;:)])/g, '$1')
+    .replace(/,\s*,/g, ',')
+    .trim();
+  const clean = (v) => deDash(stripMd(v));
+
+  // CENTRAL TENSION is meant to be one crisp sentence; the model sometimes adds a
+  // second sentence that just restates both poles (already shown below). Keep the
+  // lead line to the opening sentence when it runs long.
+  const leadSentence = (s) => {
+    if (s.length <= 320) return s;
+    const m = s.match(/^[\s\S]*?[.!?](?=\s+[A-Z(])/);
+    return m ? m[0].trim() : s;
+  };
+  const tension = deDash(leadSentence(stripMd(grab('CENTRAL TENSION'))));
+  const issue = clean(grab('ISSUE SUMMARY'));
   const polesRaw = grab('POLES & BALANCE');
   const confidence = grab('CONFIDENCE NOTE');
 
@@ -106,7 +126,7 @@ function parseAssembly(raw) {
     const mm = seg.match(/^(.*?):\s*(.*)$/);
     if (!mm) return null;
     const names = poleNames(mm[2]);
-    return names.length ? { label: mm[1].trim(), names } : null;
+    return names.length ? { label: deDash(mm[1].trim()), names } : null;
   }).filter(Boolean);
 
   // The model emits member headers as "**N. Name — Tier**" (bold, numbered) with
@@ -120,7 +140,7 @@ function parseAssembly(raw) {
     const name = stripTierSuffix(firstLine.replace(/^[ \t]*(?:\*\*)?[ \t]*\d+\.[ \t]*/, '').replace(/\*\*/g, '').trim());
     const field = (k) => {
       const m = entry.match(new RegExp('^\\s*' + k + ':\\s*([\\s\\S]*?)(?=\\n\\s*(?:Relevance|Coverage|Will argue):|$)', 'im'));
-      return m ? stripMd(m[1]) : '';
+      return m ? clean(m[1]) : '';
     };
     return { name, relevance: field('Relevance'), coverage: field('Coverage'), willArgue: field('Will argue') };
   }).filter((x) => x.name && !/^(Relevance|Coverage|Will argue)$/i.test(x.name));
@@ -131,7 +151,7 @@ function parseAssembly(raw) {
   const notSelected = notBlock.split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean).map((b) => {
     const flat = b.replace(/\s+/g, ' ').trim();
     const m = flat.match(/^[-*]?\s*\*\*([^*]+)\*\*\s*[—–:-]?\s*([\s\S]*)$/) || flat.match(/^[-*]?\s*([^:—–]+)[:—–]\s*([\s\S]*)$/);
-    return m ? { name: stripTierSuffix(m[1].trim()), reason: stripMd(m[2]) } : { name: '', reason: '' };
+    return m ? { name: stripTierSuffix(m[1].trim()), reason: clean(m[2]) } : { name: '', reason: '' };
   }).filter((x) => x.name);
 
   return { tension, issue, poles, selected, notSelected, confidence };
@@ -297,7 +317,7 @@ export default function WhoPage({ session }) {
 
         .sec-label { font-family: 'Inter', sans-serif; font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--primary); font-weight: 700; margin-bottom: 11px; }
         .lead { margin-bottom: 26px; }
-        .lead-line { font-family: 'Playfair Display', serif; font-size: 18px; line-height: 1.45; font-weight: 500; margin: 0; color: #16110e; }
+        .lead-line { font-family: 'Playfair Display', serif; font-size: 16px; line-height: 1.55; font-weight: 500; margin: 0; color: #16110e; }
 
         .poles { display: flex; gap: 12px; flex-wrap: wrap; margin: 0 0 30px; }
         .pole { flex: 1 1 220px; background: #f7f1e8; border: 0.5px solid rgba(28,23,20,0.16); border-radius: 5px; padding: 13px 15px; }
