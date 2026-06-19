@@ -61,6 +61,7 @@ function extractSelectedMembers(assemblyOutput) {
   }
   const section = selectedMatch[1];
   const names = [];
+  const seen = new Set();
   // Tolerate the whole header line being bold, e.g. "**1. Milton Friedman — Thinker**"
   // (claude-sonnet-4-6 formats it this way) as well as the bare "1. Name" form.
   const regex = /^\s*(?:\*\*)?\s*\d+\.\s+(.+?)\s*$/gm;
@@ -69,9 +70,15 @@ function extractSelectedMembers(assemblyOutput) {
   let match;
   while ((match = regex.exec(section)) !== null) {
     let rawName = match[1].trim().replace(/\*\*/g, '').replace(/^\*|\*$/g, '').trim();
+    // Drop trailing parenthetical/bracketed notes the model sometimes appends,
+    // e.g. "Hannah Arendt [already selected — see above]" → "Hannah Arendt".
+    rawName = rawName.replace(/\s*[[(].*$/, '').trim();
     rawName = stripTierSuffix(rawName);
     if (rawName.length < 3) continue;
     if (/^(Relevance|Coverage|Will argue):/i.test(rawName)) continue;
+    const key = normalizeName(rawName);
+    if (seen.has(key)) continue; // model occasionally re-lists a member; keep it once
+    seen.add(key);
     names.push(rawName);
   }
   if (names.length === 0) {
@@ -122,12 +129,18 @@ function extractMemberMetadata(assemblyOutput) {
 
   const names = [];
   const types = [];
+  const seen = new Set();
   let match;
   while ((match = regex.exec(section)) !== null) {
     const rawName = match[1].trim().replace(/\*\*/g, '').replace(/^\*|\*$/g, '').trim();
-    const cleanName = stripTierSuffix(rawName);
+    // Strip trailing parenthetical/bracketed notes (e.g. "[already selected — see above]")
+    // so a model aside never becomes a phantom member; then dedupe on the name.
+    const cleanName = stripTierSuffix(rawName.replace(/\s*[[(].*$/, '').trim());
     if (cleanName.length < 3) continue;
     if (/^(Relevance|Coverage|Will argue):/i.test(cleanName)) continue;
+    const key = normalizeName(cleanName);
+    if (seen.has(key)) continue;
+    seen.add(key);
     names.push(cleanName);
     const raw = match[2] ? match[2].toLowerCase() : 'unknown';
     const type = (raw === 'practitioner') ? 'leader'
