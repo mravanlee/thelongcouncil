@@ -2302,9 +2302,23 @@ Every card is first person. A member says "I" and "my" and never names themselve
     // can drop a selected member). Derive the cast from the finished cards and
     // carry over each speaker's tier from the assembly metadata.
     const speakerNames = extractSpeakersFromDeliberation(deliberationOutput);
-    const typeByNorm = new Map(metadata.names.map((n, i) => [normalizeName(n), metadata.types[i] || 'unknown']));
-    const castNames = speakerNames.length ? speakerNames : metadata.names;
-    const castTypes = castNames.map((n) => typeByNorm.get(normalizeName(n)) || 'unknown');
+    const lastTok = (n) => normalizeName(n).split(' ').pop();
+    let castNames = [];
+    let castTypes = [];
+    for (const s of speakerNames) {
+      // Match the speaker to the assembly entry (exact, else a unique surname),
+      // then display the FULLER of the two forms — a card heading is sometimes
+      // just a surname, the assembly list sometimes abbreviates the full name.
+      let idx = metadata.names.findIndex((n) => normalizeName(n) === normalizeName(s));
+      if (idx < 0) {
+        const cand = metadata.names.map((_, i) => i).filter((i) => lastTok(metadata.names[i]) && lastTok(metadata.names[i]) === lastTok(s));
+        if (cand.length === 1) idx = cand[0];
+      }
+      const asmName = idx >= 0 ? metadata.names[idx] : null;
+      castNames.push(asmName && asmName.split(/\s+/).length > s.split(/\s+/).length ? asmName : s);
+      castTypes.push(idx >= 0 ? (metadata.types[idx] || 'unknown') : 'unknown');
+    }
+    if (!castNames.length) { castNames = metadata.names; castTypes = metadata.types; }
 
     send('deliberation', { data: deliberationOutput });
 
