@@ -2069,6 +2069,30 @@ Use the members' names EXACTLY as listed in MEMBERS AT THE TABLE. Produce one bl
 QUALITY CHECK before emitting, for every action: imperative verb start? concrete? ≤ 22 words? no "consider/explore/should"? no em-dash? traceable to that member's card? If any fails, rewrite or drop it.`;
 
 // ── Main handler ────────────────────────────────────────────────────────
+// Who actually spoke in the finished deliberation: the member-card `## ` headings
+// (minus the convergence note), cleaned of bold and any tier suffix, deduped.
+// This is the source of truth for the cast — the assembly can select a member
+// the deliberation never gives a card.
+function extractSpeakersFromDeliberation(deliberationOutput) {
+  if (!deliberationOutput) return [];
+  const blocks = deliberationOutput.split(/(?:^|\n)\s*---\s*(?:\n|$)/).map((b) => b.trim()).filter(Boolean);
+  const names = [];
+  const seen = new Set();
+  for (const b of blocks) {
+    if (/##\s*The convergence note/i.test(b)) continue;
+    const m = b.match(/##\s*([^\n]+)/);
+    if (!m) continue;
+    let name = m[1].replace(/\*\*/g, '').trim();
+    name = name.replace(/\s*[—–\-―]\s*(Practitioner|Framer|Leader|Thinker|Wildcard)\s*$/i, '').trim();
+    if (name.length < 3) continue;
+    const key = normalizeName(name);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    names.push(name);
+  }
+  return names;
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end('Method not allowed');
 
@@ -2274,6 +2298,14 @@ Every card is first person. A member says "I" and "my" and never names themselve
     deliberationOutput = applyCanonicalTitles(deliberationOutput, loadProfileTitles(selectedNames));
     deliberationOutput = stripEmDashes(deliberationOutput);
 
+    // member_names/types must reflect who actually spoke (the deliberation step
+    // can drop a selected member). Derive the cast from the finished cards and
+    // carry over each speaker's tier from the assembly metadata.
+    const speakerNames = extractSpeakersFromDeliberation(deliberationOutput);
+    const typeByNorm = new Map(metadata.names.map((n, i) => [normalizeName(n), metadata.types[i] || 'unknown']));
+    const castNames = speakerNames.length ? speakerNames : metadata.names;
+    const castTypes = castNames.map((n) => typeByNorm.get(normalizeName(n)) || 'unknown');
+
     send('deliberation', { data: deliberationOutput });
 
     const violations = validateRoster(deliberationOutput, selectedNames);
@@ -2349,8 +2381,8 @@ Every card is first person. A member says "I" and "my" and never names themselve
         deliberationOutput,
         verdictOutput,
         briefOutput: '',
-        memberNames: metadata.names,
-        memberTypes: metadata.types,
+        memberNames: castNames,
+        memberTypes: castTypes,
         featuredQuote: null,
         featuredQuoteMember: null,
         briefQuotes: {},
@@ -2400,8 +2432,8 @@ Every card is first person. A member says "I" and "my" and never names themselve
         deliberationOutput,
         verdictOutput,
         briefOutput,
-        memberNames: metadata.names,
-        memberTypes: metadata.types,
+        memberNames: castNames,
+        memberTypes: castTypes,
         featuredQuote: featured?.quote || null,
         featuredQuoteMember: featured?.member || null,
         briefQuotes,
@@ -2419,8 +2451,8 @@ Every card is first person. A member says "I" and "my" and never names themselve
         deliberationOutput,
         verdictOutput,
         briefOutput,
-        memberNames: metadata.names,
-        memberTypes: metadata.types,
+        memberNames: castNames,
+        memberTypes: castTypes,
         featuredQuote: featured?.quote || null,
         featuredQuoteMember: featured?.member || null,
         briefQuotes,
