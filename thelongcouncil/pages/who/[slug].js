@@ -162,7 +162,21 @@ export default function WhoPage({ session }) {
   const question = cards.question_en || session.original_issue || '';
   const date = formatDate(session.created_at);
   const memberNames = (session.member_names || []).map(stripTierSuffix).filter(Boolean);
-  const { tension, issue, poles, selected, notSelected } = parseAssembly(cards.assembly);
+  const parsed = parseAssembly(cards.assembly);
+  const { issue, notSelected } = parsed;
+  // Prefer the plain-language summary (cards.panel_summary) when present: a reader-ready
+  // rewrite of the dense, academic framing the old verbose model emitted (the 11 debates
+  // from 16–19 June 2026). Every other debate falls back to the raw-assembly parse,
+  // which is concise now that the assembly prompt enforces short, plain sentences.
+  const ps = cards.panel_summary && typeof cards.panel_summary === 'object' ? cards.panel_summary : null;
+  const tension = (ps && ps.tension) || parsed.tension;
+  const poles = (ps && Array.isArray(ps.poles) && ps.poles.length >= 2) ? ps.poles : parsed.poles;
+  const psMembers = {};
+  if (ps && Array.isArray(ps.members)) for (const m of ps.members) if (m && m.name) psMembers[m.name.toLowerCase()] = m;
+  const selected = parsed.selected.map((m) => {
+    const o = psMembers[m.name.toLowerCase()];
+    return o ? { ...m, willArgue: o.stance || m.willArgue, relevance: o.why || m.relevance } : m;
+  });
 
   // ── Standalone, indexable panel page (SEO) ─────────────────────────────
   const baseUrl = 'https://www.thelongcouncil.com';
