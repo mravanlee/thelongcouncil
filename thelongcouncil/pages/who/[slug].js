@@ -75,7 +75,9 @@ function parseAssembly(raw) {
   // debate page's cleanup so names render canonically.
   text = text.replace(/(\*\*[^*\n]*?)\s*[—–-]\s*(?:Practitioner|Framer|Leader|Thinker|Wildcard)(?:\s*\/\s*(?:Practitioner|Framer|Leader|Thinker|Wildcard))?(\*\*)/g, '$1$2');
   text = text.replace(/(\*\*[^*\n]+?\*\*|[^\n—–-]+?)\s*[—–-]\s*(?:Practitioner|Framer|Leader|Thinker|Wildcard)(?:\s*\/\s*(?:Practitioner|Framer|Leader|Thinker|Wildcard))?(?=\s*$)/gim, '$1');
-  text = text.replace(/\[(?:documented|inferred|extrapolated)\]\s*[—–-]?\s*/gi, '');
+  // Strip confidence tags, tolerating extra text inside the brackets such as
+  // "[extrapolated — must be flagged]" or "[documented] —".
+  text = text.replace(/\[(?:documented|inferred|extrapolated)[^\]]*\]\s*[—–-]?\s*/gi, '');
 
   const LABELS = 'ISSUE SUMMARY|TAXONOMY TAGS|CENTRAL TENSION|POLES & BALANCE|SELECTED MEMBERS|MEMBERS CONSIDERED BUT NOT SELECTED|CONFIDENCE NOTE';
   const grab = (label) => {
@@ -84,38 +86,53 @@ function parseAssembly(raw) {
     return m ? m[1].trim() : '';
   };
 
-  const tension = grab('CENTRAL TENSION');
-  const issue = grab('ISSUE SUMMARY');
+  // Render targets are plain text, so drop any leftover markdown emphasis (* / **).
+  const stripMd = (v) => (v || '').replace(/\*+/g, '').replace(/\s+/g, ' ').trim();
+
+  const tension = stripMd(grab('CENTRAL TENSION'));
+  const issue = stripMd(grab('ISSUE SUMMARY'));
   const polesRaw = grab('POLES & BALANCE');
   const confidence = grab('CONFIDENCE NOTE');
 
-  const poles = polesRaw.split('|').map((seg) => {
-    const mm = seg.trim().match(/^(.*?):\s*(.*?)\s*(?:\((\d+)\))?$/);
+  // POLES & BALANCE comes either as a "Label: names | Label: names" single line
+  // (the spec) or, more often now, a bullet list "- **Label:** Name (2) — N voices".
+  // Drop the trailing "— N voices"/"(count)" bookkeeping and keep label + names.
+  const poleNames = (s) => s.replace(/\s*[—–-].*$/, '').split(',').map((x) => x.replace(/\(\d+\)/g, '').trim()).filter(Boolean);
+  const poleLines = polesRaw.split('\n').map((l) => l.trim()).filter((l) => /^[-*]/.test(l));
+  const poles = (poleLines.length >= 2
+    ? poleLines.map((l) => stripMd(l.replace(/^[-*]\s*/, '')))
+    : polesRaw.split('|').map((seg) => stripMd(seg))
+  ).map((seg) => {
+    const mm = seg.match(/^(.*?):\s*(.*)$/);
     if (!mm) return null;
-    return { label: mm[1].trim(), names: mm[2].split(',').map((s) => s.trim()).filter(Boolean) };
+    const names = poleNames(mm[2]);
+    return names.length ? { label: mm[1].trim(), names } : null;
   }).filter(Boolean);
 
-  const selBlock = (text.match(/SELECTED MEMBERS:[^\n]*\n+([\s\S]*?)(?=\n\s*(?:MEMBERS CONSIDERED BUT NOT SELECTED|CONFIDENCE NOTE)\s*:|$)/i) || [])[1] || '';
-  // Tolerate a leading "**" on the numbered header (claude-sonnet-4-6 often
-  // writes "**1. Name — Tier**"); without it the split found no entry
-  // boundaries and the whole block collapsed into a single member.
-  const selected = selBlock.split(/\n(?=\s*(?:\*\*)?\s*\d+\.\s)/).map((e) => e.trim()).filter(Boolean).map((entry) => {
-    const e = entry.replace(/^\s*(?:\*\*)?\s*\d+\.\s*/, '');
-    const firstLine = (e.split('\n')[0] || '');
-    const name = stripTierSuffix(firstLine.replace(/\*\*/g, '').trim());
+  // The model emits member headers as "**N. Name — Tier**" (bold, numbered) with
+  // "---" separators and the occasional "[Special flag: ...]" note between entries —
+  // not the bare "N. Name" the older parser assumed. Strip the separators/flags,
+  // then split on numbered headers tolerating the leading "**".
+  let selBlock = (text.match(/SELECTED MEMBERS:[^\n]*\n+([\s\S]*?)(?=\n\s*(?:MEMBERS CONSIDERED BUT NOT SELECTED|CONFIDENCE NOTE)\s*:|$)/i) || [])[1] || '';
+  selBlock = selBlock.replace(/^[ \t]*[-–—]{3,}[ \t]*$/gm, '').replace(/\[Special flag:[\s\S]*?\]/gi, '');
+  const selected = selBlock.split(/\n(?=[ \t]*(?:\*\*)?[ \t]*\d+\.[ \t])/).map((e) => e.trim()).filter(Boolean).map((entry) => {
+    const firstLine = (entry.split('\n')[0] || '');
+    const name = stripTierSuffix(firstLine.replace(/^[ \t]*(?:\*\*)?[ \t]*\d+\.[ \t]*/, '').replace(/\*\*/g, '').trim());
     const field = (k) => {
-      const m = e.match(new RegExp(k + ':\\s*([\\s\\S]*?)(?=\\n\\s*(?:Relevance|Coverage|Will argue):|$)', 'i'));
-      return m ? m[1].trim().replace(/\s+/g, ' ') : '';
+      const m = entry.match(new RegExp('^\\s*' + k + ':\\s*([\\s\\S]*?)(?=\\n\\s*(?:Relevance|Coverage|Will argue):|$)', 'im'));
+      return m ? stripMd(m[1]) : '';
     };
     return { name, relevance: field('Relevance'), coverage: field('Coverage'), willArgue: field('Will argue') };
-  }).filter((x) => x.name);
+  }).filter((x) => x.name && !/^(Relevance|Coverage|Will argue)$/i.test(x.name));
 
+  // Considered-but-not-selected entries are blank-line-separated paragraphs of the
+  // form "**Name** — reason", not a bullet list.
   const notBlock = (text.match(/MEMBERS CONSIDERED BUT NOT SELECTED:\s*\n?([\s\S]*?)(?=\n\s*CONFIDENCE NOTE\s*:|$)/i) || [])[1] || '';
-  const notSelected = notBlock.split('\n').map((l) => l.trim()).filter((l) => /^[-*]/.test(l)).map((l) => {
-    const body = l.replace(/^[-*]\s*/, '');
-    const m = body.match(/^\*\*([^*]+)\*\*\s*:?\s*(.*)$/) || body.match(/^([^:]+):\s*(.*)$/);
-    return m ? { name: stripTierSuffix(m[1].trim()), reason: m[2].trim() } : { name: stripTierSuffix(body), reason: '' };
-  });
+  const notSelected = notBlock.split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean).map((b) => {
+    const flat = b.replace(/\s+/g, ' ').trim();
+    const m = flat.match(/^[-*]?\s*\*\*([^*]+)\*\*\s*[—–:-]?\s*([\s\S]*)$/) || flat.match(/^[-*]?\s*([^:—–]+)[:—–]\s*([\s\S]*)$/);
+    return m ? { name: stripTierSuffix(m[1].trim()), reason: stripMd(m[2]) } : { name: '', reason: '' };
+  }).filter((x) => x.name);
 
   return { tension, issue, poles, selected, notSelected, confidence };
 }
