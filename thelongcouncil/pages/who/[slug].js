@@ -96,8 +96,11 @@ function parseAssembly(raw) {
   }).filter(Boolean);
 
   const selBlock = (text.match(/SELECTED MEMBERS:[^\n]*\n+([\s\S]*?)(?=\n\s*(?:MEMBERS CONSIDERED BUT NOT SELECTED|CONFIDENCE NOTE)\s*:|$)/i) || [])[1] || '';
-  const selected = selBlock.split(/\n(?=\s*\d+\.\s)/).map((e) => e.trim()).filter(Boolean).map((entry) => {
-    const e = entry.replace(/^\s*\d+\.\s*/, '');
+  // Tolerate a leading "**" on the numbered header (claude-sonnet-4-6 often
+  // writes "**1. Name — Tier**"); without it the split found no entry
+  // boundaries and the whole block collapsed into a single member.
+  const selected = selBlock.split(/\n(?=\s*(?:\*\*)?\s*\d+\.\s)/).map((e) => e.trim()).filter(Boolean).map((entry) => {
+    const e = entry.replace(/^\s*(?:\*\*)?\s*\d+\.\s*/, '');
     const firstLine = (e.split('\n')[0] || '');
     const name = stripTierSuffix(firstLine.replace(/\*\*/g, '').trim());
     const field = (k) => {
