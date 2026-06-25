@@ -1,22 +1,15 @@
 export const config = { maxDuration: 30 };
 
-// Fixed, agreed decline copy. The model only flags out-of-scope + language;
-// it never writes this message, so the wording is identical every time.
-const DECLINE_MESSAGES = {
-  en: "That's not really one for the council. They prefer the issues the world is facing today. Anything about politics, economy, society or the future works. Got a question like that? Ask them.",
-  nl: "Dit is niet echt iets voor de raad. Zij houden zich liever bezig met de kwesties waar de wereld nu voor staat. Alles over politiek, economie, samenleving of de toekomst kan. Heb je zo'n vraag? Stel hem gerust.",
-};
-
-// Lightweight fallback only used when the model forgets to emit a language code.
-function isLikelyDutch(s = '') {
-  return /\b(het|een|wat|hoe|waarom|moeten|kunnen|niet|voor|zijn|heeft|beste|jij|wij|raad|landen|vraag)\b/i.test(s);
-}
+// Fixed, agreed decline copy. The whole site is English, so this is the one
+// message shown whenever the model flags a question as out of scope. The model
+// never writes it, so the wording is identical every time.
+const DECLINE_MESSAGE = "That's not really one for the council. They prefer the issues the world is facing today. Anything about politics, economy, society or the future works. Got a question like that? Ask them.";
 
 const SYSTEM = `You are the Question Sharpener for The Long Council — a product where historic leaders and thinkers deliberate on governance, economic and geopolitical questions.
 
 Your job: look at the user's question and decide whether the council can deliberate on it as-is, whether it needs one clarification first, or whether it falls outside what the council deliberates on.
 
-Match the language the user writes in. If they write in Dutch, respond in Dutch. If English, English.
+Always respond in English, whatever language the user writes in. The whole site is English. When the user's question is in another language, treat its meaning normally but write your reply (and the READY question) in clear, natural English.
 
 ════════════════════════════════════════════════════════════════
 THREE PATHS — you MUST pick exactly one
@@ -66,7 +59,7 @@ Respond with EXACTLY this format:
 
 CLARIFY: [one short clarifying question, 1 sentence, plain language]
 
-Then on a new line, a short friendly explanation (1 sentence) of what's missing. Example: "I just need to know who this is about." Or: "Ik wil graag weten wie hier een besluit over moet nemen."
+Then on a new line, a short friendly explanation (1 sentence) of what's missing. Example: "I just need to know who this is about." Or: "I want to know who actually makes this call."
 
 Ask only ONE clarifying question. Never two.
 
@@ -79,12 +72,11 @@ Clearly outside scope (decline these): sports results or predictions, personal o
 
 Inside scope (NEVER decline these): any public policy, law, institution, election, war, trade, tax, climate, migration, technology or social and economic choice at the level of a group, city, company, country, or the world. If the question touches a real societal choice, it is in scope even when it is casually worded.
 
-If the question is clearly outside scope, respond with EXACTLY one of these two lines and NOTHING else:
+If the question is clearly outside scope, respond with EXACTLY this line and NOTHING else:
 
-DECLINE: en
-DECLINE: nl
+DECLINE:
 
-Use "nl" when the user wrote in Dutch, and "en" for English or any other language. Do NOT write a message of your own. The product shows its own fixed, friendly decline message. Your only job here is to flag that the question is out of scope and say which language to show it in. Do not ask a clarifying question. Do not twist the question into a policy question.
+Do NOT write a message of your own. The product shows its own fixed, friendly decline message. Your only job here is to flag that the question is out of scope. Do not ask a clarifying question. Do not twist the question into a policy question.
 
 When you are unsure whether something is in scope, do NOT decline. Prefer READY or CLARIFY. Only decline when it is obvious the council has nothing to deliberate on.
 
@@ -118,7 +110,7 @@ Example:
 User turn 1: "should we tax carbon more"
 Your turn 1: "CLARIFY: Which country or region?"
 User turn 2: "the Netherlands"
-Your turn 2: "READY: Should the Netherlands tax carbon more?\n\nDe raad kan hiermee aan de slag."
+Your turn 2: "READY: Should the Netherlands tax carbon more?\n\nThe council can get started with this."
 
 NEVER ask a second clarifying question. After one CLARIFY round, you always go to READY.
 
@@ -210,11 +202,8 @@ export default async function handler(req, res) {
       explanation = lines.slice(1).join(' ').trim();
     } else if (/^DECLINE\b/i.test(text)) {
       mode = 'decline';
-      // The model only emits a language code; the message itself is fixed copy.
-      const after = text.replace(/^DECLINE:?\s*/i, '').toLowerCase();
-      let lang = /^nl/.test(after) ? 'nl' : /^en/.test(after) ? 'en' : null;
-      if (!lang) lang = isLikelyDutch(lastMessage.content) ? 'nl' : 'en';
-      mainLine = DECLINE_MESSAGES[lang] || DECLINE_MESSAGES.en;
+      // The model only flags out-of-scope; the message itself is fixed copy.
+      mainLine = DECLINE_MESSAGE;
       explanation = '';
     } else {
       // Defensive fallback — if the model didn't use a tag, treat it as clarify
