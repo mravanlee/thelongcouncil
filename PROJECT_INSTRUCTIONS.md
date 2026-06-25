@@ -500,6 +500,21 @@ Question sharpener (sharpen.js):
   Trump question compressed correctly, short questions
   pass through unchanged.
 
+Sharpener — English-only + DECLINE path (Jun 25 2026):
+- The site is intentionally English-only. The sharpener replies
+  only in English (it used to mirror the user's language). A
+  non-English question is translated into an English READY line.
+- PATH 3 DECLINE: out-of-scope questions (sports, personal/medical
+  advice, trivia, coding, entertainment) are politely refused
+  instead of being forced into a debate. DECLINE outranks CLARIFY.
+  Errs toward READY/CLARIFY when scope is unclear.
+- The decline copy is ONE fixed English message (DECLINE_MESSAGE
+  in sharpen.js); the model only flags scope, it never writes the
+  text, so wording never drifts.
+- index.js has a safety-net branch so the sharpening screen is
+  never blank if a payload/mode is unexpected (or a stale cached
+  bundle meets a newer API).
+
 May 9 fixes (unchanged):
 - Ghost session prevention (validateSelectedMembers)
 - Debate teaser blob fix (extractTeaser)
