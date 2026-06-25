@@ -1389,6 +1389,22 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
               </div>
             </>
           )}
+
+          {/* Safety net: never leave the screen blank. If none of the known modes
+              rendered (unexpected mode, empty payload, or stale cached JS meeting a
+              newer API), fall back to letting the user proceed or start over. */}
+          {!sharpenerLoading
+            && !(sharpenerMode === 'ready' && readyQuestion)
+            && !(sharpenerMode === 'clarify' && clarifyingQuestion)
+            && !(sharpenerMode === 'decline' && declineMessage) && (
+            <>
+              <div className="sharpener-original">Your question: {question}</div>
+              <div className="proposed-actions">
+                <button className="btn-accept" onClick={() => runPipeline(question)}>Convene the council →</button>
+                <button className="btn-skip" onClick={reset}>Ask a different question</button>
+              </div>
+            </>
+          )}
         </div>
       )}
 

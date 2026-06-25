@@ -1,5 +1,17 @@
 export const config = { maxDuration: 30 };
 
+// Fixed, agreed decline copy. The model only flags out-of-scope + language;
+// it never writes this message, so the wording is identical every time.
+const DECLINE_MESSAGES = {
+  en: "That's not really one for the council. They prefer the issues the world is facing today. Anything about politics, economy, society or the future works. Got a question like that? Ask them.",
+  nl: "Dit is niet echt iets voor de raad. Zij houden zich liever bezig met de kwesties waar de wereld nu voor staat. Alles over politiek, economie, samenleving of de toekomst kan. Heb je zo'n vraag? Stel hem gerust.",
+};
+
+// Lightweight fallback only used when the model forgets to emit a language code.
+function isLikelyDutch(s = '') {
+  return /\b(het|een|wat|hoe|waarom|moeten|kunnen|niet|voor|zijn|heeft|beste|jij|wij|raad|landen|vraag)\b/i.test(s);
+}
+
 const SYSTEM = `You are the Question Sharpener for The Long Council — a product where historic leaders and thinkers deliberate on governance, economic and geopolitical questions.
 
 Your job: look at the user's question and decide whether the council can deliberate on it as-is, whether it needs one clarification first, or whether it falls outside what the council deliberates on.
@@ -67,16 +79,12 @@ Clearly outside scope (decline these): sports results or predictions, personal o
 
 Inside scope (NEVER decline these): any public policy, law, institution, election, war, trade, tax, climate, migration, technology or social and economic choice at the level of a group, city, company, country, or the world. If the question touches a real societal choice, it is in scope even when it is casually worded.
 
-If the question is clearly outside scope, respond with EXACTLY this format:
+If the question is clearly outside scope, respond with EXACTLY one of these two lines and NOTHING else:
 
-DECLINE: [two or three short sentences in plain, everyday words. Keep it light, warm, and a little human. Never lofty, academic, or grand. First: gently say this is not really one for the council. Then: in simple words say what they DO get into (the issues the world is facing today, such as politics, economy, society, or the future) and warmly invite a question like that.]
+DECLINE: en
+DECLINE: nl
 
-Keep it light. A small smile is welcome. Use the kind of words you would say out loud to a friend. Never write "deliberate", "govern", "steer economies", "resources", or "between groups and nations" — that is exactly the stiff, high-brow tone to avoid.
-
-Example (English): "DECLINE: That's not really one for the council. They prefer the issues the world is facing today. Anything about politics, economy, society or the future works. Got a question like that? Ask them."
-Example (Dutch): "DECLINE: Dat is niet echt iets voor de raad. Zij houden zich liever bezig met de kwesties waar de wereld nu voor staat. Alles over politiek, economie, samenleving of de toekomst kan. Heb je zo'n vraag? Stel hem gerust."
-
-Do not add any other line. Do not ask a clarifying question. Do not twist the question into a policy question. No dashes in the message.
+Use "nl" when the user wrote in Dutch, and "en" for English or any other language. Do NOT write a message of your own. The product shows its own fixed, friendly decline message. Your only job here is to flag that the question is out of scope and say which language to show it in. Do not ask a clarifying question. Do not twist the question into a policy question.
 
 When you are unsure whether something is in scope, do NOT decline. Prefer READY or CLARIFY. Only decline when it is obvious the council has nothing to deliberate on.
 
@@ -200,13 +208,13 @@ export default async function handler(req, res) {
       const lines = afterTag.split(/\n+/);
       mainLine = lines[0].trim();
       explanation = lines.slice(1).join(' ').trim();
-    } else if (/^DECLINE:/i.test(text)) {
+    } else if (/^DECLINE\b/i.test(text)) {
       mode = 'decline';
-      // The decline message can span multiple sentences/lines — keep all of it.
-      mainLine = text.replace(/^DECLINE:\s*/i, '').replace(/\s*\n+\s*/g, ' ').trim();
-      // House style: no em/en dashes in copy. The model ignores the prompt rule often
-      // enough that we strip them here as a safety net (turns " — " into ", ").
-      mainLine = mainLine.replace(/\s*[—–]\s*/g, ', ');
+      // The model only emits a language code; the message itself is fixed copy.
+      const after = text.replace(/^DECLINE:?\s*/i, '').toLowerCase();
+      let lang = /^nl/.test(after) ? 'nl' : /^en/.test(after) ? 'en' : null;
+      if (!lang) lang = isLikelyDutch(lastMessage.content) ? 'nl' : 'en';
+      mainLine = DECLINE_MESSAGES[lang] || DECLINE_MESSAGES.en;
       explanation = '';
     } else {
       // Defensive fallback — if the model didn't use a tag, treat it as clarify
