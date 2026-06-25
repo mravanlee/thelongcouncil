@@ -691,6 +691,7 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
   const [sharpenerMode, setSharpenerMode] = useState(null);
   const [readyQuestion, setReadyQuestion] = useState(null);
   const [clarifyingQuestion, setClarifyingQuestion] = useState(null);
+  const [declineMessage, setDeclineMessage] = useState(null);
   const [sharpenerExplanation, setSharpenerExplanation] = useState('');
   const [sharpenerInput, setSharpenerInput] = useState('');
   const [sharpenerLoading, setSharpenerLoading] = useState(false);
@@ -785,9 +786,15 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
     if (data.mode === 'ready') {
       setReadyQuestion(data.question);
       setClarifyingQuestion(null);
+      setDeclineMessage(null);
     } else if (data.mode === 'clarify') {
       setClarifyingQuestion(data.clarifyingQuestion);
       setReadyQuestion(null);
+      setDeclineMessage(null);
+    } else if (data.mode === 'decline') {
+      setDeclineMessage(data.declineMessage);
+      setReadyQuestion(null);
+      setClarifyingQuestion(null);
     }
   }
 
@@ -1022,6 +1029,7 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
     setSharpenerMode(null);
     setReadyQuestion(null);
     setClarifyingQuestion(null);
+    setDeclineMessage(null);
     setSharpenerExplanation('');
     setSharpenerInput('');
     setConfirmedQuestion('');
@@ -1365,6 +1373,19 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
               </div>
               <div className="skip-row">
                 <button className="btn-skip" onClick={() => runPipeline(question)}>Skip — use my original question</button>
+              </div>
+            </>
+          )}
+
+          {!sharpenerLoading && sharpenerMode === 'decline' && declineMessage && (
+            <>
+              <div className="sharpener-original">Your question: {question}</div>
+              <div className="decline-box">
+                <div className="decline-label">Not for the council</div>
+                <div className="decline-message">{declineMessage}</div>
+              </div>
+              <div className="decline-actions">
+                <button className="btn-accept" onClick={reset}>Ask a different question</button>
               </div>
             </>
           )}

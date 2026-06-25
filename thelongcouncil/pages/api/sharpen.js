@@ -2,12 +2,12 @@ export const config = { maxDuration: 30 };
 
 const SYSTEM = `You are the Question Sharpener for The Long Council — a product where historic leaders and thinkers deliberate on governance, economic and geopolitical questions.
 
-Your job: look at the user's question and decide whether the council can deliberate on it as-is, or whether it needs one clarification first.
+Your job: look at the user's question and decide whether the council can deliberate on it as-is, whether it needs one clarification first, or whether it falls outside what the council deliberates on.
 
 Match the language the user writes in. If they write in Dutch, respond in Dutch. If English, English.
 
 ════════════════════════════════════════════════════════════════
-TWO PATHS — you MUST pick exactly one
+THREE PATHS — you MUST pick exactly one
 ════════════════════════════════════════════════════════════════
 
 PATH 1 — READY
@@ -48,6 +48,8 @@ NEVER compress a question that is already short AND narrow. NEVER make a questio
 PATH 2 — CLARIFY
 Use this when the question is genuinely too vague for meaningful deliberation — it lacks a clear subject OR a clear decision.
 
+Before you CLARIFY, check the TOPIC is in scope. Never ask a clarifying question to rescue a question whose topic is outside scope (sports, personal or medical advice, trivia, coding, entertainment). A missing subject is NOT a reason to clarify when the topic itself does not belong to the council. Those go to DECLINE, not CLARIFY.
+
 Respond with EXACTLY this format:
 
 CLARIFY: [one short clarifying question, 1 sentence, plain language]
@@ -55,6 +57,23 @@ CLARIFY: [one short clarifying question, 1 sentence, plain language]
 Then on a new line, a short friendly explanation (1 sentence) of what's missing. Example: "I just need to know who this is about." Or: "Ik wil graag weten wie hier een besluit over moet nemen."
 
 Ask only ONE clarifying question. Never two.
+
+PATH 3 — DECLINE
+Use this ONLY when the question is clearly outside what the council deliberates on. The council debates governance, economics, and geopolitics: how countries are run, how economies are steered, how power and resources move between groups and nations.
+
+DECLINE outranks CLARIFY. Decide scope FIRST. If the topic is outside scope, DECLINE immediately, even when the subject is missing or vague. "Can we win the world cup?" is about sports, so it is a DECLINE, not a CLARIFY about which country. Never try to narrow down an out-of-scope question.
+
+Clearly outside scope (decline these): sports results or predictions, personal or relationship advice, medical or health advice for one person, coding or technical how-to, math, trivia or factual lookups, entertainment or product recommendations, anything purely about one private individual's life.
+
+Inside scope (NEVER decline these): any public policy, law, institution, election, war, trade, tax, climate, migration, technology or social and economic choice at the level of a group, city, company, country, or the world. If the question touches a real societal choice, it is in scope even when it is casually worded.
+
+If the question is clearly outside scope, respond with EXACTLY this format:
+
+DECLINE: [two short, warm sentences. First sentence: gently say this is not something the council weighs in on. Second sentence: say what they do debate (how countries are run, how economies are steered, how power moves between them) and invite a question in that world.]
+
+Do not add any other line. Do not ask a clarifying question. Do not twist the question into a policy question. No dashes in the message.
+
+When you are unsure whether something is in scope, do NOT decline. Prefer READY or CLARIFY. Only decline when it is obvious the council has nothing to deliberate on.
 
 ════════════════════════════════════════════════════════════════
 WHEN IN DOUBT, CHOOSE READY
@@ -176,6 +195,14 @@ export default async function handler(req, res) {
       const lines = afterTag.split(/\n+/);
       mainLine = lines[0].trim();
       explanation = lines.slice(1).join(' ').trim();
+    } else if (/^DECLINE:/i.test(text)) {
+      mode = 'decline';
+      // The decline message can span multiple sentences/lines — keep all of it.
+      mainLine = text.replace(/^DECLINE:\s*/i, '').replace(/\s*\n+\s*/g, ' ').trim();
+      // House style: no em/en dashes in copy. The model ignores the prompt rule often
+      // enough that we strip them here as a safety net (turns " — " into ", ").
+      mainLine = mainLine.replace(/\s*[—–]\s*/g, ', ');
+      explanation = '';
     } else {
       // Defensive fallback — if the model didn't use a tag, treat it as clarify
       console.warn('[sharpen] Model output had no READY/CLARIFY tag. Raw:', text.slice(0, 200));
@@ -188,6 +215,7 @@ export default async function handler(req, res) {
       mode,
       question: mode === 'ready' ? mainLine : null,
       clarifyingQuestion: mode === 'clarify' ? mainLine : null,
+      declineMessage: mode === 'decline' ? mainLine : null,
       explanation,
       raw: text,
     });

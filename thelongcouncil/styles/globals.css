@@ -299,6 +299,34 @@ body { background: #f8f6f2; font-family: 'Inter', sans-serif; color: #0f0f0f; mi
   font-style: italic;
 }
 
+/* Decline path — when the question falls outside what the council debates */
+.decline-box {
+  background: #f0ede8;
+  border: 1px solid #c0b8a8;
+  border-radius: 2px;
+  padding: 20px 24px;
+  margin-bottom: 18px;
+}
+.decline-label {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #7a7a7a;
+  margin-bottom: 12px;
+}
+.decline-message {
+  font-family: 'Playfair Display', serif;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.55;
+  color: #0f0f0f;
+}
+.decline-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .skip-row {
   margin-top: 14px;
 }
