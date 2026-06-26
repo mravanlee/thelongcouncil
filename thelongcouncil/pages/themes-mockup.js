@@ -169,17 +169,18 @@ function MemberTile({ m }) {
 
 function MemberHead({ m }) {
   const [failed, setFailed] = useState(false);
+  const lastName = m.name.split(' ').slice(-1)[0];
   return (
-    <Link href={`/council#m-${m.slug}`} className="group flex shrink-0 items-center gap-4 sm:w-[210px]">
-      <div className="relative grid h-[64px] w-[64px] shrink-0 place-items-center overflow-hidden rounded-full border border-border bg-secondary transition group-hover:border-primary">
-        <span className="text-[16px] font-semibold text-primary" style={SERIF}>{m.monogram}</span>
+    <Link href={`/council#m-${m.slug}`} className="group flex shrink-0 items-center gap-4 sm:w-[200px] sm:flex-col sm:items-start sm:gap-3">
+      <div className="relative grid h-[84px] w-[84px] shrink-0 place-items-center overflow-hidden rounded-full bg-secondary ring-2 ring-primary/30 transition group-hover:ring-primary">
+        <span className="text-[19px] font-semibold text-primary" style={SERIF}>{m.monogram}</span>
         {!failed && m.slug && (
           <img src={`/avatars/avatar_${m.slug}.webp`} alt="" className="absolute inset-0 h-full w-full object-cover" onError={() => setFailed(true)} />
         )}
       </div>
       <div>
-        <div className="text-[18px] leading-tight text-foreground transition group-hover:text-primary" style={SERIF}>{m.name}</div>
-        <div className="mt-1 text-[10px] tracking-[0.16em] uppercase text-muted-foreground">What they would do</div>
+        <div className="text-[20px] leading-tight text-primary" style={SERIF}>{m.name}</div>
+        <span className="mt-1.5 inline-block text-[10px] tracking-[0.14em] uppercase text-primary/70 transition group-hover:text-primary">Explore {lastName} →</span>
       </div>
     </Link>
   );
@@ -242,26 +243,30 @@ export default function ThemeHubMock({ count, memberTotal, lastUpdated, faultLin
           </div>
         </section>
 
-        {/* What the council would do — per-member concrete moves, with avatars */}
+        {/* HERO — What would they do (per-member concrete moves, with avatars) */}
         {whatWouldThey.length > 0 && (
           <section className="border-b border-border/70 bg-card/30">
-            <div className="mx-auto max-w-5xl px-6 py-12">
-              <div className="text-[11px] tracking-[0.22em] uppercase text-primary mb-2">What the council would do</div>
-              <p className="text-[14px] text-muted-foreground mb-9 max-w-2xl">The concrete moves each thinker would make on {THEME}, drawn from their debates.</p>
-              <div className="flex flex-col divide-y divide-border/60">
+            <div className="mx-auto max-w-5xl px-6 py-14">
+              <div className="text-[11px] tracking-[0.22em] uppercase text-primary mb-3">The council in action</div>
+              <h2 className="text-[30px] leading-[1.15] text-foreground" style={SERIF}>What would they do about the {THEME.toLowerCase()}?</h2>
+              <p className="mt-3 text-[15px] text-muted-foreground max-w-2xl">Each thinker's concrete moves, drawn straight from their debates.</p>
+              <div className="mt-10 space-y-5">
                 {whatWouldThey.map((m) => (
-                  <div key={m.name} className="flex flex-col gap-5 py-8 sm:flex-row sm:gap-8">
-                    <MemberHead m={m} />
-                    <ul className="flex-1 space-y-3">
-                      {m.actions.map((a, i) => (
-                        <li key={i}>
-                          <Link href={`/archive/${a.slug}`} className="group block">
-                            <span className="text-[16px] leading-[1.5] text-foreground/90" style={SERIF}>{a.text}</span>
-                            <span className="mt-1 block text-[11px] tracking-[0.04em] text-muted-foreground transition group-hover:text-primary">on “{a.question}”</span>
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
+                  <div key={m.name} className="border border-border border-l-[3px] border-l-primary bg-background p-6 sm:p-7">
+                    <div className="flex flex-col gap-6 sm:flex-row sm:gap-9">
+                      <MemberHead m={m} />
+                      <ul className="flex-1 space-y-4">
+                        {m.actions.map((a, i) => (
+                          <li key={i} className="flex gap-3">
+                            <span className="mt-[10px] h-[6px] w-[6px] shrink-0 rounded-full bg-primary" />
+                            <Link href={`/archive/${a.slug}`} className="group block">
+                              <span className="text-[16px] leading-[1.5] text-foreground/90" style={SERIF}>{a.text}</span>
+                              <span className="mt-1 block text-[11px] tracking-[0.04em] text-muted-foreground transition group-hover:text-primary">on “{a.question}”</span>
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   </div>
                 ))}
               </div>
