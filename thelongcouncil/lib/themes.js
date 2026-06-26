@@ -15,11 +15,11 @@
 export const THEMES = [
   // Place
   { label: 'US', keywords: ['united states', 'u.s.', 'america', 'washington', 'congress', 'white house', 'pentagon', 'wall street', 'trump', 'biden'], acronyms: ['US', 'USA'] },
-  { label: 'EU', keywords: ['europe', 'europ', 'brussels', 'eurozone', 'britain', 'german', 'french', 'italy', 'spain', 'adenauer', 'schmidt', 'monnet', 'de gaulle'], acronyms: ['EU'] },
+  { label: 'EU', keywords: ['europe', 'europ', 'brussels', 'eurozone', 'britain', 'german', 'french', 'italy', 'spain', 'adenauer', 'schmidt', 'monnet', 'de gaulle'], acronyms: ['EU', 'UK'] },
   { label: 'China', keywords: ['china', 'chinese', 'asia', 'asian', 'beijing', 'taiwan', 'japan', 'korea', 'singapore', 'india', 'mahathir', 'lee kuan', 'deng', 'confucius', 'sun tzu'] },
   { label: 'Netherlands', keywords: ['nederland', 'dutch', 'netherlands', 'jetten', 'groningen', 'curaçao', 'rutte', 'amsterdam', 'haag', 'wilders'], acronyms: ['ASML'] },
   // Topic
-  { label: 'Economy', keywords: ['econom', 'trade', 'handel', 'tariff', 'wealth', 'recession', 'inflation', 'export', 'import', 'monetary', 'fiscal', 'market', 'capital', 'industrial', 'corporate', 'business', 'shareholder'], acronyms: ['GDP'] },
+  { label: 'Economy', keywords: ['econom', 'trade', 'handel', 'tariff', 'wealth', 'recession', 'inflation', 'export', 'import', 'monetary', 'fiscal', 'market', 'capital', 'industrial', 'corporate', 'business', 'shareholder', 'poverty', 'bitcoin', 'crypto'], acronyms: ['GDP'] },
   { label: 'Governance', keywords: ['governance', 'institution', 'regulat', 'rule of law', 'bureaucra', 'public administration', 'oversight'] },
   { label: 'Democracy', keywords: ['democra', 'polaris', 'polariser', 'election', 'electie', 'verkiezing', 'parlement', 'citizen', 'voter', 'vote', 'debate', 'civic', 'rechtsstaat', 'jetten'] },
   { label: 'Geopolitics', keywords: ['geopoli', 'foreign policy', 'sanction', 'alliance', 'autonom', 'sovereign', 'diplomacy', 'kissinger', 'henry kissinger'], acronyms: ['NATO', 'UN'] },
@@ -42,11 +42,14 @@ export const THEME_REGEX = Object.fromEntries(
   }),
 );
 
-// Topic-only haystack: question + verdict + quote. Excludes member_names so
-// that a session debated by Lee Kuan Yew does not auto-match the China theme
-// just because his name is on the panel.
+// Match on the QUESTION only, not the verdict. The verdict prose incidentally
+// mentions "market", "sanction", "security" etc., which produced off-topic tags
+// (e.g. a processed-foods or "what purpose should a government" debate landing in
+// Economy). The question is the honest signal for what a debate is ABOUT.
+// Excludes member_names too, so a debate Lee Kuan Yew sat on doesn't auto-tag as
+// China just because his name is on the panel.
 export function topicHaystack(session) {
-  return [session.display_issue, session.original_issue, session.sharpened_issue, session.teaser, session.featured_quote]
+  return [session.display_issue, session.original_issue, session.sharpened_issue]
     .filter(Boolean).join(' ').toLowerCase();
 }
 
