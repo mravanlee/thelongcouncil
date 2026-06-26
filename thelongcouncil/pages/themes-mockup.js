@@ -91,6 +91,19 @@ export async function getServerSideProps() {
   for (const s of inTheme) for (const t of s.themes) if (t !== THEME) coCount[t] = (coCount[t] || 0) + 1;
   const related = Object.entries(coCount).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([label, count]) => ({ label, count }));
 
+  // "What X would do" — each leading thinker's concrete moves on this theme,
+  // aggregated from member_actions across the theme's debates. Grounded data.
+  const actionsByMember = {};
+  for (const s of inTheme) for (const [rawName, acts] of Object.entries(s.member_actions || {})) {
+    const name = stripTierSuffix(rawName);
+    if (!acts || !acts.length) continue;
+    (actionsByMember[name] = actionsByMember[name] || []).push({ text: acts[0], slug: s.slug, question: s.display_issue });
+  }
+  const whatWouldThey = members
+    .filter((m) => actionsByMember[m.name])
+    .slice(0, 5)
+    .map((m) => ({ name: m.name, slug: m.slug, monogram: m.monogram, actions: actionsByMember[m.name].slice(0, 3) }));
+
   // D — Head to head: debates where two thinkers proposed concrete, different
   // moves. Pulled straight from member_actions, so nothing is inferred.
   const headToHead = inTheme
@@ -129,6 +142,7 @@ export async function getServerSideProps() {
       memberTotal: Object.keys(memberCount).length,
       lastUpdated: inTheme[0]?.created_at || null,
       faultLine,
+      whatWouldThey,
       headToHead,
       members,
       related,
@@ -153,7 +167,25 @@ function MemberTile({ m }) {
   );
 }
 
-export default function ThemeHubMock({ count, memberTotal, lastUpdated, faultLine, headToHead, members, related, list }) {
+function MemberHead({ m }) {
+  const [failed, setFailed] = useState(false);
+  return (
+    <Link href={`/council#m-${m.slug}`} className="group flex shrink-0 items-center gap-4 sm:w-[210px]">
+      <div className="relative grid h-[64px] w-[64px] shrink-0 place-items-center overflow-hidden rounded-full border border-border bg-secondary transition group-hover:border-primary">
+        <span className="text-[16px] font-semibold text-primary" style={SERIF}>{m.monogram}</span>
+        {!failed && m.slug && (
+          <img src={`/avatars/avatar_${m.slug}.webp`} alt="" className="absolute inset-0 h-full w-full object-cover" onError={() => setFailed(true)} />
+        )}
+      </div>
+      <div>
+        <div className="text-[18px] leading-tight text-foreground transition group-hover:text-primary" style={SERIF}>{m.name}</div>
+        <div className="mt-1 text-[10px] tracking-[0.16em] uppercase text-muted-foreground">What they would do</div>
+      </div>
+    </Link>
+  );
+}
+
+export default function ThemeHubMock({ count, memberTotal, lastUpdated, faultLine, whatWouldThey, headToHead, members, related, list }) {
   const firstPage = list.slice(0, 25);
   const topMembers = members.slice(0, 8);
   return (
@@ -210,13 +242,28 @@ export default function ThemeHubMock({ count, memberTotal, lastUpdated, faultLin
           </div>
         </section>
 
-        {/* The council on this theme */}
-        {topMembers.length > 0 && (
+        {/* What the council would do — per-member concrete moves, with avatars */}
+        {whatWouldThey.length > 0 && (
           <section className="border-b border-border/70 bg-card/30">
-            <div className="mx-auto max-w-5xl px-6 py-11">
-              <div className="text-[11px] tracking-[0.22em] uppercase text-primary mb-7">The voices most present on {THEME}</div>
-              <div className="flex flex-wrap gap-x-6 gap-y-8">
-                {topMembers.map((m) => <MemberTile key={m.name} m={m} />)}
+            <div className="mx-auto max-w-5xl px-6 py-12">
+              <div className="text-[11px] tracking-[0.22em] uppercase text-primary mb-2">What the council would do</div>
+              <p className="text-[14px] text-muted-foreground mb-9 max-w-2xl">The concrete moves each thinker would make on {THEME}, drawn from their debates.</p>
+              <div className="flex flex-col divide-y divide-border/60">
+                {whatWouldThey.map((m) => (
+                  <div key={m.name} className="flex flex-col gap-5 py-8 sm:flex-row sm:gap-8">
+                    <MemberHead m={m} />
+                    <ul className="flex-1 space-y-3">
+                      {m.actions.map((a, i) => (
+                        <li key={i}>
+                          <Link href={`/archive/${a.slug}`} className="group block">
+                            <span className="text-[16px] leading-[1.5] text-foreground/90" style={SERIF}>{a.text}</span>
+                            <span className="mt-1 block text-[11px] tracking-[0.04em] text-muted-foreground transition group-hover:text-primary">on “{a.question}”</span>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
               </div>
             </div>
           </section>
