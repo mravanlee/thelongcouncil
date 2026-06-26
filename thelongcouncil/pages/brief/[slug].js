@@ -13,6 +13,15 @@ export async function getServerSideProps(context) {
   // No brief yet (pre-created / unfinished session) → 404, so we never index a
   // thin/empty Policy Brief page.
   if (!session.cards || !session.cards.brief) return { notFound: true };
+
+  // Per-debate page is immutable once published, so let the edge CDN cache it
+  // instead of the getServerSideProps no-store default. Only on the success
+  // path, so transient Supabase errors are never cached.
+  context.res.setHeader(
+    'Cache-Control',
+    'public, s-maxage=86400, stale-while-revalidate=604800'
+  );
+
   return { props: { session } };
 }
 

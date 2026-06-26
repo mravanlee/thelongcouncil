@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabase';
 import { resolveAvatarSlug } from '../lib/avatarSlugs';
 import { SERIF, SiteFooter, SiteHeader } from '../components/SiteChrome';
 
-export async function getServerSideProps() {
+export async function getServerSideProps(context) {
   try {
     const { data: sessions } = await supabase.from('sessions').select('member_names');
     const counts = {};
@@ -20,6 +20,13 @@ export async function getServerSideProps() {
         }
       }
     }
+    // Roster page; only the per-member debate counts shift as new debates land.
+    // A short edge cache keeps it fast without letting the counts go stale for
+    // long. Success path only (the catch below stays uncached).
+    context.res.setHeader(
+      'Cache-Control',
+      'public, s-maxage=3600, stale-while-revalidate=86400'
+    );
     return { props: { debateCounts: counts } };
   } catch (e) {
     return { props: { debateCounts: {} } };

@@ -46,6 +46,14 @@ export async function getServerSideProps(ctx) {
     theme: typeof ctx.query.theme === 'string' ? ctx.query.theme : null,
   };
 
+  // Listing grows as new debates are published, so cache shorter than the
+  // immutable detail pages: edge-cache for an hour, serve stale up to a day
+  // while it revalidates. Success path only (errors stay uncached).
+  ctx.res.setHeader(
+    'Cache-Control',
+    'public, s-maxage=3600, stale-while-revalidate=86400'
+  );
+
   return { props: { sessions: enriched, error: null, initialFilters } };
 }
 
