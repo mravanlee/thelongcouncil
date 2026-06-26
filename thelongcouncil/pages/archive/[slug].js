@@ -18,6 +18,16 @@ export async function getServerSideProps(context) {
     .eq('slug', slug)
     .single();
   if (error || !session) return { notFound: true };
+
+  // Archive debates are immutable once published, so let Vercel's edge CDN
+  // cache the SSR HTML instead of sending the getServerSideProps no-store
+  // default. Faster for visitors, and friendlier to AI fetchers/caches.
+  // (Related Debates may lag up to a day on a cached page; harmless.)
+  context.res.setHeader(
+    'Cache-Control',
+    'public, s-maxage=86400, stale-while-revalidate=604800'
+  );
+
   return { props: { session, memberQuery } };
 }
 
