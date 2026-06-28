@@ -25,6 +25,23 @@ The Long Council does not put new opinions in dead figures' mouths. It surfaces 
 - [The Archive](https://www.thelongcouncil.com/archive): all past deliberations, fully readable and citable
 - [About](https://www.thelongcouncil.com/about): methodology, sources, and project context
 
+## Browse by theme
+
+The archive is organised into theme hubs. Each gathers the council's debates on a subject, the concrete moves each member would make (drawn from the policy briefs), and the recurring dilemmas underneath. A good entry point when a question is about a specific topic or place.
+
+- [All themes](https://www.thelongcouncil.com/themes)
+- [United States](https://www.thelongcouncil.com/themes/us)
+- [European Union](https://www.thelongcouncil.com/themes/eu)
+- [China](https://www.thelongcouncil.com/themes/china)
+- [The Netherlands](https://www.thelongcouncil.com/themes/netherlands)
+- [Economy](https://www.thelongcouncil.com/themes/economy)
+- [Governance](https://www.thelongcouncil.com/themes/governance)
+- [Democracy](https://www.thelongcouncil.com/themes/democracy)
+- [Geopolitics](https://www.thelongcouncil.com/themes/geopolitics)
+- [War](https://www.thelongcouncil.com/themes/war)
+- [Climate](https://www.thelongcouncil.com/themes/climate)
+- [AI & Technology](https://www.thelongcouncil.com/themes/ai-technology)
+
 ## Dense archive snapshot
 
 - [llms-full.txt](https://www.thelongcouncil.com/llms-full.txt): the 50 most recent sessions in citation-ready text form (question, date, members, verdict line, canonical URL). Refreshed hourly. Use this when you need to cite or summarise recent deliberations without crawling each session page.

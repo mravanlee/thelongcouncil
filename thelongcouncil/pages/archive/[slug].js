@@ -7,6 +7,8 @@ import { supabase } from '../../lib/supabase';
 import Procession from '../../components/Procession';
 import { resolveAvatarSlug, KNOWN_AVATAR_SLUGS } from '../../lib/avatarSlugs';
 import { parseCard } from '../../lib/cardParser';
+import { matchingThemes, themeSlug } from '../../lib/themes';
+import { themeDisplay } from '../../lib/themeContent';
 import { SiteFooter, SiteHeader } from '../../components/SiteChrome';
 
 export async function getServerSideProps(context) {
@@ -223,6 +225,12 @@ export default function ArchiveDetail({ session, memberQuery }) {
   const briefText = (cards.brief || '').replace(PM_OLD, PM_NEW);
   const assemblyText = cards.assembly || '';
   const actions = Array.isArray(cards.actions) ? cards.actions.filter(Boolean) : [];
+  // Themes this debate belongs to, for the "Filed under" links to the hubs.
+  const filedThemes = matchingThemes({
+    display_issue: cards.question_en || session.original_issue,
+    original_issue: session.original_issue,
+    sharpened_issue: session.sharpened_issue,
+  });
 
   // Questions asked in another language are stored translated (cards.question_en)
   // with the source language name (cards.question_lang). The site is English-first:
@@ -522,6 +530,20 @@ export default function ArchiveDetail({ session, memberQuery }) {
               </a>
             )}
           </div>
+        )}
+
+        {/* Filed under — crawlable links from this debate to its theme hubs. */}
+        {filedThemes.length > 0 && (
+          <section className="mx-auto max-w-[680px] px-5 py-8">
+            <div className="text-[11px] tracking-[0.22em] uppercase text-muted-foreground mb-3">Filed under</div>
+            <div className="flex flex-wrap gap-2">
+              {filedThemes.map((t) => (
+                <Link key={t} href={`/themes/${themeSlug(t)}`} className="rounded-sm border border-border bg-card px-3 py-1.5 text-[11px] tracking-[0.14em] uppercase text-muted-foreground transition hover:border-primary hover:text-primary">
+                  {themeDisplay(t).name}
+                </Link>
+              ))}
+            </div>
+          </section>
         )}
 
         {/* Related Debates — precomputed in sessions.related (offline embedding

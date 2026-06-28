@@ -140,6 +140,9 @@ export function SiteFooter() {
           <Link href="/archive" className="hover:text-foreground">
             Sessions
           </Link>
+          <Link href="/themes" className="hover:text-foreground">
+            Themes
+          </Link>
           <Link href="/about" className="hover:text-foreground">
             About
           </Link>
