@@ -37,11 +37,9 @@ export async function getServerSideProps(context) {
 function ThemeCard({ t }) {
   return (
     <Link href={`/themes/${t.slug}`} className="group block border border-border border-t-[2px] border-t-primary bg-card p-6 transition hover:-translate-y-0.5 hover:shadow-md">
-      <div className="flex items-baseline justify-between gap-3">
-        <h2 className="text-[22px] text-foreground transition group-hover:text-primary" style={SERIF}>{t.name}</h2>
-        <span className="shrink-0 text-[10px] tracking-[0.16em] uppercase text-muted-foreground">{t.count} debates</span>
-      </div>
-      {t.intro && <p className="mt-3 text-[14px] leading-[1.6] text-foreground/75">{t.intro.split('. ').slice(0, 1).join('. ')}.</p>}
+      <h2 className="text-[22px] leading-tight text-foreground transition group-hover:text-primary" style={SERIF}>{t.name}</h2>
+      <div className="mt-1.5 text-[10px] tracking-[0.16em] uppercase text-muted-foreground">{t.count} debates</div>
+      {t.intro && <p className="mt-3 text-[14px] leading-[1.6] text-foreground/75">{(t.intro.match(/^.*?[.?!]/) || [t.intro])[0]}</p>}
     </Link>
   );
 }
@@ -70,8 +68,8 @@ export default function ThemesIndex({ themes }) {
         <section className="border-b border-border/70">
           <div className="mx-auto max-w-5xl px-6 pt-16 pb-10 lg:pt-20">
             <div className="text-[11px] tracking-[0.22em] uppercase text-primary">Themes</div>
-            <h1 className="mt-4 text-[36px] leading-[1.12] tracking-tight text-foreground sm:text-5xl" style={SERIF}>How the council has argued the questions of our time</h1>
-            <p className="mt-5 max-w-2xl text-[15px] leading-relaxed text-muted-foreground">Each theme gathers the council’s debates, the concrete moves its members would make, and the recurring dilemmas underneath.</p>
+            <h1 className="mt-4 text-[36px] leading-[1.12] tracking-tight text-foreground sm:text-5xl" style={SERIF}>Many minds, many eras, rarely one answer</h1>
+            <p className="mt-5 max-w-2xl text-[15px] leading-relaxed text-muted-foreground">Browse the council’s debates by topic and by place. Thirty-seven historic leaders and thinkers, from Confucius to Keynes, the questions they took on, and the very different conclusions they reached.</p>
           </div>
         </section>
 
