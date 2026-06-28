@@ -9,7 +9,7 @@
 
 export const THEME_CONTENT = {
   'US': {
-    intro: 'How a superpower governs itself and acts on the world stage. The council weighs America’s reach abroad against its strains at home, from the threat to its own democracy to who its economy is built to serve.',
+    intro: 'Few questions test the council like America. Hannah Arendt watches for the cracks in its democracy; Sun Tzu and Margaret Thatcher weigh how a superpower should use its strength; Ibn Khaldun, who studied how empires rise and fall, asks how long any of it lasts. Put a hard one to them, whether the US should pull back from the world or how it cools its own politics, and you get a real argument, not a verdict.',
     clusters: [
       { label: 'America’s role in the world', dilemma: 'How far should the US extend its power abroad, and when does global leadership tip into overreach?', words: ['security guarantor', 'guarantor', 'military', 'troops', 'bases', 'hormuz', 'iran', 'world’s', 'withdraw', 'protect taiwan', 'foreign'], acronyms: ['NATO'] },
       { label: 'Trump & American democracy', dilemma: 'Is the threat to American democracy a person, a movement, or the system that produced both?', words: ['trump', 'democracy', 'radicaliz', 'polaris', 'polariz', 'president', 'supreme court'] },
@@ -17,7 +17,7 @@ export const THEME_CONTENT = {
     ],
   },
   'EU': {
-    intro: 'Europe as a bloc, not its member states one by one. The council debates whether the union can act with one will, defend itself, and answer China and the United States, or whether it drifts toward decline.',
+    intro: 'Europe divides its own founders. Konrad Adenauer and Helmut Schmidt built the union and want it to act as one; Margaret Thatcher distrusts every transfer of power to Brussels; Hannah Arendt asks whether a bloc this size can stay democratic at all. Ask them whether the EU should build an army, widen further, or risk coming apart, and the table splits at once.',
     clusters: [
       { label: 'Strategic autonomy & defence', dilemma: 'Can Europe defend itself and act on its own, or does it stay dependent on the United States?', words: ['army', 'military', 'nuclear', 'defence', 'defense', 'troops', 'autonom', 'dependency', 'dependence'], acronyms: ['NATO'] },
       { label: 'Europe and China', dilemma: 'How should Europe answer China’s subsidised exports and its technological rise?', words: ['china', 'chinese', 'import', 'subsidiz', 'subsidis', 'manufactur', 'trade war', 'tariff'] },
@@ -26,7 +26,7 @@ export const THEME_CONTENT = {
     ],
   },
   'China': {
-    intro: 'A rising power that unsettles every other theme. The council asks whether a richer China grows freer or more assertive, how far the West should decouple, and what happens if it moves on Taiwan.',
+    intro: 'On China the council includes people who shaped Asia themselves. Deng Xiaoping opened it; Lee Kuan Yew and Mahathir Mohamad built states in its shadow; Sun Tzu reads its strategy. Ask whether a richer China grows freer or more assertive, or what the world should do if it moves on Taiwan, and you hear insiders disagree, not outsiders guess.',
     clusters: [
       { label: 'China’s rise', dilemma: 'Will a richer China grow freer or more assertive, and can it overtake the United States?', words: ['prosper', 'democracy', 'surpass', 'leadership', 'freedom', 'rise', 'demand'] },
       { label: 'Trade & decoupling', dilemma: 'How far should the West decouple from Chinese manufacturing and supply?', words: ['trade', 'manufactur', 'import', 'subsidiz', 'subsidis', 'asml', 'vietnam', 'supply', 'export'] },
@@ -34,7 +34,7 @@ export const THEME_CONTENT = {
     ],
   },
   'Netherlands': {
-    intro: 'National-level Dutch policy, the member-state view beneath the European one. The council takes on housing, a slowing economy and stretched institutions, and the question of whether taxing wealth makes the country fairer or drives capital away.',
+    intro: 'Dutch questions draw out the council’s pragmatists. Elinor Ostrom, who spent her life studying how communities manage what they share, takes on housing and the polder model; Lee Kuan Yew answers as the master of small-state strategy; Margaret Thatcher presses on whether a wealth tax just drives capital away. Ask how to fix housing, or whether to reopen Groningen’s gas, and the answers pull in different directions.',
     clusters: [
       { label: 'Society & institutions', dilemma: 'Can Dutch institutions keep up with housing, migration and a slowing economy?', words: ['housing', 'bureaucracy', 'migrant', 'aging', 'senate', 'polder', 'institution', 'jetten', 'social problem'] },
       { label: 'Wealth & redistribution', dilemma: 'Does taxing wealth make the Netherlands fairer, or simply drive capital abroad?', words: ['wealth', 'redistribut', 'tax', 'curacao', 'curaçao', 'poor', 'prosperity'] },
@@ -42,7 +42,7 @@ export const THEME_CONTENT = {
     ],
   },
   'Economy': {
-    intro: 'How societies steer their material life: taxation and redistribution, trade and tariffs, industrial policy, and the role of markets versus the state. Each question forces a choice between competing goods, and the council is built to hold that tension rather than resolve it cheaply.',
+    intro: 'Few questions divide the council like the economy. Hayek and Friedman trust the market to sort it out; Keynes and Amartya Sen want the state to step in where it fails; Lee Kuan Yew and Deng Xiaoping speak as people who actually ran economies, not just theorised about them. Ask them how to tax wealth, or who captures the gains when AI takes the jobs, and you will not get one answer. You will get a real argument, drawn from the experience of those who lived these choices.',
     clusters: [
       { label: 'Taxes & Redistribution', dilemma: 'How much may the state move from those who have to those who do not before it erodes the drive that creates wealth in the first place?', words: ['wealth', 'redistribut', 'tax', 'fiscal', 'billionaire', 'inequalit', 'prosperity', 'poverty', 'shareholder', 'sovereign', 'welfare'] },
       { label: 'Trade, Tariffs & Industrial Policy', dilemma: 'Open trade lowers prices but exposes home industry, while protection shields jobs and invites retaliation.', words: ['trade', 'tariff', 'import', 'export', 'asml', 'subsid', 'protectionis', 'dumping', 'industrial', 'manufactur'] },
@@ -51,7 +51,7 @@ export const THEME_CONTENT = {
     ],
   },
   'Governance': {
-    intro: 'The machinery of the state and the rules that bind it. The council asks whether institutions can still deliver, when the state should step in to regulate, and how government holds up under crisis and division.',
+    intro: 'What makes a state work is old ground for this council. Confucius answers with the character of those who govern; Hannah Arendt with the institutions that restrain them; Elinor Ostrom with the rules communities write for themselves; Ibn Khaldun with why states decay. Ask when the state should regulate, or how it holds together under strain, and four very different traditions answer at once.',
     clusters: [
       { label: 'Institutions & the state', dilemma: 'Can the machinery of the state still deliver, and how should it be reformed when it cannot?', words: ['bureaucracy', 'institution', 'public administration', 'reform', 'rule of law', 'oversight'] },
       { label: 'Regulation & its limits', dilemma: 'When should the state step in to regulate, and when does it overreach?', words: ['regulat', 'ban', 'advertising', 'social media', 'artificial intelligence', 'oversight'], acronyms: ['AI'] },
@@ -59,7 +59,7 @@ export const THEME_CONTENT = {
     ],
   },
   'Democracy': {
-    intro: 'Self-rule under strain. The council debates what breaks the cycle of radicalization, who gets to vote and how, and whether today’s democracies are quietly backsliding.',
+    intro: 'Self-rule is where this council comes alive. Hannah Arendt warns how democracies hollow out; Jean-Jacques Rousseau asks what a people sharing one will even means; John Rawls tests every answer against fairness; Franklin Roosevelt speaks as someone who held a democracy together under strain. Ask what breaks the cycle of radicalization, or who should get to vote, and centuries of hard experience pull apart.',
     clusters: [
       { label: 'Polarization & radicalization', dilemma: 'What breaks the cycle of mutual radicalization pulling democracies apart?', words: ['radicaliz', 'polaris', 'polariz', 'divisiv', 'mutual', 'extremis'] },
       { label: 'Elections & the vote', dilemma: 'Who gets to vote, how, and what makes an election legitimate?', words: ['election', 'vote', 'voter', 'voting', 'suffrage', 'referendum', 'electie', 'verkiezing'] },
@@ -67,7 +67,7 @@ export const THEME_CONTENT = {
     ],
   },
   'Geopolitics': {
-    intro: 'How power and resources move between nations. The council weighs when to bind in alliances or act alone, whether sanctions change behaviour or harden it, and how middle powers survive a contest of giants.',
+    intro: 'Power between nations is the council’s oldest subject. Sun Tzu reads the strategy; Charles de Gaulle insists a nation keep its own hand free; Lee Kuan Yew answers as a small state that survived among giants; Helmut Schmidt weighs the worth of alliances. Ask when to bind in alliance and when to act alone, or whether sanctions ever change a regime, and the realists and the idealists divide.',
     clusters: [
       { label: 'Alliances & autonomy', dilemma: 'When should nations bind themselves in alliances, and when act alone?', words: ['alliance', 'autonom', 'sovereign', 'dependency', 'ally', 'foreign policy'], acronyms: ['NATO', 'UN'] },
       { label: 'Sanctions & diplomacy', dilemma: 'Do sanctions and pressure change behaviour, or simply harden it?', words: ['sanction', 'diplomacy', 'negotiat', 'peace deal', 'pressure', 'kissinger'] },
@@ -75,7 +75,7 @@ export const THEME_CONTENT = {
     ],
   },
   'War': {
-    intro: 'Conflict, deterrence and the terms of peace. The council takes on Russia’s war in Ukraine, the wars of the Middle East, and how much states should arm to keep the peace.',
+    intro: 'On war the council holds both the sword and its conscience. Sun Tzu plans the campaign; David Ben-Gurion answers as a man who led a state through its wars; Hannah Arendt asks what violence does to those who use it; Eleanor Roosevelt presses for the peace that has to follow. Ask how the West should answer Russia, or what outsiders owe the Middle East, and strategy and conscience pull against each other.',
     clusters: [
       { label: 'Ukraine & Russia', dilemma: 'How should the West answer Russia’s war, and on what terms does it end?', words: ['ukraine', 'russia', 'russian', 'putin'] },
       { label: 'The Middle East', dilemma: 'From Gaza to Iran, what part should outside powers play in the region’s wars?', words: ['israel', 'gaza', 'lebanon', 'libanon', 'iran', 'hormuz', 'hamas'] },
@@ -83,7 +83,7 @@ export const THEME_CONTENT = {
     ],
   },
   'Climate': {
-    intro: 'The planet and the economy that strains it. The council debates how fast to move off fossil fuels, whether growth must slow to save the climate, and how best to restore nature.',
+    intro: 'The climate sets the council’s economists against its ecologists. Wangari Maathai, who planted forests to fight poverty and drought, speaks for the living world; Elinor Ostrom for the communities that must share it; Margaret Thatcher and John Maynard Keynes for an economy that cannot simply be switched off. Ask how fast to leave fossil fuels, or whether growth itself must slow, and the answers collide.',
     clusters: [
       { label: 'The energy transition', dilemma: 'How fast can societies move off fossil fuels without breaking the economy?', words: ['energy', 'renewable', 'fossil', 'oil', 'gas', 'transition', 'nuclear', 'kerosene', 'emission', 'carbon'] },
       { label: 'Growth vs the planet', dilemma: 'Must we slow growth to save the climate, or can we grow our way out?', words: ['degrowth', 'growth', 'prosperity', 'environment', 'sustainab'] },
@@ -91,7 +91,7 @@ export const THEME_CONTENT = {
     ],
   },
   'AI & Technology': {
-    intro: 'The tools reshaping work, power and public life. The council asks how to govern AI without strangling it, who should own the compute behind it, and how far the state should reach into online life.',
+    intro: 'The newest subject meets the oldest minds. Friedrich Hayek, who argued no central planner can know what a market knows, is set loose on the algorithm; Hannah Arendt asks what the machine does to human judgment; Elinor Ostrom, on who should own a shared resource, takes on data and compute; Lee Kuan Yew weighs technology as an engine of the state. Ask how to regulate AI, or who captures the gains when it takes the jobs, and the council is anything but settled.',
     clusters: [
       { label: 'Regulating AI', dilemma: 'Can we govern AI without strangling the innovation that drives it?', words: ['regulat', 'artificial intelligence', 'govern', 'algorithm'], acronyms: ['AI'] },
       { label: 'Sovereignty & datacenters', dilemma: 'Who should own the compute and capabilities that power AI?', words: ['datacenter', 'capabilit', 'sovereign', 'dependency', 'asml', 'semiconduct', 'chip'] },
