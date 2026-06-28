@@ -17,7 +17,7 @@ export const THEME_CONTENT = {
     ],
   },
   'EU': {
-    intro: 'Can Europe act as one, defend itself, and still stay democratic? Should the union build an army, widen further, or risk coming apart? Konrad Adenauer and Helmut Schmidt, who helped build it, sit with Margaret Thatcher, who never trusted it, and Hannah Arendt. They will not agree, and that is the point. Start with the debates below.',
+    intro: 'Can Europe regain its competitiveness and its power, or only manage its own decline? Should the union build an army, widen further, or risk coming apart? Konrad Adenauer and Helmut Schmidt, who helped build it, sit with Margaret Thatcher, who never trusted it, and Hannah Arendt. They will not agree, and that is the point. Start with the debates below.',
     clusters: [
       { label: 'Strategic autonomy & defence', dilemma: 'Can Europe defend itself and act on its own, or does it stay dependent on the United States?', words: ['army', 'military', 'nuclear', 'defence', 'defense', 'troops', 'autonom', 'dependency', 'dependence'], acronyms: ['NATO'] },
       { label: 'Europe and China', dilemma: 'How should Europe answer China’s subsidised exports and its technological rise?', words: ['china', 'chinese', 'import', 'subsidiz', 'subsidis', 'manufactur', 'trade war', 'tariff'] },
@@ -110,7 +110,7 @@ export function themeContent(label) {
 // "What would they do about ___?" heading.
 const THEME_DISPLAY = {
   'US': { name: 'The United States', about: 'the United States' },
-  'EU': { name: 'The European Union', about: 'the European Union' },
+  'EU': { name: 'European Union', about: 'the European Union' },
   'China': { name: 'China', about: 'China' },
   'Netherlands': { name: 'The Netherlands', about: 'the Netherlands' },
   'Economy': { name: 'Economy', about: 'the economy' },
