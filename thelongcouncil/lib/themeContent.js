@@ -104,3 +104,24 @@ export const THEME_CONTENT = {
 export function themeContent(label) {
   return THEME_CONTENT[label] || null;
 }
+
+// Short labels (US, EU, AI) are handy for tag chips and slugs, but on the hub
+// pages we show the full name. `about` is the grammatical form for the
+// "What would they do about ___?" heading.
+const THEME_DISPLAY = {
+  'US': { name: 'The United States', about: 'the United States' },
+  'EU': { name: 'The European Union', about: 'the European Union' },
+  'China': { name: 'China', about: 'China' },
+  'Netherlands': { name: 'The Netherlands', about: 'the Netherlands' },
+  'Economy': { name: 'Economy', about: 'the economy' },
+  'Governance': { name: 'Governance', about: 'governance' },
+  'Democracy': { name: 'Democracy', about: 'democracy' },
+  'Geopolitics': { name: 'Geopolitics', about: 'geopolitics' },
+  'War': { name: 'War', about: 'war' },
+  'Climate': { name: 'Climate', about: 'climate' },
+  'AI & Technology': { name: 'Artificial Intelligence & Technology', about: 'AI and technology' },
+};
+
+export function themeDisplay(label) {
+  return THEME_DISPLAY[label] || { name: label, about: `the ${String(label).toLowerCase()}` };
+}

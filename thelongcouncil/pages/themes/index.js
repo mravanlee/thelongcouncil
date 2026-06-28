@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { supabase } from '../../lib/supabase';
 import { SERIF, SiteHeader, SiteFooter } from '../../components/SiteChrome';
 import { THEMES, matchingThemes, themeSlug } from '../../lib/themes';
-import { themeContent } from '../../lib/themeContent';
+import { themeContent, themeDisplay } from '../../lib/themeContent';
 
 const SITE = 'https://www.thelongcouncil.com';
 // THEMES order is place-first, then topic; the first four are the place themes.
@@ -23,6 +23,7 @@ export async function getServerSideProps(context) {
 
   const themes = THEMES.map((t) => ({
     label: t.label,
+    name: themeDisplay(t.label).name,
     slug: themeSlug(t.label),
     count: counts[t.label] || 0,
     intro: themeContent(t.label)?.intro || '',
@@ -37,7 +38,7 @@ function ThemeCard({ t }) {
   return (
     <Link href={`/themes/${t.slug}`} className="group block border border-border border-t-[2px] border-t-primary bg-card p-6 transition hover:-translate-y-0.5 hover:shadow-md">
       <div className="flex items-baseline justify-between gap-3">
-        <h2 className="text-[22px] text-foreground transition group-hover:text-primary" style={SERIF}>{t.label}</h2>
+        <h2 className="text-[22px] text-foreground transition group-hover:text-primary" style={SERIF}>{t.name}</h2>
         <span className="shrink-0 text-[10px] tracking-[0.16em] uppercase text-muted-foreground">{t.count} debates</span>
       </div>
       {t.intro && <p className="mt-3 text-[14px] leading-[1.6] text-foreground/75">{t.intro.split('. ').slice(0, 1).join('. ')}.</p>}

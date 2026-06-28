@@ -5,7 +5,7 @@ import { supabase } from '../../lib/supabase';
 import { resolveAvatarSlug } from '../../lib/avatarSlugs';
 import { SERIF, SiteHeader, SiteFooter } from '../../components/SiteChrome';
 import { matchingThemes, themeBySlug, themeSlug } from '../../lib/themes';
-import { themeContent } from '../../lib/themeContent';
+import { themeContent, themeDisplay } from '../../lib/themeContent';
 
 const SITE = 'https://www.thelongcouncil.com';
 const MIN_INDEXABLE = 5; // below this a hub is too thin to index
@@ -116,9 +116,12 @@ export async function getServerSideProps(context) {
   // Immutable-ish landing page; let the edge CDN cache it (counts shift slowly).
   context.res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400');
 
+  const disp = themeDisplay(label);
   return {
     props: {
       label,
+      displayName: disp.name,
+      aboutPhrase: disp.about,
       slug: context.params.theme,
       intro: content?.intro || `How the council has debated ${label.toLowerCase()}.`,
       count: inTheme.length,
@@ -156,7 +159,7 @@ function MemberHead({ m }) {
   );
 }
 
-export default function ThemeHub({ label, slug, intro, count, memberTotal, lastUpdated, indexable, whatWouldThey, clusters, related, itemList, error }) {
+export default function ThemeHub({ label, displayName, aboutPhrase, slug, intro, count, memberTotal, lastUpdated, indexable, whatWouldThey, clusters, related, itemList, error }) {
   if (error) {
     return (
       <div className="min-h-screen bg-background text-foreground antialiased">
@@ -168,7 +171,8 @@ export default function ThemeHub({ label, slug, intro, count, memberTotal, lastU
   }
 
   const canonical = `${SITE}/themes/${slug}`;
-  const title = `${label} — The Long Council`;
+  const name = displayName || label;
+  const title = `${name} — The Long Council`;
   const desc = (intro || '').replace(/\s+/g, ' ').slice(0, 155);
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -176,9 +180,9 @@ export default function ThemeHub({ label, slug, intro, count, memberTotal, lastU
       { '@type': 'BreadcrumbList', itemListElement: [
         { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE}/` },
         { '@type': 'ListItem', position: 2, name: 'Themes', item: `${SITE}/themes` },
-        { '@type': 'ListItem', position: 3, name: label },
+        { '@type': 'ListItem', position: 3, name },
       ] },
-      { '@type': 'CollectionPage', '@id': canonical, name: title, about: { '@type': 'Thing', name: label }, description: desc,
+      { '@type': 'CollectionPage', '@id': canonical, name: title, about: { '@type': 'Thing', name }, description: desc,
         mainEntity: { '@type': 'ItemList', numberOfItems: itemList.length,
           itemListElement: itemList.map((d) => ({ '@type': 'ListItem', position: d.pos, url: `${SITE}/archive/${d.slug}`, name: d.q })) } },
     ],
@@ -210,9 +214,9 @@ export default function ThemeHub({ label, slug, intro, count, memberTotal, lastU
             <div className="text-[11px] tracking-[0.22em] uppercase text-primary">
               <Link href="/themes" className="hover:text-foreground">Themes</Link>
               <span className="mx-2 text-muted-foreground">/</span>
-              <span className="text-muted-foreground">{label}</span>
+              <span className="text-muted-foreground">{name}</span>
             </div>
-            <h1 className="mt-4 text-[40px] leading-[1.1] tracking-tight text-foreground sm:text-6xl" style={SERIF}>{label}</h1>
+            <h1 className="mt-4 text-[40px] leading-[1.1] tracking-tight text-foreground sm:text-6xl" style={SERIF}>{name}</h1>
             <p className="mt-5 max-w-3xl text-[17px] leading-[1.6] text-foreground/80" style={SERIF}>{intro}</p>
 
             <dl className="mt-8 flex flex-wrap gap-x-10 gap-y-4">
@@ -239,7 +243,7 @@ export default function ThemeHub({ label, slug, intro, count, memberTotal, lastU
           <section className="border-b border-border/70 bg-card/30">
             <div className="mx-auto max-w-5xl px-6 py-14">
               <div className="text-[11px] tracking-[0.22em] uppercase text-primary mb-3">The council in action</div>
-              <h2 className="text-[30px] leading-[1.15] text-foreground" style={SERIF}>What would they do about {label.toLowerCase().startsWith('the ') ? label.toLowerCase() : `the ${label.toLowerCase()}`}?</h2>
+              <h2 className="text-[30px] leading-[1.15] text-foreground" style={SERIF}>What would they do about {aboutPhrase}?</h2>
               <p className="mt-3 text-[15px] text-muted-foreground max-w-2xl">Each thinker’s concrete moves, drawn straight from their debates.</p>
               <div className="mt-10 space-y-5">
                 {whatWouldThey.map((m) => (
@@ -295,7 +299,7 @@ export default function ThemeHub({ label, slug, intro, count, memberTotal, lastU
                 ))}
               </div>
               <div className="mt-10">
-                <Link href={`/archive?theme=${encodeURIComponent(label)}`} className="text-[12px] tracking-[0.14em] uppercase text-primary hover:text-foreground">See all {count} {label} debates →</Link>
+                <Link href={`/archive?theme=${encodeURIComponent(label)}`} className="text-[12px] tracking-[0.14em] uppercase text-primary hover:text-foreground">See all {count} debates →</Link>
               </div>
             </div>
           </section>
