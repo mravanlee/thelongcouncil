@@ -37,8 +37,8 @@ export async function getServerSideProps(context) {
 function ThemeCard({ t }) {
   return (
     <Link href={`/themes/${t.slug}`} className="group block border border-border border-t-[2px] border-t-primary bg-card p-6 transition hover:-translate-y-0.5 hover:shadow-md">
-      <h2 className="text-[22px] leading-tight text-foreground transition group-hover:text-primary" style={SERIF}>{t.name}</h2>
-      <div className="mt-1.5 text-[10px] tracking-[0.16em] uppercase text-muted-foreground">{t.count} debates</div>
+      <h2 className="flex min-h-[2.2em] items-start text-[22px] leading-[1.08] text-foreground transition group-hover:text-primary [text-wrap:balance]" style={SERIF}>{t.name}</h2>
+      <div className="mt-2 text-[10px] tracking-[0.16em] uppercase text-muted-foreground">{t.count} debates</div>
       {t.intro && <p className="mt-3 text-[14px] leading-[1.6] text-foreground/75">{(t.intro.match(/^.*?[.?!]/) || [t.intro])[0]}</p>}
     </Link>
   );
