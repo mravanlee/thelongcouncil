@@ -6,7 +6,8 @@ import { Search } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { resolveAvatarSlug } from '../../lib/avatarSlugs';
 import { SERIF, SiteFooter, SiteHeader } from '../../components/SiteChrome';
-import { THEMES, THEME_REGEX, topicHaystack, matchingThemes } from '../../lib/themes';
+import { THEMES, THEME_REGEX, topicHaystack, matchingThemes, themeSlug } from '../../lib/themes';
+import { themeDisplay } from '../../lib/themeContent';
 
 const PAGE_SIZE = 25;
 const SCROLL_KEY = 'archive_scroll_y';
@@ -342,6 +343,13 @@ export default function Archive({ sessions, error, initialFilters }) {
                 );
               })}
             </div>
+            {activeTheme && (
+              <div className="mt-4">
+                <Link href={`/themes/${themeSlug(activeTheme)}`} className="text-[12px] tracking-[0.1em] uppercase text-primary hover:text-foreground">
+                  Explore {themeDisplay(activeTheme).name} in depth →
+                </Link>
+              </div>
+            )}
           </div>
         </section>
 

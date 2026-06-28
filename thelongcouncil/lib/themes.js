@@ -25,8 +25,7 @@ export const THEMES = [
   { label: 'Geopolitics', keywords: ['geopoli', 'foreign policy', 'sanction', 'alliance', 'autonom', 'sovereign', 'diplomacy', 'kissinger', 'henry kissinger'], acronyms: ['NATO', 'UN'] },
   { label: 'War', keywords: ['military', 'conflict', 'security', 'defense', 'defence', 'ukraine', 'russia', 'israel', 'gaza', 'warfare', 'sun tzu', 'churchill'], acronyms: ['NATO'] },
   { label: 'Climate', keywords: ['climat', 'energy', 'oil', 'renewable', 'emission', 'carbon', 'fossil', 'groningen', 'sustainab', 'green', 'maathai', 'nature', 'ecosystem', 'biodiversit', 'rewild'] },
-  { label: 'Technology', keywords: ['technolog', 'semiconduct', 'internet', 'social media', 'platform', 'innovation'] },
-  { label: 'AI', keywords: ['artificial intelligence', 'algorithm', 'machine learning', 'silicon'], acronyms: ['AI', 'ASML'] },
+  { label: 'AI & Technology', keywords: ['technolog', 'semiconduct', 'internet', 'social media', 'platform', 'innovation', 'artificial intelligence', 'algorithm', 'machine learning', 'silicon'], acronyms: ['AI', 'ASML'] },
 ];
 
 function escapeRegex(s) {

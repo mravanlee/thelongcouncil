@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { THEMES, themeSlug } from '../lib/themes';
 
 const SITE_URL = 'https://www.thelongcouncil.com';
 
@@ -10,8 +11,17 @@ const STATIC_PAGES = [
   { path: '/',         changefreq: 'daily',   priority: '1.0' },
   { path: '/council',  changefreq: 'monthly', priority: '0.8' },
   { path: '/archive',  changefreq: 'daily',   priority: '0.9' },
+  { path: '/themes',   changefreq: 'weekly',  priority: '0.8' },
   { path: '/about',    changefreq: 'monthly', priority: '0.5' },
 ];
+
+// One hub page per theme. Theme hubs are strong topical landing pages, so they
+// get a high priority and a weekly changefreq (counts shift as debates land).
+const THEME_PAGES = THEMES.map((t) => ({
+  path: `/themes/${themeSlug(t.label)}`,
+  changefreq: 'weekly',
+  priority: '0.8',
+}));
 
 function escapeXml(unsafe) {
   return unsafe
@@ -87,7 +97,7 @@ export async function getServerSideProps({ res }) {
     console.error('[sitemap] Failed to fetch sessions:', e);
   }
 
-  const xml = buildSitemap(STATIC_PAGES, sessions);
+  const xml = buildSitemap([...STATIC_PAGES, ...THEME_PAGES], sessions);
 
   res.setHeader('Content-Type', 'application/xml; charset=utf-8');
   // Cache for 1 hour at the CDN edge, allow stale-while-revalidate for 24h.
