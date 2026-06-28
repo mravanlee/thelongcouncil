@@ -83,26 +83,24 @@ export async function getServerSideProps(context) {
   const members = Object.entries(memberCount).sort((a, b) => b[1] - a[1])
     .map(([name, count]) => ({ name, count, slug: memberSlug(name), monogram: monogram(name) }));
 
-  // "What would they do" — surface each thinker's full action block from the
-  // policy brief (cards.member_actions), not just the first line. For each
-  // member, take their richest block (most concrete moves) in this theme and
-  // show up to 3, topping up from another debate only if that block has fewer.
-  const blocksByMember = {};
+  // "What would they do" — surface each thinker's concrete moves from the policy
+  // brief (cards.member_actions). Rank a member's moves by how much they are
+  // actually about THIS theme (theme words in the move, then in the question),
+  // so a place theme that a debate only mentions in passing (e.g. China inside
+  // an "what should the EU do" debate) surfaces the China-relevant moves first.
+  const themeRx = clusterRegex({ words: theme.keywords, acronyms: theme.acronyms });
+  const actionsByMember = {};
   for (const s of inTheme) for (const [rawName, acts] of Object.entries(s.member_actions || {})) {
     const name = stripTierSuffix(rawName);
     if (!acts || !acts.length) continue;
-    (blocksByMember[name] = blocksByMember[name] || []).push({ slug: s.slug, question: s.display_issue, acts });
-  }
-  const whatWouldThey = members.filter((m) => blocksByMember[m.name]).slice(0, 5).map((m) => {
-    const blocks = blocksByMember[m.name].slice().sort((a, b) => b.acts.length - a.acts.length);
-    const actions = [];
-    for (const b of blocks) {
-      for (const text of b.acts) {
-        actions.push({ text, slug: b.slug, question: b.question });
-        if (actions.length >= 3) break;
-      }
-      if (actions.length >= 3) break;
+    const qHit = themeRx.test(s.display_issue || '') ? 1 : 0;
+    for (const text of acts) {
+      const score = (themeRx.test(text) ? 2 : 0) + qHit;
+      (actionsByMember[name] = actionsByMember[name] || []).push({ text, slug: s.slug, question: s.display_issue, score });
     }
+  }
+  const whatWouldThey = members.filter((m) => actionsByMember[m.name]).slice(0, 5).map((m) => {
+    const actions = actionsByMember[m.name].slice().sort((a, b) => b.score - a.score).slice(0, 3);
     return { name: m.name, slug: m.slug, monogram: m.monogram, actions };
   });
 
@@ -268,7 +266,7 @@ export default function ThemeHub({ label, displayName, aboutPhrase, slug, intro,
                           <li key={i}>
                             <Link href={`/archive/${a.slug}`} className="group block rounded-sm border-l-[3px] border-l-primary bg-primary/[0.05] px-5 py-4 transition hover:bg-primary/[0.09]">
                               <span className="text-[17px] leading-[1.45] text-foreground" style={SERIF}>{a.text}</span>
-                              <span className="mt-2 flex items-center gap-1.5 text-[12px] text-primary/75 transition group-hover:text-primary">
+                              <span className="mt-2.5 flex items-center gap-1.5 text-[13px] text-primary transition group-hover:text-foreground">
                                 <span className="italic" style={SERIF}>{a.question}</span><span aria-hidden>→</span>
                               </span>
                             </Link>
