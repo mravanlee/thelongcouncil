@@ -83,15 +83,28 @@ export async function getServerSideProps(context) {
   const members = Object.entries(memberCount).sort((a, b) => b[1] - a[1])
     .map(([name, count]) => ({ name, count, slug: memberSlug(name), monogram: monogram(name) }));
 
-  // "What would they do" — concrete moves per leading thinker.
-  const actionsByMember = {};
+  // "What would they do" — surface each thinker's full action block from the
+  // policy brief (cards.member_actions), not just the first line. For each
+  // member, take their richest block (most concrete moves) in this theme and
+  // show up to 3, topping up from another debate only if that block has fewer.
+  const blocksByMember = {};
   for (const s of inTheme) for (const [rawName, acts] of Object.entries(s.member_actions || {})) {
     const name = stripTierSuffix(rawName);
     if (!acts || !acts.length) continue;
-    (actionsByMember[name] = actionsByMember[name] || []).push({ text: acts[0], slug: s.slug, question: s.display_issue });
+    (blocksByMember[name] = blocksByMember[name] || []).push({ slug: s.slug, question: s.display_issue, acts });
   }
-  const whatWouldThey = members.filter((m) => actionsByMember[m.name]).slice(0, 5)
-    .map((m) => ({ name: m.name, slug: m.slug, monogram: m.monogram, actions: actionsByMember[m.name].slice(0, 3) }));
+  const whatWouldThey = members.filter((m) => blocksByMember[m.name]).slice(0, 5).map((m) => {
+    const blocks = blocksByMember[m.name].slice().sort((a, b) => b.acts.length - a.acts.length);
+    const actions = [];
+    for (const b of blocks) {
+      for (const text of b.acts) {
+        actions.push({ text, slug: b.slug, question: b.question });
+        if (actions.length >= 3) break;
+      }
+      if (actions.length >= 3) break;
+    }
+    return { name: m.name, slug: m.slug, monogram: m.monogram, actions };
+  });
 
   // Policy clusters.
   const clusterHay = (s) => [s.display_issue, s.original_issue, s.sharpened_issue].filter(Boolean).join(' ').toLowerCase();
