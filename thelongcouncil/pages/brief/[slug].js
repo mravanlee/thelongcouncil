@@ -187,6 +187,19 @@ export default function BriefPrint({ session }) {
             <a href={debateUrl} className="foot-link">View the full debate →</a>
           </footer>
         </article>
+
+        {/* Related briefs — crawlable links between /brief/ pages (same
+            precomputed sessions.related mesh the debate pages use), so
+            every brief is discoverable from other briefs, not only from
+            its own debate page. */}
+        {Array.isArray(session.related) && session.related.length > 0 && (
+          <aside className="rel no-print">
+            <div className="rel-label">Related policy briefs</div>
+            {session.related.map((r) => (
+              <a key={r.slug} href={`/brief/${r.slug}`} className="rel-link">{r.title}</a>
+            ))}
+          </aside>
+        )}
       </div>
 
       <style jsx global>{`
@@ -228,6 +241,11 @@ export default function BriefPrint({ session }) {
         .doc-foot { margin-top: 30px; padding-top: 14px; border-top: 1px solid rgba(28,23,20,0.14); font-family: 'Inter', sans-serif; font-size: 12px; color: #8a7d70; }
         .foot-link { color: var(--primary); text-decoration: none; font-weight: 600; }
         .foot-link:hover { text-decoration: underline; }
+
+        .rel { max-width: 720px; margin: 22px auto 0; padding: 0 4px; font-family: 'Inter', sans-serif; }
+        .rel-label { font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--primary); font-weight: 700; margin-bottom: 9px; }
+        .rel-link { display: block; font-size: 13.5px; line-height: 1.5; color: #4a3f36; text-decoration: none; padding: 4px 0; }
+        .rel-link:hover { color: var(--primary); text-decoration: underline; }
 
         @media print {
           .page { background: #fff; padding: 0; }
