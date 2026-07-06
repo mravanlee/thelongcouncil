@@ -108,6 +108,8 @@ export default function BriefPrint({ session }) {
   // ── Standalone, indexable Policy Brief page (SEO) ──────────────────────
   const baseUrl = 'https://www.thelongcouncil.com';
   const debateUrl = `${baseUrl}/archive/${session.slug}`;
+  const whoUrl = `${baseUrl}/who/${session.slug}`;
+  const hasAssembly = !!cards.assembly;
   const canonicalUrl = `${baseUrl}/brief/${session.slug}`;
   const pageTitle = `${question} | Policy Brief | The Long Council`;
   // Positioning-aligned: a brief that EXAMINES the question (competing views +
@@ -155,6 +157,7 @@ export default function BriefPrint({ session }) {
       <div className="page">
         <div className="toolbar no-print">
           <a href={debateUrl} className="debatelink">← View the full debate</a>
+          {hasAssembly && <a href={whoUrl} className="wholink">Who was selected, and why →</a>}
           <button type="button" onClick={() => window.print()} className="savebtn">Save as PDF</button>
         </div>
 
@@ -211,6 +214,8 @@ export default function BriefPrint({ session }) {
         .savebtn:hover { opacity: 0.9; }
         .debatelink { margin-right: auto; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; letter-spacing: 0.02em; color: var(--primary); text-decoration: none; }
         .debatelink:hover { text-decoration: underline; }
+        .wholink { font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; letter-spacing: 0.02em; color: var(--primary); text-decoration: none; }
+        .wholink:hover { text-decoration: underline; }
 
         .doc { max-width: 720px; margin: 0 auto; background: #fff; color: #1c1714; padding: 46px 52px 40px; box-shadow: 0 1px 14px rgba(0,0,0,0.10); }
         .doc-head { border-bottom: 1px solid rgba(28,23,20,0.14); padding-bottom: 18px; margin-bottom: 22px; }
