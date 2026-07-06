@@ -9,7 +9,6 @@ import { SERIF, SiteFooter, SiteHeader } from '../../components/SiteChrome';
 import { THEMES, THEME_REGEX, topicHaystack, matchingThemes, themeSlug } from '../../lib/themes';
 import { themeDisplay } from '../../lib/themeContent';
 
-const PAGE_SIZE = 25;
 const SCROLL_KEY = 'archive_scroll_y';
 
 export async function getServerSideProps(ctx) {
@@ -101,7 +100,6 @@ export default function Archive({ sessions, error, initialFilters }) {
   const router = useRouter();
   const [search, setSearch] = useState(initialFilters?.q || '');
   const [activeTheme, setActiveTheme] = useState(initialFilters?.theme || null);
-  const [page, setPage] = useState(1);
 
   // CollectionPage + ItemList of recent sessions. Limit to 50 to keep the
   // JSON-LD payload reasonable; the full set is always in the sitemap.
@@ -171,10 +169,6 @@ export default function Archive({ sessions, error, initialFilters }) {
     return () => router.events.off('routeChangeComplete', handleRouteChange);
   }, [router.events]);
 
-  useEffect(() => {
-    setPage(1);
-  }, [search, activeTheme]);
-
   // Scroll position memory
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -212,9 +206,6 @@ export default function Archive({ sessions, error, initialFilters }) {
       return true;
     });
   }, [sessions, search, activeTheme]);
-
-  const paginated = visible.slice(0, page * PAGE_SIZE);
-  const hasMore = visible.length > paginated.length;
 
   const hasActiveFilter = !!(search.trim() || activeTheme);
   const countLabel = hasActiveFilter
@@ -385,28 +376,21 @@ export default function Archive({ sessions, error, initialFilters }) {
               </div>
             )}
 
-            {paginated.length > 0 && (
-              <>
-                <ol className="divide-y divide-border/70 border-y border-border/70">
-                  {paginated.map((session) => (
-                    <ArchiveEntry
-                      key={session.id}
-                      session={session}
-                      themes={matchingThemes(session)}
-                      onMemberClick={onMemberClick}
-                    />
-                  ))}
-                </ol>
-                {hasMore && (
-                  <button
-                    type="button"
-                    onClick={() => setPage((p) => p + 1)}
-                    className="mt-10 mx-auto block rounded-sm border border-border bg-card px-5 py-2 text-[11px] tracking-[0.18em] uppercase text-muted-foreground hover:border-primary hover:text-primary transition"
-                  >
-                    Load older sessions ({visible.length - paginated.length} remaining)
-                  </button>
-                )}
-              </>
+            {/* Every session is server-rendered as a crawlable link. The old
+                client-side "Load older sessions" pagination hid everything
+                past the first 25 entries from crawlers, which left older
+                debates (and their brief/who pages) with no reliable inlink. */}
+            {visible.length > 0 && (
+              <ol className="divide-y divide-border/70 border-y border-border/70">
+                {visible.map((session) => (
+                  <ArchiveEntry
+                    key={session.id}
+                    session={session}
+                    themes={matchingThemes(session)}
+                    onMemberClick={onMemberClick}
+                  />
+                ))}
+              </ol>
             )}
           </div>
         </section>
