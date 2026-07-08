@@ -10,8 +10,11 @@
 // Supabase; raw outputs land in --outdir for manual reading.
 //
 // Run from thelongcouncil/:
-//   node scripts/ab-delib-prompt.mjs --slugs slug1,slug2 [--outdir DIR] [--variant a|b]
-//   node scripts/ab-delib-prompt.mjs --limit 4            # last N debates
+//   node scripts/ab-delib-prompt.mjs --prompt-b draft.txt --slugs slug1,slug2 [--outdir DIR] [--variant a|b]
+//   node scripts/ab-delib-prompt.mjs --prompt-b draft.txt --limit 4   # last N debates
+// Variant A is always the live PROMPT2_SYSTEM extracted from pipeline.js;
+// variant B is the draft file you pass via --prompt-b (omit it, together with
+// --variant a, to baseline the live prompt only).
 
 import { readFileSync, writeFileSync, mkdirSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -43,7 +46,12 @@ function extractCurrentPrompt2() {
   return m[1].replace(/\\`/g, '`').replace(/\\\$/g, '$');
 }
 const PROMPT_A = extractCurrentPrompt2();
-const PROMPT_B = readFileSync(join(__dirname, 'prompt2-consolidated.txt'), 'utf-8');
+const promptBPath = argVal('--prompt-b', null);
+if (!promptBPath && (ONLY_VARIANT || '').toLowerCase() !== 'a') {
+  console.error('Pass --prompt-b <file> with the draft prompt to test, or --variant a to baseline the live prompt.');
+  process.exit(1);
+}
+const PROMPT_B = promptBPath ? readFileSync(promptBPath, 'utf-8') : null;
 
 // ── Pipeline user-message reconstruction (mirrors pages/api/pipeline.js) ─
 const normalizeName = (name) => name.toLowerCase().normalize('NFD')
