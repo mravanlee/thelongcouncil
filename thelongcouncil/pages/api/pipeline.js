@@ -69,6 +69,15 @@ function extractSelectedMembers(assemblyOutput) {
     s.replace(/\s*[—–\-―]\s*(Practitioner|Framer|Leader|Thinker)\s*$/i, '').trim();
   let match;
   while ((match = regex.exec(section)) !== null) {
+    // A real entry names exactly ONE person in bold ("**Name** — Tier"). The
+    // model occasionally emits a reasoning line under the SAME numbering that
+    // names two members and reads as prose, e.g.
+    //   "5. **Hannah Arendt** covers X; **Helmut Schmidt** covers Y. One more
+    //    voice is needed to address the German constitutional dimension..."
+    // followed by the real "5. **Ibn Khaldun** — Thinker". Without this guard
+    // the whole prose line becomes a fake member in the roster and the live
+    // "Council in session" reveal. Two bold names on one line ⇒ not a member.
+    if ((match[1].match(/\*\*[^*]+\*\*/g) || []).length > 1) continue;
     let rawName = match[1].trim().replace(/\*\*/g, '').replace(/^\*|\*$/g, '').trim();
     // Drop trailing parenthetical/bracketed notes the model sometimes appends,
     // e.g. "Hannah Arendt [already selected — see above]" → "Hannah Arendt".
@@ -76,6 +85,10 @@ function extractSelectedMembers(assemblyOutput) {
     rawName = stripTierSuffix(rawName);
     if (rawName.length < 3) continue;
     if (/^(Relevance|Coverage|Will argue):/i.test(rawName)) continue;
+    // A member name is short and has no sentence punctuation. A semicolon or a
+    // run over 6 words means the line is prose, not a name (initials like
+    // "Franklin D. Roosevelt" stay well under the word cap and carry no ";").
+    if (/;/.test(rawName) || rawName.split(/\s+/).length > 6) continue;
     const key = normalizeName(rawName);
     if (seen.has(key)) continue; // model occasionally re-lists a member; keep it once
     seen.add(key);
