@@ -525,7 +525,41 @@ async function deleteOrphanSession(slug) {
 }
 
 // ── Claude API call ─────────────────────────────────────────────────────
-async function callClaude(system, user, maxTokens = 4000, temperature = 1.0, model = 'claude-sonnet-4-6') {
+// Deliberation / assembly / verdict / brief model. Env-overridable so the model
+// can be A/B-tested on a preview and rolled back in prod with a single env flip,
+// without a code change. The small out-of-scope step stays on Haiku (set explicitly).
+const DELIB_MODEL = process.env.TLC_MODEL || 'claude-sonnet-5';
+// Claude 5-family models reject a `temperature` field (400) and run thinking by
+// default. We send no temperature and disable thinking for them, which keeps the
+// output format identical to the 4.x behaviour the parsers were tuned against and
+// keeps the live deliberation stream fast (no pre-text thinking pause). 4.x models
+// (e.g. the Haiku step) keep their temperature untouched.
+const FIVE_SERIES = /^claude-(sonnet|opus|fable)-5/;
+
+function buildClaudeBody(model, system, user, maxTokens, temperature, stream) {
+  const body = {
+    model,
+    max_tokens: maxTokens,
+    system,
+    messages: [{ role: 'user', content: user }],
+  };
+  if (FIVE_SERIES.test(model)) {
+    body.thinking = { type: 'disabled' };
+  } else {
+    body.temperature = temperature;
+  }
+  if (stream) body.stream = true;
+  return body;
+}
+
+// Returns the first text block's text, skipping any thinking blocks a model may
+// emit. More robust than content[0].text and required if thinking is ever enabled.
+function extractText(content) {
+  const block = (content || []).find((c) => c.type === 'text');
+  return block ? block.text : '';
+}
+
+async function callClaude(system, user, maxTokens = 4000, temperature = 1.0, model = DELIB_MODEL) {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -533,20 +567,14 @@ async function callClaude(system, user, maxTokens = 4000, temperature = 1.0, mod
       'x-api-key': process.env.ANTHROPIC_API_KEY,
       'anthropic-version': '2023-06-01',
     },
-    body: JSON.stringify({
-      model,
-      max_tokens: maxTokens,
-      temperature,
-      system,
-      messages: [{ role: 'user', content: user }],
-    }),
+    body: JSON.stringify(buildClaudeBody(model, system, user, maxTokens, temperature, false)),
   });
   if (!res.ok) {
     const err = await res.text();
     throw new Error(`Anthropic API error ${res.status}: ${err}`);
   }
   const data = await res.json();
-  return data.content[0].text;
+  return extractText(data.content);
 }
 
 // Streaming variant: same call but with `stream: true`, invoking onDelta(textChunk)
@@ -554,7 +582,7 @@ async function callClaude(system, user, maxTokens = 4000, temperature = 1.0, mod
 // end. Used for the deliberation so the client can render speakers live. On any
 // network/parse hiccup it still returns whatever text accumulated; the caller runs
 // the same validation it would on a non-streamed result.
-async function callClaudeStream(system, user, maxTokens, temperature, model = 'claude-sonnet-4-6', onDelta = null) {
+async function callClaudeStream(system, user, maxTokens, temperature, model = DELIB_MODEL, onDelta = null) {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -562,14 +590,7 @@ async function callClaudeStream(system, user, maxTokens, temperature, model = 'c
       'x-api-key': process.env.ANTHROPIC_API_KEY,
       'anthropic-version': '2023-06-01',
     },
-    body: JSON.stringify({
-      model,
-      max_tokens: maxTokens,
-      temperature,
-      system,
-      messages: [{ role: 'user', content: user }],
-      stream: true,
-    }),
+    body: JSON.stringify(buildClaudeBody(model, system, user, maxTokens, temperature, true)),
   });
   if (!res.ok) {
     const err = await res.text();
@@ -692,7 +713,7 @@ How to judge:
 - Return at most ONE quote — only one you would defend as unmistakably on-subject. Return a second only in the rare case it is equally on-subject AND makes a genuinely different point.
 
 Answer with ONLY the quote number(s), comma-separated (at most two), or the single word NONE. No other text.`;
-    const responseText = await callClaude('', prompt, 30, 0.2, 'claude-sonnet-4-6');
+    const responseText = await callClaude('', prompt, 30, 0.2, DELIB_MODEL);
     if (/\bnone\b/i.test(responseText)) return [];
     const nums = (responseText.match(/\d+/g) || []).map(n => parseInt(n, 10)).filter(n => n >= 1 && n <= quotes.length);
     const seen = new Set();
@@ -1794,7 +1815,7 @@ export default async function handler(req, res) {
       deliberationUserBase,
       2500,
       0.7,
-      'claude-sonnet-4-6',
+      DELIB_MODEL,
       (chunk) => send('delib-delta', { text: chunk })
     );
 
