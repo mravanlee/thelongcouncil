@@ -525,10 +525,19 @@ async function deleteOrphanSession(slug) {
 }
 
 // ── Claude API call ─────────────────────────────────────────────────────
-// Deliberation / assembly / verdict / brief model. Env-overridable so the model
-// can be A/B-tested on a preview and rolled back in prod with a single env flip,
-// without a code change. The small out-of-scope step stays on Haiku (set explicitly).
-const DELIB_MODEL = process.env.TLC_MODEL || 'claude-sonnet-5';
+// Per-step model selection. Each pipeline step reads its OWN env override and
+// falls back to MODEL_DEFAULT, so models migrate ONE STEP AT A TIME on a preview
+// and roll back per step, without touching code. Conservative default: every step
+// stays on claude-sonnet-4-6 until that step's env var is set, so merging this
+// branch changes nothing in production until a knob is flipped.
+//   TLC_MODEL               default for every step
+//   TLC_MODEL_ASSEMBLY      PROMPT1 assembly (member selection)
+//   TLC_MODEL_DELIBERATION  PROMPT2 deliberation — keep on 4.6 for now: temperature
+//                           still works there and keeps the prose tight
+//   TLC_MODEL_VERDICT / _BRIEF / _ANCHORS / _ACTIONS / _MEMBER_ACTIONS / _QUOTE
+// The two Haiku steps (translate, out-of-scope) are pinned explicitly below.
+const MODEL_DEFAULT = process.env.TLC_MODEL || 'claude-sonnet-4-6';
+const modelFor = (step) => process.env[`TLC_MODEL_${step}`] || MODEL_DEFAULT;
 // Claude 5-family models reject a `temperature` field (400) and run thinking by
 // default. We send no temperature and disable thinking for them, which keeps the
 // output format identical to the 4.x behaviour the parsers were tuned against and
@@ -559,7 +568,7 @@ function extractText(content) {
   return block ? block.text : '';
 }
 
-async function callClaude(system, user, maxTokens = 4000, temperature = 1.0, model = DELIB_MODEL) {
+async function callClaude(system, user, maxTokens = 4000, temperature = 1.0, model = MODEL_DEFAULT) {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -582,7 +591,7 @@ async function callClaude(system, user, maxTokens = 4000, temperature = 1.0, mod
 // end. Used for the deliberation so the client can render speakers live. On any
 // network/parse hiccup it still returns whatever text accumulated; the caller runs
 // the same validation it would on a non-streamed result.
-async function callClaudeStream(system, user, maxTokens, temperature, model = DELIB_MODEL, onDelta = null) {
+async function callClaudeStream(system, user, maxTokens, temperature, model = MODEL_DEFAULT, onDelta = null) {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -656,7 +665,7 @@ Return EXACTLY this format, no preamble:
 QUOTE: "the chosen quote here"
 MEMBER: Member Name`;
 
-    const responseText = await callClaude('', prompt, 200, 1.0);
+    const responseText = await callClaude('', prompt, 200, 1.0, modelFor('QUOTE'));
     const qm = responseText.match(/QUOTE:\s*"([^"]+)"/i);
     const mm = responseText.match(/MEMBER:\s*(.+?)(?:\n|$)/i);
     if (!qm || !mm) {
@@ -713,7 +722,7 @@ How to judge:
 - Return at most ONE quote — only one you would defend as unmistakably on-subject. Return a second only in the rare case it is equally on-subject AND makes a genuinely different point.
 
 Answer with ONLY the quote number(s), comma-separated (at most two), or the single word NONE. No other text.`;
-    const responseText = await callClaude('', prompt, 30, 0.2, DELIB_MODEL);
+    const responseText = await callClaude('', prompt, 30, 0.2, modelFor('QUOTE'));
     if (/\bnone\b/i.test(responseText)) return [];
     const nums = (responseText.match(/\d+/g) || []).map(n => parseInt(n, 10)).filter(n => n >= 1 && n <= quotes.length);
     const seen = new Set();
@@ -798,7 +807,7 @@ async function notifyIndexNow(slug) {
 // 1y cache) before anyone shares the link, so cards reliably show the image.
 async function generateFactualAnchors(question) {
   try {
-    const output = await callClaude(PROMPT_FACTUAL_ANCHORS_SYSTEM, `SHARPENED QUESTION:\n${question}`, 400, 0.3);
+    const output = await callClaude(PROMPT_FACTUAL_ANCHORS_SYSTEM, `SHARPENED QUESTION:\n${question}`, 400, 0.3, modelFor('ANCHORS'));
     const trimmed = (output || '').trim();
     if (!trimmed || /^NO ANCHORS\b/i.test(trimmed)) return '';
     return trimmed;
@@ -853,7 +862,7 @@ async function translateQuestion(question) {
 async function generateActions(originalIssue, deliberationOutput, verdictOutput) {
   try {
     const userMessage = `ISSUE:\n${originalIssue}\n\nDELIBERATION (Layer 2 member cards):\n${deliberationOutput}\n\nVERDICT:\n${verdictOutput}`;
-    const output = await callClaude(PROMPT_ACTIONS_SYSTEM, userMessage, 700, 0.6);
+    const output = await callClaude(PROMPT_ACTIONS_SYSTEM, userMessage, 700, 0.6, modelFor('ACTIONS'));
     return output.trim();
   } catch (err) {
     console.error('[pipeline] Action extraction failed:', err.message);
@@ -945,7 +954,7 @@ async function generateMemberActions(originalIssue, deliberationOutput, verdictO
     if (names.length === 0) return {};
     const roster = names.map((n, i) => `${i + 1}. ${n}`).join('\n');
     const userMessage = `ISSUE:\n${originalIssue}\n\nMEMBERS AT THE TABLE (use these EXACT names as ## headings, one block each):\n${roster}\n\nDELIBERATION (Layer 2 member cards):\n${deliberationOutput}\n\nVERDICT:\n${verdictOutput}`;
-    const output = await callClaude(PROMPT_MEMBER_ACTIONS_SYSTEM, userMessage, 1500, 0.6);
+    const output = await callClaude(PROMPT_MEMBER_ACTIONS_SYSTEM, userMessage, 1500, 0.6, modelFor('MEMBER_ACTIONS'));
     return parseMemberActions(output, names);
   } catch (err) {
     console.error('[pipeline] Member-action extraction failed:', err.message);
@@ -1772,7 +1781,9 @@ export default async function handler(req, res) {
       // claude-sonnet-4-6 writes longer per-member justifications; 2000 tokens
       // truncated 5-member assemblies mid-output, dropping the closing sections
       // the SELECTED MEMBERS parser anchors on. 4000 leaves headroom.
-      4000
+      4000,
+      1.0,
+      modelFor('ASSEMBLY')
     );
     send('assembly', { data: assemblyOutput });
 
@@ -1815,7 +1826,7 @@ export default async function handler(req, res) {
       deliberationUserBase,
       2500,
       0.7,
-      DELIB_MODEL,
+      modelFor('DELIBERATION'),
       (chunk) => send('delib-delta', { text: chunk })
     );
 
@@ -1831,7 +1842,7 @@ export default async function handler(req, res) {
 
 REGENERATION CONSTRAINT — CRITICAL:
 Your previous attempt opened with ${p1Check.firstMember}'s card, but the BODY of that card (framing line and paragraph) referenced ${p1Check.mentions.join(', ')}, other council members at the table. THE FIRST CARD'S BODY MUST NOT NAME ANY OTHER COUNCIL MEMBER: not in the framing line, not in the paragraph. The opening voice engages the ISSUE directly. No "X is right that...", no "X's argument...", no "as X would say...". The first card MAY end with a "**Challenge to [card-2 speaker]:**" line if appropriate, but the body itself stands alone. Rewrite the full deliberation.`;
-      const retried = await callClaude(PROMPT2_SYSTEM, retryMessage, 2500, 0.5);
+      const retried = await callClaude(PROMPT2_SYSTEM, retryMessage, 2500, 0.5, modelFor('DELIBERATION'));
       const recheck = validatePosition1Card(retried, selectedNames);
       if (recheck.ok) {
         console.log('[pipeline] First-card retry SUCCEEDED');
@@ -1873,7 +1884,7 @@ Rewrite the full deliberation so that:
 2. Every other card MAY include a challenge, but it must address ONLY the speaker of the card that immediately follows it. This includes the FIRST card, whose challenge (if present) targets the card-2 speaker.
 3. The next card, when it follows a challenge, opens by engaging with that challenge before pivoting to its own position.
 4. The first card's BODY (framing line + paragraph) still names no other council member; only its challenge line may.`;
-      const chainRetried = await callClaude(PROMPT2_SYSTEM, chainRetryMessage, 2500, 0.5);
+      const chainRetried = await callClaude(PROMPT2_SYSTEM, chainRetryMessage, 2500, 0.5, modelFor('DELIBERATION'));
       const chainRecheck = validateChallengeChain(chainRetried);
       const p1Recheck = validatePosition1Card(chainRetried, selectedNames);
       if (chainRecheck.ok && p1Recheck.ok) {
@@ -1905,7 +1916,7 @@ A card referred to its own speaker in the third person:
 ${list}
 
 Every card is first person. A member says "I" and "my" and never names themselves. When a card rebuts the previous speaker, it names THAT speaker. Rewrite the full deliberation.`;
-      const retried = await callClaude(PROMPT2_SYSTEM, selfRefRetry, 2500, 0.5);
+      const retried = await callClaude(PROMPT2_SYSTEM, selfRefRetry, 2500, 0.5, modelFor('DELIBERATION'));
       const recheck = validateSelfReference(retried);
       const p1Recheck = validatePosition1Card(retried, selectedNames);
       const chainRecheck = validateChallengeChain(retried);
@@ -1969,7 +1980,8 @@ Every card is first person. A member says "I" and "my" and never names themselve
       PROMPT3_SYSTEM,
       `${contextBlock}ISSUE:\n${question}\n\nPROMPT 2 OUTPUT — REASONING CARDS AND CONVERGENCE NOTE:\n${deliberationOutput}`,
       1500,
-      0.7
+      0.7,
+      modelFor('VERDICT')
     );
     send('verdict', { data: verdictOutput });
 
@@ -1985,7 +1997,7 @@ Every card is first person. A member says "I" and "my" and never names themselve
       console.warn('[pipeline] ACTIONS validation failed on first attempt:', actionsCheck);
       const constraintNote = (actionsCheck.violations || []).map(v => `- "${v.action}" (${v.reason})`).join('\n');
       const retryUser = `ISSUE:\n${question}\n\nDELIBERATION (Layer 2 member cards):\n${deliberationOutput}\n\nVERDICT:\n${verdictOutput}\n\nREGENERATION CONSTRAINT:\nYour previous attempt produced actions that failed validation:\n${constraintNote}\n\nRewrite. Every action must (a) begin with an imperative verb, (b) name a concrete entity, (c) be ≤ 25 words, (d) contain no "consider/explore/examine/review/assess/evaluate", (e) not begin with "should". If you cannot produce 2 defensible actions, emit only 1.`;
-      const retryRaw = await callClaude(PROMPT_ACTIONS_SYSTEM, retryUser, 700, 0.4);
+      const retryRaw = await callClaude(PROMPT_ACTIONS_SYSTEM, retryUser, 700, 0.4, modelFor('ACTIONS'));
       const retryActions = parseActions(retryRaw);
       const recheck = validateActions(retryActions);
       if (recheck.ok) {
@@ -2045,7 +2057,9 @@ Every card is first person. A member says "I" and "my" and never names themselve
     const briefOutput = await callClaude(
       PROMPT4_SYSTEM,
       `${contextBlock}ISSUE:\n${question}\n\nTODAY'S DATE: ${todayForBrief}\n\nPROMPT 2 OUTPUT — REASONING CARDS AND CONVERGENCE NOTE:\n${deliberationOutput}\n\nPROMPT 3 OUTPUT — VERDICT:\n${verdictOutput}`,
-      3000
+      3000,
+      1.0,
+      modelFor('BRIEF')
     );
     send('brief', { data: briefOutput });
 
