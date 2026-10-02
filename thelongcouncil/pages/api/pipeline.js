@@ -991,6 +991,11 @@ EACH ANCHOR MUST:
 3. Be load-bearing: removing it would change which positions are tenable.
 4. Be verifiable, the kind of claim that would survive a fact-check.
 
+PRECISION OVER COVERAGE:
+- Prefer fewer rock-solid anchors to more plausible ones. One anchor you are certain of beats three you are guessing at. Never pad to reach three.
+- Include an anchor only if you could name where it comes from: a specific report, law, event, or public statement. If you cannot point to a source, drop it.
+- A number or date you are not fully certain of: omit the anchor, or state the fact without the uncertain figure. A wrong "fact" here corrupts the whole deliberation.
+
 FORBIDDEN:
 - Opinions, predictions, normative claims.
 - Generic statements ("climate change is accelerating", too vague).
