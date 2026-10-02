@@ -37,6 +37,13 @@ const OUTDIR = argVal('--outdir', join(ROOT, '..', '.ab-delib-out'));
 const SLUGS = argVal('--slugs', null);
 const LIMIT = Number(argVal('--limit', 4));
 const ONLY_VARIANT = argVal('--variant', null); // 'a' or 'b' to run one side
+// Model comparison: run the SAME prompt on two models. Variant A = MODEL_A,
+// variant B = MODEL_B. Defaults compare the live model against the Sonnet 5 target.
+const MODEL_A = argVal('--model-a', 'claude-sonnet-4-6');
+const MODEL_B = argVal('--model-b', 'claude-sonnet-5');
+const MODEL_MODE = args.includes('--model-b'); // true when comparing models, not prompts
+// Claude 5-family rejects `temperature` (400) and runs thinking by default.
+const FIVE_SERIES = /^claude-(sonnet|opus|fable)-5/;
 
 // ── Prompts ─────────────────────────────────────────────────────────────
 function extractCurrentPrompt2() {
@@ -47,11 +54,12 @@ function extractCurrentPrompt2() {
 }
 const PROMPT_A = extractCurrentPrompt2();
 const promptBPath = argVal('--prompt-b', null);
-if (!promptBPath && (ONLY_VARIANT || '').toLowerCase() !== 'a') {
-  console.error('Pass --prompt-b <file> with the draft prompt to test, or --variant a to baseline the live prompt.');
+if (!promptBPath && !MODEL_MODE && (ONLY_VARIANT || '').toLowerCase() !== 'a') {
+  console.error('Pass --prompt-b <file> to test a prompt, --model-b <id> to test a model, or --variant a to baseline the live setup.');
   process.exit(1);
 }
-const PROMPT_B = promptBPath ? readFileSync(promptBPath, 'utf-8') : null;
+// In model mode (no --prompt-b) variant B reuses the live prompt so only the model differs.
+const PROMPT_B = promptBPath ? readFileSync(promptBPath, 'utf-8') : PROMPT_A;
 
 // ── Pipeline user-message reconstruction (mirrors pages/api/pipeline.js) ─
 const normalizeName = (name) => name.toLowerCase().normalize('NFD')
@@ -117,14 +125,14 @@ function buildUserMessage(session) {
 }
 
 // ── Anthropic call (pipeline params: 2500 tokens, temp 0.7) ─────────────
-async function callClaude(system, user) {
+async function callClaude(system, user, model = 'claude-sonnet-4-6') {
+  const body = { model, max_tokens: 2500, system, messages: [{ role: 'user', content: user }] };
+  if (FIVE_SERIES.test(model)) body.thinking = { type: 'disabled' };
+  else body.temperature = 0.7;
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-6', max_tokens: 2500, temperature: 0.7,
-      system, messages: [{ role: 'user', content: user }],
-    }),
+    body: JSON.stringify(body),
   });
   const j = await res.json();
   if (j.error) throw new Error(`API: ${j.error.message}`);
@@ -169,18 +177,22 @@ async function main() {
   const sessions = SLUGS
     ? await sb(`${select}&slug=in.(${SLUGS.split(',').map((s) => `"${s.trim()}"`).join(',')})`)
     : await sb(`${select}&order=created_at.desc&limit=${LIMIT}`);
-  console.log(`Prompt A (huidig): ~${Math.round(PROMPT_A.length / 4)} tokens · Prompt B (geconsolideerd): ~${Math.round(PROMPT_B.length / 4)} tokens`);
+  if (MODEL_MODE) {
+    console.log(`Modelvergelijking · A: ${MODEL_A} · B: ${MODEL_B} (zelfde prompt, ~${Math.round(PROMPT_A.length / 4)} tokens)`);
+  } else {
+    console.log(`Promptvergelijking · A (huidig): ~${Math.round(PROMPT_A.length / 4)} tokens · B: ~${Math.round(PROMPT_B.length / 4)} tokens · model ${MODEL_A}`);
+  }
   console.log(`Sessies: ${sessions.length} · output → ${OUTDIR}\n`);
 
   const summary = [];
   for (const session of sessions) {
     const { user, selectedNames } = buildUserMessage(session);
     const short = session.slug.slice(0, 34);
-    for (const [variant, system] of [['A', PROMPT_A], ['B', PROMPT_B]]) {
+    for (const [variant, system, model] of [['A', PROMPT_A, MODEL_A], ['B', PROMPT_B, MODEL_B]]) {
       if (ONLY_VARIANT && variant.toLowerCase() !== ONLY_VARIANT.toLowerCase()) continue;
       process.stdout.write(`${short} ${variant}... `);
       try {
-        const { text, usage } = await callClaude(system, user);
+        const { text, usage } = await callClaude(system, user, model);
         writeFileSync(join(OUTDIR, `${session.slug}.${variant}.md`), text);
         const lint = lintDeliberation(text);
         const struct = structuralCheck(text, selectedNames);
