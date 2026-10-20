@@ -145,6 +145,15 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Scope/sharpen decision. Haiku 4.5 over-declined and over-clarified valid
+    // current-affairs questions (e.g. "causes of the 2026 riots in France + how to
+    // prevent"), reading them as factual lookups. Sonnet 5 classifies them correctly.
+    // Env-overridable for rollback: TLC_MODEL_SHARPEN=claude-haiku-4-5-20251001.
+    const SHARPEN_MODEL = process.env.TLC_MODEL_SHARPEN || 'claude-sonnet-5';
+    const reqBody = { model: SHARPEN_MODEL, max_tokens: 500, system: SYSTEM, messages };
+    // Claude 5-family rejects `temperature` and runs thinking by default; disable
+    // thinking so the check stays fast and returns a plain text block to parse.
+    if (/^claude-(sonnet|opus|fable)-5/.test(SHARPEN_MODEL)) reqBody.thinking = { type: 'disabled' };
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -152,12 +161,7 @@ export default async function handler(req, res) {
         'x-api-key': process.env.ANTHROPIC_API_KEY,
         'anthropic-version': '2023-06-01',
       },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 500,
-        system: SYSTEM,
-        messages,
-      }),
+      body: JSON.stringify(reqBody),
     });
 
     // Capture the full Anthropic error body — this is what we were missing
@@ -175,13 +179,15 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
-    // Defensive: make sure response shape is what we expect
-    if (!data?.content?.[0]?.text) {
+    // Defensive: take the first TEXT block (skips any thinking block a 5-model
+    // might emit), rather than assuming content[0] is text.
+    const textBlock = (data?.content || []).find((c) => c.type === 'text');
+    if (!textBlock?.text) {
       console.error('[sharpen] Unexpected response shape:', JSON.stringify(data).slice(0, 500));
       throw new Error('Unexpected response from sharpener');
     }
 
-    const text = data.content[0].text.trim();
+    const text = textBlock.text.trim();
 
     // Parse the two-path output
     let mode = null;
