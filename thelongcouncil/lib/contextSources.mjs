@@ -158,8 +158,12 @@ function extractReadable(html) {
   if (article) body = article[0];
   const text = decodeEntities(body.replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim();
   const gatedMarker = /(subscribe to (continue|read)|create (a free )?account to|sign in to read|this content is for subscribers|register to continue|paywall)/i.test(html);
+  // Pages that are plainly not a news article: login walls, deployment pages,
+  // captcha/JS gates, error pages. Reject these instead of confirming them.
+  const SYSTEM_PAGE = /(protected deployment|please enable javascript|^just a moment|attention required|verify you are (a )?human|are you a robot|access denied|403 forbidden|page not found|this page (could not|can't|cannot) be found|log ?in to continue|sign in to continue)/i;
+  const notArticle = SYSTEM_PAGE.test(title) || SYSTEM_PAGE.test(text.slice(0, 2000)) || (text.length < 160 && !description);
   const paywalled = gatedMarker || text.length < MIN_ARTICLE_CHARS;
-  return { title, description, text: text.slice(0, 12000), paywalled };
+  return { title, description, text: text.slice(0, 12000), paywalled, notArticle };
 }
 
 // ── Public API: fetch + validate one source ───────────────────────────────
@@ -178,9 +182,10 @@ export async function fetchSource(rawUrl, webRiskKey) {
   const fetched = await safeFetch(v.url);
   if (!fetched.ok) return { ok: false, url: v.url, reason: fetched.reason };
   const read = extractReadable(fetched.html);
+  if (read.notArticle) return { ok: false, url: v.url, reason: 'not_article' };
   const type = guessOpinion(fetched.finalUrl, read.title) ? 'opinion' : 'news';
   if (read.paywalled) {
-    if (!read.title && !read.description) return { ok: false, url: v.url, reason: 'unreadable' };
+    if (!read.description) return { ok: false, url: v.url, reason: 'unreadable' };
     return { ok: true, url: v.url, title: read.title, type, mode: 'summary', summary: read.description, text: '' };
   }
   return { ok: true, url: v.url, title: read.title, type, mode: 'full', summary: read.description, text: read.text };

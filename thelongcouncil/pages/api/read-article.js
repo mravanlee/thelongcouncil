@@ -19,7 +19,8 @@ const REASON_COPY = {
   unsafe: 'That link was flagged as unsafe and was blocked.',
   private_ip: 'That link points to an internal address and was blocked.',
   not_html: 'That link is not a readable web page.',
-  unreadable: 'That article could not be read, even its headline.',
+  not_article: 'That link is not a news article, so there is nothing for the council to read.',
+  unreadable: 'We could not find an article to read at that link.',
   too_many_redirects: 'That link redirected too many times.',
   fetch_failed: 'That page could not be reached.',
 };

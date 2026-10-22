@@ -1338,7 +1338,7 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
                 </div>
 
                 <div className="mt-6">
-                  <div className="text-[11px] tracking-[0.18em] uppercase text-muted-foreground">Add context (optional)</div>
+                  <div className="text-[11px] tracking-[0.18em] uppercase text-primary">Add a news article for context (optional)</div>
                   <p className="mt-2 max-w-2xl text-[13px] leading-relaxed text-muted-foreground/90">
                     To improve the debate, give the council a news article related to your question. They use it as context and debate your question.
                   </p>
@@ -1365,10 +1365,11 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
                         onChange={(e) => setCtxDraft(e.target.value)}
                         onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); if (ctxDraft.trim()) { addCtxLink(ctxDraft.trim()); setCtxDraft(''); } } }}
                         placeholder="Paste a news article link"
-                        className="min-w-0 flex-1 border-b border-foreground/30 bg-transparent py-1.5 text-[14px] text-foreground placeholder:text-muted-foreground/60 focus:border-foreground focus:outline-none" />
+                        className="min-w-0 flex-1 border border-border bg-background px-3 py-2.5 text-[14px] text-foreground placeholder:text-muted-foreground/60 focus:border-foreground/70 focus:outline-none" />
                       <button type="button" onClick={() => { if (ctxDraft.trim()) { addCtxLink(ctxDraft.trim()); setCtxDraft(''); } }} disabled={!ctxDraft.trim()}
-                        className="shrink-0 rounded-sm border border-border px-3 py-1.5 text-[13px] text-primary transition hover:border-primary/60 disabled:opacity-35">
-                        Add link
+                        className="shrink-0 rounded-sm bg-primary px-4 py-2.5 text-[13px] font-medium transition hover:bg-primary/90 disabled:opacity-35 disabled:cursor-not-allowed"
+                        style={{ ...SERIF, color: 'var(--color-primary-foreground)' }}>
+                        Add
                       </button>
                     </div>
                   )}
