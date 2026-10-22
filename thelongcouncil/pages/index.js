@@ -218,7 +218,6 @@ function stripTier(name) {
 
 const EXAMPLE_QUESTIONS = [
   'Should the EU build an army?',
-  'How can we protect democratic institutions?',
   'Should AI be regulated?',
   'How should wealth be redistributed?',
 ];
