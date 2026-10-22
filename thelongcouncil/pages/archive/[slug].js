@@ -438,7 +438,7 @@ export default function ArchiveDetail({ session, memberQuery }) {
 
         <p className="-mt-5 mb-9 max-w-[80ch] text-[12px] leading-[1.6] text-muted-foreground">
           Built from documented writings, speeches, decisions and historical records.
-          Council members argue from documented positions, applied to today's question.
+          Council members argue from those positions, applied to today's question.
         </p>
 
         {contextSources.length > 0 && (
