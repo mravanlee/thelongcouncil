@@ -111,7 +111,11 @@ async function safeFetch(startUrl) {
       r = await fetch(v.url, {
         redirect: 'manual',
         signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-        headers: { 'User-Agent': 'TheLongCouncil-ContextFetcher/1.0 (+https://thelongcouncil.com)', Accept: 'text/html,application/xhtml+xml' },
+        // Identify as our bot, but include the facebookexternalhit token that news
+        // sites whitelist for link previews, so consent-gated / paywalled pages
+        // (e.g. DPG Media titles) still serve their og metadata instead of a
+        // cookie-consent redirect.
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; TheLongCouncilBot/1.0; +https://thelongcouncil.com) facebookexternalhit/1.1', Accept: 'text/html,application/xhtml+xml' },
       });
     } catch (e) { return { ok: false, reason: 'fetch_failed', detail: e.message }; }
     if (r.status >= 300 && r.status < 400) {
