@@ -697,12 +697,11 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
   const [sharpenerLoading, setSharpenerLoading] = useState(false);
 
   const [confirmedQuestion, setConfirmedQuestion] = useState('');
-  // Article mode: paste a news link, the platform reads it and suggests questions.
-  const [askMode, setAskMode] = useState('question');
-  const [articleUrl, setArticleUrl] = useState('');
-  const [articleReading, setArticleReading] = useState(false);
-  const [articleData, setArticleData] = useState(null);
-  const [articleError, setArticleError] = useState('');
+  // Optional supporting links: the asker attaches up to 3 article links to
+  // ground the question in real facts. The council reads them for context.
+  const [linksOpen, setLinksOpen] = useState(false);
+  const [supportLinks, setSupportLinks] = useState(['']);
+  const cleanLinks = () => supportLinks.map((l) => l.trim()).filter((l) => /^https:\/\//i.test(l)).slice(0, 3);
   const [loadingStep, setLoadingStep] = useState(0);
   const [loadingMessage, setLoadingMessage] = useState('');
   const [liveDebate, setLiveDebate] = useState(''); // raw deliberation buffer while it streams in
@@ -857,48 +856,14 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
     }
   }
 
-  async function readArticle(urlArg) {
-    const url = (typeof urlArg === 'string' ? urlArg : articleUrl).trim();
-    if (!url) return;
-    setArticleReading(true);
-    setArticleError('');
-    setArticleData(null);
-    try {
-      const res = await fetch('/api/read-article', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setArticleError(data.error || 'That article could not be read. Try another source.');
-      } else if (!data.ok || !Array.isArray(data.questions) || data.questions.length === 0) {
-        const first = data.errors && data.errors[0] && data.errors[0].message;
-        setArticleError(first || 'That article could not be read. Try another source.');
-      } else {
-        setArticleData(data);
-      }
-    } catch (e) {
-      setArticleError('Could not reach the reader. Please try again.');
-    } finally {
-      setArticleReading(false);
-    }
+  function updateLink(i, val) { setSupportLinks((ls) => ls.map((l, idx) => (idx === i ? val : l))); }
+  function addLink() { setSupportLinks((ls) => (ls.length < 3 ? [...ls, ''] : ls)); }
+  function removeLink(i) {
+    setSupportLinks((ls) => {
+      const next = ls.filter((_, idx) => idx !== i);
+      return next.length ? next : [''];
+    });
   }
-
-  // Deep link: /?source=<article-url> opens the article flow directly (for a
-  // "Debate on The Long Council" link a publisher could place by an article).
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      const src = new URLSearchParams(window.location.search).get('source');
-      if (src && /^https:\/\//i.test(src)) {
-        setAskMode('article');
-        setArticleUrl(src);
-        readArticle(src);
-      }
-    } catch (e) { /* ignore */ }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   async function pollForCompletedSession(originalQuestion) {
     for (let attempt = 0; attempt < FINALIZE_MAX_ATTEMPTS; attempt++) {
@@ -1104,7 +1069,7 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
     setError(null);
     if (retryAction === 'submit') { setScreen('landing'); handleSubmit(); }
     else if (retryAction === 'reply') { setScreen('sharpening'); }
-    else if (retryAction === 'pipeline') { runPipeline(confirmedQuestion); }
+    else if (retryAction === 'pipeline') { runPipeline(confirmedQuestion, cleanLinks()); }
     else { setScreen('landing'); }
   }
 
@@ -1309,80 +1274,6 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
                 debate, and deliver a verdict.
               </p>
 
-              {/* Mode toggle: ask a question, or debate a news article */}
-              <div className="mt-8 inline-flex border border-border">
-                <button type="button" onClick={() => setAskMode('question')}
-                  className={`px-4 py-2 text-[13px] transition ${askMode === 'question' ? 'bg-primary' : 'text-muted-foreground hover:text-foreground'}`}
-                  style={askMode === 'question' ? { color: 'var(--color-primary-foreground)' } : undefined}>
-                  Ask a question
-                </button>
-                <button type="button" onClick={() => setAskMode('article')}
-                  className={`px-4 py-2 text-[13px] transition ${askMode === 'article' ? 'bg-primary' : 'text-muted-foreground hover:text-foreground'}`}
-                  style={askMode === 'article' ? { color: 'var(--color-primary-foreground)' } : undefined}>
-                  Debate an article
-                </button>
-              </div>
-
-              {/* Article mode: paste a link, read it, pick a suggested question */}
-              {askMode === 'article' && (
-                <div className="mt-8 flex w-full flex-col gap-4">
-                  <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-end">
-                    <div className="flex-1 border-b-2 border-foreground/40 focus-within:border-foreground transition-colors">
-                      <input
-                        type="url"
-                        inputMode="url"
-                        value={articleUrl}
-                        onChange={(e) => setArticleUrl(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); readArticle(); } }}
-                        placeholder="Paste a news article link"
-                        className="w-full bg-transparent pt-3 pb-1 text-[16px] leading-tight text-foreground placeholder:text-muted-foreground/70 focus:outline-none"
-                      />
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => readArticle()}
-                      disabled={!articleUrl.trim() || articleReading}
-                      className="inline-flex shrink-0 items-center justify-center gap-2 rounded-sm bg-primary px-5 py-2.5 text-[13px] font-medium tracking-wide transition hover:bg-primary/90 disabled:opacity-35 disabled:cursor-not-allowed"
-                      style={{ ...SERIF, color: 'var(--color-primary-foreground)' }}
-                    >
-                      {articleReading ? 'Reading…' : 'Read article'}
-                    </button>
-                  </div>
-                  <p className="text-[12px] leading-relaxed text-muted-foreground/80">
-                    Links are https only, scanned for malware, and read securely. Paywalled articles fall back to the headline and summary; opinion pieces are read for their factual claims only.
-                  </p>
-                  {articleError && <p className="text-[13px] text-primary">{articleError}</p>}
-                  {articleData && articleData.ok && (
-                    <div className="flex flex-col gap-4">
-                      {articleData.sources && articleData.sources[0] && (
-                        <p className="text-[13px] leading-relaxed text-muted-foreground">
-                          Read and checked:{' '}
-                          <span className="text-foreground">&ldquo;{articleData.sources[0].title || articleData.sources[0].url}&rdquo;</span>
-                          {articleData.sources[0].type === 'opinion' ? ' (opinion piece)' : ''}
-                          {articleData.sources[0].mode === 'summary' ? ' — headline and summary only' : ''}
-                        </p>
-                      )}
-                      <div className="text-[11px] tracking-[0.18em] uppercase text-primary">Pick what the council should debate</div>
-                      <div className="flex flex-col gap-2">
-                        {articleData.questions.map((q) => (
-                          <button
-                            key={q}
-                            type="button"
-                            onClick={() => runPipeline(q, (articleData.sources || []).map((s) => s.url))}
-                            className="cursor-pointer rounded-sm border border-border bg-background px-4 py-3 text-left transition hover:border-primary/60"
-                            style={SERIF}
-                          >
-                            <span className="text-[17px] leading-snug text-foreground">{q}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Question mode: the original question input and examples */}
-              <div hidden={askMode !== 'question'}>
               <div className="mt-10 flex w-full flex-col gap-3 sm:flex-row sm:items-end">
                 <div className="flex-1 border-b-2 border-foreground/40 focus-within:border-foreground transition-colors">
                   <input
@@ -1412,6 +1303,39 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
                 </button>
               </div>
 
+              <div className="mt-5">
+                {!linksOpen ? (
+                  <button type="button" onClick={() => setLinksOpen(true)} className="text-[13px] text-primary hover:underline">
+                    + Add a link for context (optional)
+                  </button>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    <div className="text-[11px] tracking-[0.18em] uppercase text-muted-foreground">Supporting links</div>
+                    <p className="text-[12px] leading-relaxed text-muted-foreground/80">
+                      Paste news article links so the council debates the real situation, grounded in their facts. Up to 3. Links are https only, scanned for malware, and read securely.
+                    </p>
+                    {supportLinks.map((lnk, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <input
+                          type="url"
+                          inputMode="url"
+                          value={lnk}
+                          onChange={(e) => updateLink(i, e.target.value)}
+                          placeholder="https://... news article link"
+                          className="min-w-0 flex-1 border-b border-foreground/30 bg-transparent py-1.5 text-[14px] text-foreground placeholder:text-muted-foreground/60 focus:border-foreground focus:outline-none"
+                        />
+                        {supportLinks.length > 1 && (
+                          <button type="button" onClick={() => removeLink(i)} className="shrink-0 px-1 text-muted-foreground hover:text-foreground" aria-label="Remove link">&times;</button>
+                        )}
+                      </div>
+                    ))}
+                    {supportLinks.length < 3 && (
+                      <button type="button" onClick={addLink} className="self-start text-[13px] text-primary hover:underline">+ Add another link</button>
+                    )}
+                  </div>
+                )}
+              </div>
+
               <div className="mt-6 text-[11px] tracking-[0.18em] uppercase text-muted-foreground">
                 Or try one of these
               </div>
@@ -1426,7 +1350,6 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
                     {q}
                   </button>
                 ))}
-              </div>
               </div>
             </div>
           </section>
@@ -1469,7 +1392,7 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
                 {wasSharpened && <div className="proposed-original">You asked: <span>{question}</span></div>}
                 {sharpenerExplanation && <div className="proposed-explanation">{sharpenerExplanation}</div>}
                 <div className="proposed-actions">
-                  <button className="btn-accept" onClick={() => runPipeline(readyQuestion)}>Convene the council →</button>
+                  <button className="btn-accept" onClick={() => runPipeline(readyQuestion, cleanLinks())}>Convene the council →</button>
                 </div>
               </div>
             );
@@ -1496,7 +1419,7 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
                 <button className="sharpen-send" onClick={handleSharpenerReply} disabled={!sharpenerInput.trim() || sharpenerLoading}>→</button>
               </div>
               <div className="skip-row">
-                <button className="btn-skip" onClick={() => runPipeline(question)}>Skip — use my original question</button>
+                <button className="btn-skip" onClick={() => runPipeline(question, cleanLinks())}>Skip — use my original question</button>
               </div>
             </>
           )}
@@ -1524,7 +1447,7 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
             <>
               <div className="sharpener-original">Your question: {question}</div>
               <div className="proposed-actions">
-                <button className="btn-accept" onClick={() => runPipeline(question)}>Convene the council →</button>
+                <button className="btn-accept" onClick={() => runPipeline(question, cleanLinks())}>Convene the council →</button>
                 <button className="btn-skip" onClick={reset}>Ask a different question</button>
               </div>
             </>
