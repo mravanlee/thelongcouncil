@@ -218,7 +218,7 @@ function sourceBlock(sources) {
   return sources.map((s, i) => {
     const kind = s.type === 'opinion' ? 'OPINION PIECE' : 'NEWS REPORT';
     const content = s.mode === 'summary'
-      ? `(gated article — headline and summary only)\nSUMMARY: ${s.summary || '(none)'}`
+      ? `(gated article, headline and summary only)\nSUMMARY: ${s.summary || '(none)'}`
       : `TEXT: ${s.text}`;
     return `--- SOURCE ${i + 1} [${kind}] ---\nTITLE: ${s.title || '(untitled)'}\n${content}`;
   }).join('\n\n');

@@ -231,7 +231,7 @@ function extractTeaser(cards) {
   if (firstPara.length > 240) {
     const trimmed = firstPara.substring(0, 240);
     const lastPeriod = trimmed.lastIndexOf('.');
-    return lastPeriod > 100 ? trimmed.substring(0, lastPeriod + 1) : trimmed + '…';
+    return lastPeriod > 100 ? trimmed.substring(0, lastPeriod + 1) : trimmed + 'â¦';
   }
   return firstPara;
 }
@@ -697,11 +697,17 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
   const [sharpenerLoading, setSharpenerLoading] = useState(false);
 
   const [confirmedQuestion, setConfirmedQuestion] = useState('');
-  // Optional supporting links: the asker attaches up to 3 article links to
-  // ground the question in real facts. The council reads them for context.
-  const [linksOpen, setLinksOpen] = useState(false);
-  const [supportLinks, setSupportLinks] = useState(['']);
-  const cleanLinks = () => supportLinks.map((l) => l.trim()).filter((l) => /^https:\/\//i.test(l)).slice(0, 3);
+  // Two equal starting points. 'question': ask a question and optionally attach
+  // news links as context. 'article': paste a link, get suggested questions.
+  const [startMode, setStartMode] = useState('question');
+  const [ctxLinks, setCtxLinks] = useState([]); // {url, status:'checking'|'ok'|'error', title, type, mode, message}
+  const [ctxDraft, setCtxDraft] = useState('');
+  const [artUrl, setArtUrl] = useState('');
+  const [artStatus, setArtStatus] = useState('idle'); // 'idle'|'checking'|'ready'|'error'
+  const [artSource, setArtSource] = useState(null);
+  const [artQuestions, setArtQuestions] = useState([]);
+  const [artMsg, setArtMsg] = useState('');
+  const okCtxLinks = () => ctxLinks.filter((l) => l.status === 'ok').map((l) => l.url);
   const [loadingStep, setLoadingStep] = useState(0);
   const [loadingMessage, setLoadingMessage] = useState('');
   const [liveDebate, setLiveDebate] = useState(''); // raw deliberation buffer while it streams in
@@ -856,13 +862,44 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
     }
   }
 
-  function updateLink(i, val) { setSupportLinks((ls) => ls.map((l, idx) => (idx === i ? val : l))); }
-  function addLink() { setSupportLinks((ls) => (ls.length < 3 ? [...ls, ''] : ls)); }
-  function removeLink(i) {
-    setSupportLinks((ls) => {
-      const next = ls.filter((_, idx) => idx !== i);
-      return next.length ? next : [''];
+  async function checkLink(url, suggest) {
+    const res = await fetch('/api/read-article', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, suggest }),
     });
+    return res.json();
+  }
+  async function addCtxLink(url) {
+    const u = (url || '').trim();
+    if (!u || ctxLinks.length >= 3) return;
+    const at = ctxLinks.length;
+    setCtxLinks((ls) => [...ls, { url: u, status: 'checking' }]);
+    try {
+      const data = await checkLink(u, false);
+      setCtxLinks((ls) => ls.map((l, i) => (i === at
+        ? (data.ok
+          ? { url: u, status: 'ok', title: data.source.title, type: data.source.type, mode: data.source.mode }
+          : { url: u, status: 'error', message: data.message || 'That link could not be used.' })
+        : l)));
+    } catch {
+      setCtxLinks((ls) => ls.map((l, i) => (i === at ? { url: u, status: 'error', message: 'Could not check that link.' } : l)));
+    }
+  }
+  function removeCtxLink(i) { setCtxLinks((ls) => ls.filter((_, idx) => idx !== i)); }
+
+  async function readArticleForQuestions() {
+    const u = artUrl.trim();
+    if (!u) return;
+    setArtStatus('checking'); setArtMsg(''); setArtSource(null); setArtQuestions([]);
+    try {
+      const data = await checkLink(u, true);
+      if (!data.ok) { setArtStatus('error'); setArtMsg(data.message || 'That article could not be read. Try another source.'); return; }
+      setArtSource(data.source);
+      setArtQuestions(Array.isArray(data.questions) ? data.questions : []);
+      setArtStatus('ready');
+    } catch {
+      setArtStatus('error'); setArtMsg('Could not reach the reader. Please try again.');
+    }
   }
 
   async function pollForCompletedSession(originalQuestion) {
@@ -1069,7 +1106,7 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
     setError(null);
     if (retryAction === 'submit') { setScreen('landing'); handleSubmit(); }
     else if (retryAction === 'reply') { setScreen('sharpening'); }
-    else if (retryAction === 'pipeline') { runPipeline(confirmedQuestion, cleanLinks()); }
+    else if (retryAction === 'pipeline') { runPipeline(confirmedQuestion, okCtxLinks()); }
     else { setScreen('landing'); }
   }
 
@@ -1261,76 +1298,128 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
           >
             <div className="mx-auto max-w-4xl px-6 py-10 sm:py-20">
               <div className="text-[11px] tracking-[0.22em] uppercase text-muted-foreground">
-                Ask a question of your own
+                Put it to the council
               </div>
-              <h2
-                className="mt-3 text-[28px] leading-tight tracking-tight sm:text-[36px]"
-                style={SERIF}
-              >
-                Have a question of your own?
+              <h2 className="mt-3 text-[28px] leading-tight tracking-tight sm:text-[36px]" style={SERIF}>
+                Ask a question, or start from an article
               </h2>
               <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-muted-foreground">
-                The council will bring together the right leaders and thinkers,
-                debate, and deliver a verdict.
+                Give the council a question to debate. Point it at the news, and it grounds the debate in today&rsquo;s facts instead of reasoning in the abstract.
               </p>
 
-              <div className="mt-10 flex w-full flex-col gap-3 sm:flex-row sm:items-end">
-                <div className="flex-1 border-b-2 border-foreground/40 focus-within:border-foreground transition-colors">
-                  <input
-                    ref={textareaRef}
-                    type="text"
-                    value={question}
-                    onChange={(e) => setQuestion(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSubmit();
-                      }
-                    }}
-                    placeholder="Type your question here"
-                    className="w-full bg-transparent pt-3 pb-1 text-[18px] leading-tight text-foreground placeholder:text-muted-foreground/70 focus:outline-none"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={handleSubmit}
-                  disabled={!question.trim() || sharpenerLoading}
-                  className="inline-flex shrink-0 items-center justify-center gap-2 rounded-sm bg-primary px-5 py-2.5 text-[13px] font-medium tracking-wide transition hover:bg-primary/90 disabled:opacity-35 disabled:cursor-not-allowed"
-                  style={{ ...SERIF, color: 'var(--color-primary-foreground)' }}
-                >
-                  {sharpenerLoading ? 'Considering…' : 'Ask the council'}
-                  <span aria-hidden>→</span>
+              <div className="mt-8 inline-flex border border-border">
+                <button type="button" onClick={() => setStartMode('question')}
+                  className={`px-4 py-2 text-[13px] transition ${startMode === 'question' ? 'bg-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                  style={startMode === 'question' ? { color: 'var(--color-primary-foreground)' } : undefined}>
+                  I have a question
+                </button>
+                <button type="button" onClick={() => setStartMode('article')}
+                  className={`px-4 py-2 text-[13px] transition ${startMode === 'article' ? 'bg-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                  style={startMode === 'article' ? { color: 'var(--color-primary-foreground)' } : undefined}>
+                  I have an article
                 </button>
               </div>
 
-              <div className="mt-5">
-                {!linksOpen ? (
-                  <button type="button" onClick={() => setLinksOpen(true)} className="text-[13px] text-primary hover:underline">
-                    + Add a link for context (optional)
+              <div hidden={startMode !== 'question'}>
+                <div className="mt-8 flex w-full flex-col gap-3 sm:flex-row sm:items-end">
+                  <div className="flex-1 border-b-2 border-foreground/40 focus-within:border-foreground transition-colors">
+                    <input ref={textareaRef} type="text" value={question}
+                      onChange={(e) => setQuestion(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(); } }}
+                      placeholder="Type your question here"
+                      className="w-full bg-transparent pt-3 pb-1 text-[18px] leading-tight text-foreground placeholder:text-muted-foreground/70 focus:outline-none" />
+                  </div>
+                  <button type="button" onClick={handleSubmit} disabled={!question.trim() || sharpenerLoading}
+                    className="inline-flex shrink-0 items-center justify-center gap-2 rounded-sm bg-primary px-5 py-2.5 text-[13px] font-medium tracking-wide transition hover:bg-primary/90 disabled:opacity-35 disabled:cursor-not-allowed"
+                    style={{ ...SERIF, color: 'var(--color-primary-foreground)' }}>
+                    {sharpenerLoading ? 'Consideringâ¦' : 'Ask the council'}
+                    <span aria-hidden>&rarr;</span>
                   </button>
-                ) : (
-                  <div className="flex flex-col gap-2">
-                    <div className="text-[11px] tracking-[0.18em] uppercase text-muted-foreground">Supporting links</div>
-                    <p className="text-[12px] leading-relaxed text-muted-foreground/80">
-                      Paste news article links so the council debates the real situation, grounded in their facts. Up to 3. Links are https only, scanned for malware, and read securely.
-                    </p>
-                    {supportLinks.map((lnk, i) => (
-                      <div key={i} className="flex items-center gap-2">
-                        <input
-                          type="url"
-                          inputMode="url"
-                          value={lnk}
-                          onChange={(e) => updateLink(i, e.target.value)}
-                          placeholder="https://... news article link"
-                          className="min-w-0 flex-1 border-b border-foreground/30 bg-transparent py-1.5 text-[14px] text-foreground placeholder:text-muted-foreground/60 focus:border-foreground focus:outline-none"
-                        />
-                        {supportLinks.length > 1 && (
-                          <button type="button" onClick={() => removeLink(i)} className="shrink-0 px-1 text-muted-foreground hover:text-foreground" aria-label="Remove link">&times;</button>
-                        )}
-                      </div>
-                    ))}
-                    {supportLinks.length < 3 && (
-                      <button type="button" onClick={addLink} className="self-start text-[13px] text-primary hover:underline">+ Add another link</button>
+                </div>
+
+                <div className="mt-6">
+                  <div className="text-[11px] tracking-[0.18em] uppercase text-muted-foreground">Add context, so the verdict is sharper</div>
+                  <p className="mt-2 max-w-2xl text-[13px] leading-relaxed text-muted-foreground/90">
+                    Paste a news article link about your question. The council reads it and debates the real situation, grounded in its facts. Up to 3. Links are https only, scanned for malware, and read securely.
+                  </p>
+                  {ctxLinks.length > 0 && (
+                    <ul className="mt-3 flex list-none flex-col gap-2 p-0">
+                      {ctxLinks.map((l, i) => (
+                        <li key={i} className="flex items-start gap-2 text-[13px] leading-relaxed">
+                          {l.status === 'checking' && <span className="text-muted-foreground">Checking the linkâ¦</span>}
+                          {l.status === 'ok' && (
+                            <span className="min-w-0 text-foreground">
+                              <span className="text-primary">&#10003; Read and checked:</span> {l.title || l.url}
+                              {l.type === 'opinion' ? ' (opinion)' : ''}{l.mode === 'summary' ? ' (headline and summary only)' : ''}
+                            </span>
+                          )}
+                          {l.status === 'error' && <span className="min-w-0 text-primary">{l.message}</span>}
+                          <button type="button" onClick={() => removeCtxLink(i)} className="ml-auto shrink-0 px-1 text-muted-foreground hover:text-foreground" aria-label="Remove link">&times;</button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {ctxLinks.length < 3 && (
+                    <div className="mt-3 flex items-end gap-2">
+                      <input type="url" inputMode="url" value={ctxDraft}
+                        onChange={(e) => setCtxDraft(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); if (ctxDraft.trim()) { addCtxLink(ctxDraft.trim()); setCtxDraft(''); } } }}
+                        placeholder="https://â¦ news article link"
+                        className="min-w-0 flex-1 border-b border-foreground/30 bg-transparent py-1.5 text-[14px] text-foreground placeholder:text-muted-foreground/60 focus:border-foreground focus:outline-none" />
+                      <button type="button" onClick={() => { if (ctxDraft.trim()) { addCtxLink(ctxDraft.trim()); setCtxDraft(''); } }} disabled={!ctxDraft.trim()}
+                        className="shrink-0 rounded-sm border border-border px-3 py-1.5 text-[13px] text-primary transition hover:border-primary/60 disabled:opacity-35">
+                        Add link
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div hidden={startMode !== 'article'}>
+                <p className="mt-8 max-w-2xl text-[15px] leading-relaxed text-muted-foreground">
+                  No question yet? Paste a news article and we will suggest what the council could debate.
+                </p>
+                <div className="mt-4 flex w-full flex-col gap-3 sm:flex-row sm:items-end">
+                  <div className="flex-1 border-b-2 border-foreground/40 focus-within:border-foreground transition-colors">
+                    <input type="url" inputMode="url" value={artUrl}
+                      onChange={(e) => setArtUrl(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); readArticleForQuestions(); } }}
+                      placeholder="Paste a news article link"
+                      className="w-full bg-transparent pt-3 pb-1 text-[17px] leading-tight text-foreground placeholder:text-muted-foreground/70 focus:outline-none" />
+                  </div>
+                  <button type="button" onClick={readArticleForQuestions} disabled={!artUrl.trim() || artStatus === 'checking'}
+                    className="inline-flex shrink-0 items-center justify-center gap-2 rounded-sm bg-primary px-5 py-2.5 text-[13px] font-medium tracking-wide transition hover:bg-primary/90 disabled:opacity-35 disabled:cursor-not-allowed"
+                    style={{ ...SERIF, color: 'var(--color-primary-foreground)' }}>
+                    {artStatus === 'checking' ? 'Readingâ¦' : 'Read article'}
+                  </button>
+                </div>
+                <p className="mt-3 text-[12px] leading-relaxed text-muted-foreground/80">
+                  Links are https only, scanned for malware, and read securely. Paywalled articles fall back to the headline and summary.
+                </p>
+                {artStatus === 'error' && <p className="mt-2 text-[13px] text-primary">{artMsg}</p>}
+                {artStatus === 'ready' && (
+                  <div className="mt-4 flex flex-col gap-4">
+                    {artSource && (
+                      <p className="text-[13px] leading-relaxed text-muted-foreground">
+                        <span className="text-primary">&#10003; Read and checked:</span>{' '}
+                        <span className="text-foreground">{artSource.title || artSource.url}</span>
+                        {artSource.type === 'opinion' ? ' (opinion piece)' : ''}{artSource.mode === 'summary' ? ' (headline and summary only)' : ''}
+                      </p>
+                    )}
+                    {artQuestions.length > 0 ? (
+                      <>
+                        <div className="text-[11px] tracking-[0.18em] uppercase text-primary">Pick what the council should debate</div>
+                        <div className="flex flex-col gap-2">
+                          {artQuestions.map((q) => (
+                            <button key={q} type="button" onClick={() => runPipeline(q, artSource ? [artSource.url] : [])}
+                              className="cursor-pointer rounded-sm border border-border bg-background px-4 py-3 text-left transition hover:border-primary/60" style={SERIF}>
+                              <span className="text-[17px] leading-snug text-foreground">{q}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    ) : (
+                      <p className="text-[13px] text-muted-foreground">We could not form clear questions from that article. Try another, or switch to &ldquo;I have a question&rdquo;.</p>
                     )}
                   </div>
                 )}
@@ -1344,7 +1433,7 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
                   <button
                     key={q}
                     type="button"
-                    onClick={() => setQuestion(q)}
+                    onClick={() => { setQuestion(q); setStartMode('question'); }}
                     className="max-w-full cursor-pointer rounded-sm border border-border bg-background px-3 py-2 text-left text-[13px] leading-snug text-foreground/80 transition hover:border-primary/60 hover:text-foreground"
                   >
                     {q}
@@ -1392,7 +1481,7 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
                 {wasSharpened && <div className="proposed-original">You asked: <span>{question}</span></div>}
                 {sharpenerExplanation && <div className="proposed-explanation">{sharpenerExplanation}</div>}
                 <div className="proposed-actions">
-                  <button className="btn-accept" onClick={() => runPipeline(readyQuestion, cleanLinks())}>Convene the council →</button>
+                  <button className="btn-accept" onClick={() => runPipeline(readyQuestion, okCtxLinks())}>Convene the council →</button>
                 </div>
               </div>
             );
@@ -1419,7 +1508,7 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
                 <button className="sharpen-send" onClick={handleSharpenerReply} disabled={!sharpenerInput.trim() || sharpenerLoading}>→</button>
               </div>
               <div className="skip-row">
-                <button className="btn-skip" onClick={() => runPipeline(question, cleanLinks())}>Skip — use my original question</button>
+                <button className="btn-skip" onClick={() => runPipeline(question, okCtxLinks())}>Skip — use my original question</button>
               </div>
             </>
           )}
@@ -1447,7 +1536,7 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
             <>
               <div className="sharpener-original">Your question: {question}</div>
               <div className="proposed-actions">
-                <button className="btn-accept" onClick={() => runPipeline(question, cleanLinks())}>Convene the council →</button>
+                <button className="btn-accept" onClick={() => runPipeline(question, okCtxLinks())}>Convene the council →</button>
                 <button className="btn-skip" onClick={reset}>Ask a different question</button>
               </div>
             </>

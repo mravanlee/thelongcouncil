@@ -464,7 +464,7 @@ export default function ArchiveDetail({ session, memberQuery }) {
                   className="break-words text-[14px] text-primary hover:underline">
                   {s.title || s.url}
                   {s.type === 'opinion' ? ' (opinion)' : ''}
-                  {s.mode === 'summary' ? ' — headline and summary only' : ''}
+                  {s.mode === 'summary' ? ' (headline and summary only)' : ''}
                 </a>
               ))}
             </div>
