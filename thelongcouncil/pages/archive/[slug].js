@@ -225,6 +225,11 @@ export default function ArchiveDetail({ session, memberQuery }) {
   const briefText = (cards.brief || '').replace(PM_OLD, PM_NEW);
   const assemblyText = cards.assembly || '';
   const actions = Array.isArray(cards.actions) ? cards.actions.filter(Boolean) : [];
+  // Sources the asker attached to ground this debate (article-first flow).
+  const contextSources = Array.isArray(cards.context_sources) ? cards.context_sources : [];
+  const anchorFacts = (cards.factual_anchors || '')
+    .split('\n').map((l) => l.trim()).filter((l) => /^ANCHOR\s*\d+:/i.test(l))
+    .map((l) => l.replace(/^ANCHOR\s*\d+:\s*/i, '').replace(/\s*\[S\d+\]\s*$/i, '').trim());
   // Themes this debate belongs to, for the "Filed under" links to the hubs.
   const filedThemes = matchingThemes({
     display_issue: cards.question_en || session.original_issue,
@@ -435,6 +440,39 @@ export default function ArchiveDetail({ session, memberQuery }) {
           Built from documented writings, speeches, decisions and historical records.
           Council members argue from documented positions, applied to today's question.
         </p>
+
+        {contextSources.length > 0 && (
+          <div className="bg-secondary border border-border p-6 sm:p-8 mb-8">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-[10px] tracking-[0.22em] uppercase text-primary">Grounded in</span>
+              <span className="text-[10px] tracking-[0.12em] uppercase text-muted-foreground border border-border px-2 py-0.5">Context provided by the asker</span>
+            </div>
+            {anchorFacts.length > 0 && (
+              <ul className="mt-5 flex list-none flex-col gap-3 p-0">
+                {anchorFacts.map((f, i) => (
+                  <li key={i} className="flex gap-3 text-[15px] leading-relaxed text-foreground">
+                    <span className="shrink-0 text-primary" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>{i + 1}</span>
+                    <span className="min-w-0">{f}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="mt-5 flex flex-col gap-1.5 border-t border-border/70 pt-4">
+              <span className="text-[11px] tracking-[0.16em] uppercase text-muted-foreground">Sources</span>
+              {contextSources.map((s, i) => (
+                <a key={i} href={s.url} target="_blank" rel="noopener noreferrer nofollow"
+                  className="break-words text-[14px] text-primary hover:underline">
+                  {s.title || s.url}
+                  {s.type === 'opinion' ? ' (opinion)' : ''}
+                  {s.mode === 'summary' ? ' (headline and summary only)' : ''}
+                </a>
+              ))}
+            </div>
+            <p className="mt-4 text-[12px] leading-relaxed text-muted-foreground">
+              The council treats these as reported facts, not settled truth. The members supply the reasoning; the asker supplied the sources.
+            </p>
+          </div>
+        )}
 
         {verdict && (
           <div className="bg-secondary border border-border p-6 sm:p-8 mb-8">
