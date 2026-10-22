@@ -231,7 +231,7 @@ function extractTeaser(cards) {
   if (firstPara.length > 240) {
     const trimmed = firstPara.substring(0, 240);
     const lastPeriod = trimmed.lastIndexOf('.');
-    return lastPeriod > 100 ? trimmed.substring(0, lastPeriod + 1) : trimmed + 'â¦';
+    return lastPeriod > 100 ? trimmed.substring(0, lastPeriod + 1) : trimmed + '…';
   }
   return firstPara;
 }
@@ -1304,7 +1304,7 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
                 Ask a question, or start from an article
               </h2>
               <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-muted-foreground">
-                Give the council a question to debate. Point it at the news, and it grounds the debate in today&rsquo;s facts instead of reasoning in the abstract.
+                Give the council a question to debate, with the news that makes it current.
               </p>
 
               <div className="mt-8 inline-flex border border-border">
@@ -1332,21 +1332,21 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
                   <button type="button" onClick={handleSubmit} disabled={!question.trim() || sharpenerLoading}
                     className="inline-flex shrink-0 items-center justify-center gap-2 rounded-sm bg-primary px-5 py-2.5 text-[13px] font-medium tracking-wide transition hover:bg-primary/90 disabled:opacity-35 disabled:cursor-not-allowed"
                     style={{ ...SERIF, color: 'var(--color-primary-foreground)' }}>
-                    {sharpenerLoading ? 'Consideringâ¦' : 'Ask the council'}
+                    {sharpenerLoading ? 'Considering…' : 'Ask the council'}
                     <span aria-hidden>&rarr;</span>
                   </button>
                 </div>
 
                 <div className="mt-6">
-                  <div className="text-[11px] tracking-[0.18em] uppercase text-muted-foreground">Add context, so the verdict is sharper</div>
+                  <div className="text-[11px] tracking-[0.18em] uppercase text-muted-foreground">Add context (optional)</div>
                   <p className="mt-2 max-w-2xl text-[13px] leading-relaxed text-muted-foreground/90">
-                    Paste a news article link about your question. The council reads it and debates the real situation, grounded in its facts. Up to 3. Links are https only, scanned for malware, and read securely.
+                    To improve the debate, give the council a news article related to your question. They use it as context and debate your question.
                   </p>
                   {ctxLinks.length > 0 && (
                     <ul className="mt-3 flex list-none flex-col gap-2 p-0">
                       {ctxLinks.map((l, i) => (
                         <li key={i} className="flex items-start gap-2 text-[13px] leading-relaxed">
-                          {l.status === 'checking' && <span className="text-muted-foreground">Checking the linkâ¦</span>}
+                          {l.status === 'checking' && <span className="text-muted-foreground">Checking the link…</span>}
                           {l.status === 'ok' && (
                             <span className="min-w-0 text-foreground">
                               <span className="text-primary">&#10003; Read and checked:</span> {l.title || l.url}
@@ -1364,7 +1364,7 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
                       <input type="url" inputMode="url" value={ctxDraft}
                         onChange={(e) => setCtxDraft(e.target.value)}
                         onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); if (ctxDraft.trim()) { addCtxLink(ctxDraft.trim()); setCtxDraft(''); } } }}
-                        placeholder="https://â¦ news article link"
+                        placeholder="Paste a news article link"
                         className="min-w-0 flex-1 border-b border-foreground/30 bg-transparent py-1.5 text-[14px] text-foreground placeholder:text-muted-foreground/60 focus:border-foreground focus:outline-none" />
                       <button type="button" onClick={() => { if (ctxDraft.trim()) { addCtxLink(ctxDraft.trim()); setCtxDraft(''); } }} disabled={!ctxDraft.trim()}
                         className="shrink-0 rounded-sm border border-border px-3 py-1.5 text-[13px] text-primary transition hover:border-primary/60 disabled:opacity-35">
@@ -1390,12 +1390,9 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
                   <button type="button" onClick={readArticleForQuestions} disabled={!artUrl.trim() || artStatus === 'checking'}
                     className="inline-flex shrink-0 items-center justify-center gap-2 rounded-sm bg-primary px-5 py-2.5 text-[13px] font-medium tracking-wide transition hover:bg-primary/90 disabled:opacity-35 disabled:cursor-not-allowed"
                     style={{ ...SERIF, color: 'var(--color-primary-foreground)' }}>
-                    {artStatus === 'checking' ? 'Readingâ¦' : 'Read article'}
+                    {artStatus === 'checking' ? 'Working…' : 'Generate questions'}
                   </button>
                 </div>
-                <p className="mt-3 text-[12px] leading-relaxed text-muted-foreground/80">
-                  Links are https only, scanned for malware, and read securely. Paywalled articles fall back to the headline and summary.
-                </p>
                 {artStatus === 'error' && <p className="mt-2 text-[13px] text-primary">{artMsg}</p>}
                 {artStatus === 'ready' && (
                   <div className="mt-4 flex flex-col gap-4">
