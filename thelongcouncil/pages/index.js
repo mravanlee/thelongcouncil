@@ -702,6 +702,7 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
   const [startMode, setStartMode] = useState('question');
   const [ctxLinks, setCtxLinks] = useState([]); // {url, status:'checking'|'ok'|'error', title, type, mode, message}
   const [ctxDraft, setCtxDraft] = useState('');
+  const [ctxError, setCtxError] = useState('');
   const [artUrl, setArtUrl] = useState('');
   const [artStatus, setArtStatus] = useState('idle'); // 'idle'|'checking'|'ready'|'error'
   const [artSource, setArtSource] = useState(null);
@@ -872,20 +873,26 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
   async function addCtxLink(url) {
     const u = (url || '').trim();
     if (!u || ctxLinks.length >= 3) return;
-    const at = ctxLinks.length;
-    setCtxLinks((ls) => [...ls, { url: u, status: 'checking' }]);
+    setCtxError('');
+    const id = Date.now() + Math.random();
+    setCtxLinks((ls) => [...ls, { id, url: u, status: 'checking' }]);
     try {
       const data = await checkLink(u, false);
-      setCtxLinks((ls) => ls.map((l, i) => (i === at
-        ? (data.ok
-          ? { url: u, status: 'ok', title: data.source.title, type: data.source.type, mode: data.source.mode }
-          : { url: u, status: 'error', message: data.message || 'That link could not be used.' })
-        : l)));
+      if (data.ok) {
+        setCtxLinks((ls) => ls.map((l) => (l.id === id
+          ? { id, url: u, status: 'ok', title: data.source.title, type: data.source.type, mode: data.source.mode }
+          : l)));
+      } else {
+        // A failed link does not become a row; show the reason once, under the field.
+        setCtxLinks((ls) => ls.filter((l) => l.id !== id));
+        setCtxError(data.message || 'That link could not be used.');
+      }
     } catch {
-      setCtxLinks((ls) => ls.map((l, i) => (i === at ? { url: u, status: 'error', message: 'Could not check that link.' } : l)));
+      setCtxLinks((ls) => ls.filter((l) => l.id !== id));
+      setCtxError('Could not check that link.');
     }
   }
-  function removeCtxLink(i) { setCtxLinks((ls) => ls.filter((_, idx) => idx !== i)); }
+  function removeCtxLink(id) { setCtxLinks((ls) => ls.filter((l) => l.id !== id)); }
 
   async function readArticleForQuestions() {
     const u = artUrl.trim();
@@ -1337,15 +1344,16 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
                   </button>
                 </div>
 
-                <div className="mt-6">
-                  <div className="text-[11px] tracking-[0.18em] uppercase text-primary">Add a news article for context (optional)</div>
-                  <p className="mt-2 max-w-2xl text-[13px] leading-relaxed text-muted-foreground/90">
-                    To improve the debate, give the council a news article related to your question. They use it as context and debate your question.
+                {/* Context: a quiet panel attached to the question, secondary to it. */}
+                <div className="mt-6 border-l-2 border-primary/40 pl-4">
+                  <div className="text-[11px] tracking-[0.18em] uppercase text-muted-foreground">Add a news article for context (optional)</div>
+                  <p className="mt-1.5 max-w-xl text-[13px] leading-relaxed text-muted-foreground/90">
+                    Attach a related news article and the council will use it as context.
                   </p>
                   {ctxLinks.length > 0 && (
                     <ul className="mt-3 flex list-none flex-col gap-2 p-0">
-                      {ctxLinks.map((l, i) => (
-                        <li key={i} className="flex items-start gap-2 text-[13px] leading-relaxed">
+                      {ctxLinks.map((l) => (
+                        <li key={l.id} className="flex items-start gap-2 text-[13px] leading-relaxed">
                           {l.status === 'checking' && <span className="text-muted-foreground">Checking the link…</span>}
                           {l.status === 'ok' && (
                             <span className="min-w-0 text-foreground">
@@ -1353,22 +1361,22 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
                               {l.type === 'opinion' ? ' (opinion)' : ''}{l.mode === 'summary' ? ' (headline and summary only)' : ''}
                             </span>
                           )}
-                          {l.status === 'error' && <span className="min-w-0 text-primary">{l.message}</span>}
-                          <button type="button" onClick={() => removeCtxLink(i)} className="ml-auto shrink-0 px-1 text-muted-foreground hover:text-foreground" aria-label="Remove link">&times;</button>
+                          <button type="button" onClick={() => removeCtxLink(l.id)} className="ml-auto shrink-0 px-1 text-muted-foreground hover:text-foreground" aria-label="Remove link">&times;</button>
                         </li>
                       ))}
                     </ul>
                   )}
+                  {ctxError && <p className="mt-2 text-[13px] text-primary">{ctxError}</p>}
                   {ctxLinks.length < 3 && (
-                    <div className="mt-3 flex items-end gap-2">
+                    <div className="mt-3 flex items-stretch gap-2">
                       <input type="url" inputMode="url" value={ctxDraft}
-                        onChange={(e) => setCtxDraft(e.target.value)}
+                        onChange={(e) => { setCtxDraft(e.target.value); if (ctxError) setCtxError(''); }}
                         onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); if (ctxDraft.trim()) { addCtxLink(ctxDraft.trim()); setCtxDraft(''); } } }}
                         placeholder="Paste a news article link"
-                        className="min-w-0 flex-1 border border-border bg-background px-3 py-2.5 text-[14px] text-foreground placeholder:text-muted-foreground/60 focus:border-foreground/70 focus:outline-none" />
+                        className="min-w-0 flex-1 border-b border-foreground/25 bg-transparent py-1.5 text-[14px] text-foreground placeholder:text-muted-foreground/55 focus:border-foreground/60 focus:outline-none" />
                       <button type="button" onClick={() => { if (ctxDraft.trim()) { addCtxLink(ctxDraft.trim()); setCtxDraft(''); } }} disabled={!ctxDraft.trim()}
-                        className="shrink-0 rounded-sm bg-primary px-4 py-2.5 text-[13px] font-medium transition hover:bg-primary/90 disabled:opacity-35 disabled:cursor-not-allowed"
-                        style={{ ...SERIF, color: 'var(--color-primary-foreground)' }}>
+                        className="shrink-0 self-end rounded-sm border border-border px-3 py-1.5 text-[13px] text-primary transition hover:border-primary/60 disabled:opacity-35 disabled:cursor-not-allowed"
+                        style={SERIF}>
                         Add
                       </button>
                     </div>
