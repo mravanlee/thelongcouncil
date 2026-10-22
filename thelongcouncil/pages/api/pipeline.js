@@ -4,6 +4,7 @@ import { getServiceSupabase, generateSlug } from '../../lib/supabase';
 import { getMemberQuotes } from '../../lib/memberQuotes';
 import { storeOgCards } from '../../lib/ogCards.mjs';
 import { refreshRelated } from '../../lib/related.mjs';
+import { fetchSources, anchorsFromSources } from '../../lib/contextSources.mjs';
 
 export const config = { maxDuration: 300 };
 
@@ -452,10 +453,10 @@ async function precreateSession(originalIssue) {
   }
 }
 
-async function finalizeSession({ slug, sharpenedIssue, assemblyOutput, deliberationOutput, verdictOutput, briefOutput, memberNames, memberTypes, featuredQuote, featuredQuoteMember, briefQuotes, memberActions, actions, factualAnchors, questionEnglish, questionLang }) {
+async function finalizeSession({ slug, sharpenedIssue, assemblyOutput, deliberationOutput, verdictOutput, briefOutput, memberNames, memberTypes, featuredQuote, featuredQuoteMember, briefQuotes, memberActions, actions, factualAnchors, contextSources, questionEnglish, questionLang }) {
   try {
     const supabase = getServiceSupabase();
-    const cards = { assembly: assemblyOutput, deliberation: deliberationOutput, verdict: verdictOutput, brief: briefOutput, actions: actions || [], brief_quotes: briefQuotes || {}, member_actions: memberActions || {}, factual_anchors: factualAnchors || '', question_en: questionEnglish || null, question_lang: questionLang || null };
+    const cards = { assembly: assemblyOutput, deliberation: deliberationOutput, verdict: verdictOutput, brief: briefOutput, actions: actions || [], brief_quotes: briefQuotes || {}, member_actions: memberActions || {}, factual_anchors: factualAnchors || '', context_sources: contextSources || [], question_en: questionEnglish || null, question_lang: questionLang || null };
     const { data, error } = await supabase
       .from('sessions')
       .update({
@@ -478,10 +479,10 @@ async function finalizeSession({ slug, sharpenedIssue, assemblyOutput, deliberat
   }
 }
 
-async function saveSessionToDatabase({ originalIssue, sharpenedIssue, assemblyOutput, deliberationOutput, verdictOutput, briefOutput, memberNames, memberTypes, featuredQuote, featuredQuoteMember, briefQuotes, memberActions, actions, factualAnchors, questionEnglish, questionLang }) {
+async function saveSessionToDatabase({ originalIssue, sharpenedIssue, assemblyOutput, deliberationOutput, verdictOutput, briefOutput, memberNames, memberTypes, featuredQuote, featuredQuoteMember, briefQuotes, memberActions, actions, factualAnchors, contextSources, questionEnglish, questionLang }) {
   try {
     const supabase = getServiceSupabase();
-    const cards = { assembly: assemblyOutput, deliberation: deliberationOutput, verdict: verdictOutput, brief: briefOutput, actions: actions || [], brief_quotes: briefQuotes || {}, member_actions: memberActions || {}, factual_anchors: factualAnchors || '', question_en: questionEnglish || null, question_lang: questionLang || null };
+    const cards = { assembly: assemblyOutput, deliberation: deliberationOutput, verdict: verdictOutput, brief: briefOutput, actions: actions || [], brief_quotes: briefQuotes || {}, member_actions: memberActions || {}, factual_anchors: factualAnchors || '', context_sources: contextSources || [], question_en: questionEnglish || null, question_lang: questionLang || null };
     let slug = generateSlug(sharpenedIssue || originalIssue);
     let attempt = 0;
     let inserted = null;
@@ -1739,7 +1740,7 @@ function extractSpeakersFromDeliberation(deliberationOutput) {
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end('Method not allowed');
 
-  const { question } = req.body;
+  const { question, contextLinks } = req.body;
   if (!question) return res.status(400).json({ error: 'No question provided' });
 
   res.setHeader('Content-Type', 'text/event-stream');
@@ -1765,14 +1766,37 @@ export default async function handler(req, res) {
     const allProfiles = loadAllProfiles();
 
     send('progress', { step: 1, message: 'Establishing current context...' });
-    const [factualAnchors, translation] = await Promise.all([
-      generateFactualAnchors(question),
-      translateQuestion(question),
-    ]);
-    if (factualAnchors) {
-      console.log('[pipeline] Factual anchors generated:\n' + factualAnchors);
+    // When the asker attached news links, the facts come from those sources
+    // (fetched securely in lib/contextSources); otherwise the model generates
+    // them from its own knowledge as before.
+    const links = Array.isArray(contextLinks)
+      ? contextLinks.filter((u) => typeof u === 'string' && u.trim()).slice(0, 3)
+      : [];
+    let factualAnchors = '';
+    let contextSources = [];
+    let translation;
+    if (links.length > 0) {
+      const [fetched, tr] = await Promise.all([
+        fetchSources(links, process.env.WEBRISK_API_KEY),
+        translateQuestion(question),
+      ]);
+      translation = tr;
+      if (fetched.sources.length > 0) {
+        contextSources = fetched.sources.map((s) => ({ url: s.url, title: s.title, type: s.type, mode: s.mode }));
+        const ctxModel = process.env.TLC_MODEL_CONTEXT || process.env.TLC_MODEL || 'claude-sonnet-5';
+        const extracted = await anchorsFromSources(question, fetched.sources, { key: process.env.ANTHROPIC_API_KEY, model: ctxModel });
+        factualAnchors = extracted.anchors;
+      }
+      console.log(`[pipeline] Context from ${contextSources.length} source(s); anchors: ${factualAnchors ? 'yes' : 'none'}.`);
     } else {
-      console.log('[pipeline] No factual anchors emitted (evergreen or no confident facts).');
+      const [fa, tr] = await Promise.all([
+        generateFactualAnchors(question),
+        translateQuestion(question),
+      ]);
+      factualAnchors = fa;
+      translation = tr;
+      if (factualAnchors) console.log('[pipeline] Factual anchors generated:\n' + factualAnchors);
+      else console.log('[pipeline] No factual anchors emitted (evergreen or no confident facts).');
     }
     if (translation.english) {
       console.log(`[pipeline] Question translated from ${translation.lang}: ${translation.english}`);
@@ -2049,6 +2073,7 @@ Every card is first person. A member says "I" and "my" and never names themselve
         memberActions: {},
         actions,
         factualAnchors,
+        contextSources,
         questionEnglish: translation.english,
         questionLang: translation.lang,
       });
@@ -2102,6 +2127,7 @@ Every card is first person. A member says "I" and "my" and never names themselve
         memberActions,
         actions,
         factualAnchors,
+        contextSources,
         questionEnglish: translation.english,
         questionLang: translation.lang,
       });
@@ -2121,6 +2147,7 @@ Every card is first person. A member says "I" and "my" and never names themselve
         memberActions,
         actions,
         factualAnchors,
+        contextSources,
         questionEnglish: translation.english,
         questionLang: translation.lang,
       });
