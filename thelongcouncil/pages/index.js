@@ -722,16 +722,8 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
 
   const [error, setError] = useState(null);
 
-  const textareaRef = useRef(null);
   const wakeLockRef = useRef(null);
   const concWrapRef = useRef(null);
-
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
-    }
-  }, [question]);
 
   useEffect(() => {
     return () => {
@@ -1345,7 +1337,7 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
               <div hidden={startMode !== 'question'}>
                 <div className="mt-8 flex w-full flex-col gap-3 sm:flex-row sm:items-end">
                   <div className="flex-1 border-b-2 border-foreground/40 focus-within:border-foreground transition-colors">
-                    <input ref={textareaRef} type="text" value={question}
+                    <input type="text" value={question}
                       onChange={(e) => setQuestion(e.target.value)}
                       onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(); } }}
                       placeholder="Type your question here"
