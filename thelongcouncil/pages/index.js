@@ -791,6 +791,22 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
     return () => window.removeEventListener('longcouncil:home-reset', handler);
   }, []);
 
+  // Links in the daily suggestions mail (lib/dailyPicks.mjs) open
+  // /?q=<question>&article=<url>#ask with both filled in. The reader still
+  // presses "Ask the council"; the article gets the same checks as a pasted link.
+  const prefilledRef = useRef(false);
+  useEffect(() => {
+    if (!router.isReady || prefilledRef.current) return;
+    const q = typeof router.query.q === 'string' ? router.query.q.trim().slice(0, 300) : '';
+    const article = typeof router.query.article === 'string' ? router.query.article.trim() : '';
+    if (!q && !article) return;
+    prefilledRef.current = true;
+    setStartMode('question');
+    if (q) setQuestion(q);
+    if (article) addCtxLink(article);
+    router.replace('/#ask', undefined, { shallow: true, scroll: false });
+  }, [router.isReady]);
+
   function applySharpenerResponse(data) {
     setSharpenerMode(data.mode);
     setSharpenerExplanation(data.explanation || '');
