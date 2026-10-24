@@ -248,7 +248,9 @@ export const QUESTION_STYLE = `How each question must read:
 // question still slips through now and then; this catches it in code.
 export function isFactQuestion(q) {
   const s = q.trim();
-  return /^(why|when|where)\b/i.test(s) || /^what (happened|changes?|is|are|was|were|does|did)\b/i.test(s);
+  return /^(why|when|where|waarom|wanneer)\b/i.test(s)
+    || /^what (happened|changes?|is|are|was|were|does|did)\b/i.test(s)
+    || /^wat (gebeurde|gebeurt|verandert|veranderde|is|zijn|was|waren|doet|deed)\b/i.test(s);
 }
 
 // Three distinct, deliberation-worthy questions the sources raise.
