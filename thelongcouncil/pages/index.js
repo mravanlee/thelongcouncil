@@ -724,6 +724,23 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
 
   const wakeLockRef = useRef(null);
   const concWrapRef = useRef(null);
+  const questionRef = useRef(null);
+
+  // The question field is a one-row textarea that grows with its text, so a long
+  // (or prefilled) question wraps on a phone instead of running out of view. On a
+  // textarea scrollHeight includes the padding in every browser; on the <input>
+  // it replaced, iOS left the padding out and the field was cut in half.
+  useEffect(() => {
+    const fit = () => {
+      const el = questionRef.current;
+      if (!el) return;
+      el.style.height = 'auto';
+      el.style.height = el.scrollHeight + 'px';
+    };
+    fit();
+    window.addEventListener('resize', fit);
+    return () => window.removeEventListener('resize', fit);
+  }, [question]);
 
   useEffect(() => {
     return () => {
@@ -1337,11 +1354,11 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
               <div hidden={startMode !== 'question'}>
                 <div className="mt-8 flex w-full flex-col gap-3 sm:flex-row sm:items-end">
                   <div className="flex-1 border-b-2 border-foreground/40 focus-within:border-foreground transition-colors">
-                    <input type="text" value={question}
-                      onChange={(e) => setQuestion(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(); } }}
+                    <textarea ref={questionRef} rows={1} value={question}
+                      onChange={(e) => setQuestion(e.target.value.replace(/\s*\n\s*/g, ' '))}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSubmit(); } }}
                       placeholder="Type your question here"
-                      className="w-full bg-transparent pt-3 pb-1 text-[18px] leading-tight text-foreground placeholder:text-muted-foreground/70 focus:outline-none" />
+                      className="block w-full resize-none overflow-hidden bg-transparent pt-3 pb-1 text-[18px] leading-tight text-foreground placeholder:text-muted-foreground/70 focus:outline-none" />
                   </div>
                   <button type="button" onClick={handleSubmit} disabled={!question.trim() || sharpenerLoading}
                     className="inline-flex shrink-0 items-center justify-center gap-2 rounded-sm bg-primary px-5 py-2.5 text-[13px] font-medium tracking-wide transition hover:bg-primary/90 disabled:opacity-35 disabled:cursor-not-allowed"
@@ -1351,11 +1368,17 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
                   </button>
                 </div>
 
-                {/* Context: a quiet panel attached to the question, secondary to it. */}
+                {/* Context: a quiet panel attached to the question, secondary to it.
+                    Once an article is attached (by hand or from a mail link) the copy
+                    confirms it instead of still inviting the reader to add one. */}
                 <div className="mt-6 border-l-2 border-primary/40 pl-4">
-                  <div className="text-[11px] tracking-[0.18em] uppercase text-muted-foreground">Add a news article for context (optional)</div>
+                  <div className="text-[11px] tracking-[0.18em] uppercase text-muted-foreground">
+                    {okCtxLinks().length === 0 ? 'Add a news article for context (optional)'
+                      : okCtxLinks().length === 1 ? 'News article for context' : 'News articles for context'}
+                  </div>
                   <p className="mt-1.5 max-w-xl text-[13px] leading-relaxed text-muted-foreground/90">
-                    Attach a related news article and the council will use it as context.
+                    {okCtxLinks().length === 0 ? 'Attach a related news article and the council will use it as context.'
+                      : `The council will use ${okCtxLinks().length === 1 ? 'this article' : 'these articles'} as context.`}
                   </p>
                   {ctxLinks.length > 0 && (
                     <ul className="mt-3 flex list-none flex-col gap-2 p-0">
@@ -1379,7 +1402,7 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
                       <input type="url" inputMode="url" value={ctxDraft}
                         onChange={(e) => { setCtxDraft(e.target.value); if (ctxError) setCtxError(''); }}
                         onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); if (ctxDraft.trim()) { addCtxLink(ctxDraft.trim()); setCtxDraft(''); } } }}
-                        placeholder="Paste a news article link"
+                        placeholder={okCtxLinks().length ? 'Add another article (optional)' : 'Paste a news article link'}
                         className="min-w-0 flex-1 border-b border-foreground/25 bg-transparent py-1.5 text-[14px] text-foreground placeholder:text-muted-foreground/55 focus:border-foreground/60 focus:outline-none" />
                       <button type="button" onClick={() => { if (ctxDraft.trim()) { addCtxLink(ctxDraft.trim()); setCtxDraft(''); } }} disabled={!ctxDraft.trim()}
                         className="shrink-0 self-end rounded-sm border border-border px-3 py-1.5 text-[13px] text-primary transition hover:border-primary/60 disabled:opacity-35 disabled:cursor-not-allowed"
