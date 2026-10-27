@@ -1903,7 +1903,10 @@ export default async function handler(req, res) {
     const rosterLine = `SELECTED MEMBERS FOR THIS DELIBERATION (the only members at the table):\n${selectedNames.map((n, i) => `${i + 1}. ${n}`).join('\n')}\n\n`;
 
     send('progress', { step: 2, message: 'The council is deliberating...' });
-    const deliberationUserBase = `${contextBlock}ISSUE:\n${question}\n\n${rosterLine}PROMPT 1 OUTPUT:\n${assemblyOutput}\n\nMEMBER PROFILES:\n${profilesForDeliberation}\n\nFINAL REMINDER: Each card is exactly ONE paragraph, 60-100 words total. Framing line ≤ 12 words AND must answer THIS specific issue (not generic philosophy). Challenge line ≤ 8 words ending in ? (chain forward to next speaker; never on the final card). Zero em-dashes anywhere. No exceptions.`;
+    // The article's claim is repeated in the final reminder: with it only in the
+    // context block, a 27 Oct production run scored 2/6 (members drifted back to
+    // their usual doctrine); the reminder is what the model reads last.
+    const deliberationUserBase = `${contextBlock}ISSUE:\n${question}\n\n${rosterLine}PROMPT 1 OUTPUT:\n${assemblyOutput}\n\nMEMBER PROFILES:\n${profilesForDeliberation}\n\nFINAL REMINDER: Each card is exactly ONE paragraph, 60-100 words total. Framing line ≤ 12 words AND must answer THIS specific issue (not generic philosophy). Challenge line ≤ 8 words ending in ? (chain forward to next speaker; never on the final card). Zero em-dashes anywhere. No exceptions.${articleClaim ? `\n\nEVERY card engages the article's central claim: "${articleClaim}" Test it, build on it or dispute it, in the member's own terms. A card that argues only the general topic or the member's usual doctrine cannot ship.` : ''}`;
     // Stream the first deliberation attempt so the client can render speakers live.
     // The closing 'deliberation' event below still carries the final, validated and
     // post-processed text; if a guard regenerates, a 'delib-reset' tells the client
