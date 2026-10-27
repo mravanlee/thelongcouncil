@@ -6,6 +6,7 @@
 // and article already filled in (/?q=…&article=…#ask); Alex still presses "Ask the
 // council", and the article then goes through the usual contextSources checks.
 import { callClaude, QUESTION_STYLE, isFactQuestion } from './contextSources.mjs';
+import { parseFirstJson } from './parseJson.mjs';
 
 const SITE = 'https://www.thelongcouncil.com';
 const UA = 'Mozilla/5.0 (compatible; TheLongCouncilBot/1.0; +https://thelongcouncil.com)';
@@ -165,12 +166,9 @@ function validPicks(raw, items) {
 async function choose(en, nl, { key, model }) {
   const user = `ENGLISH CANDIDATES:\n${listBlock(en)}\n\nDUTCH CANDIDATES:\n${listBlock(nl)}`;
   const out = await callClaude(SYSTEM, user, 1500, model, key, 50000);
-  const m = out.match(/\{[\s\S]*\}/);
-  if (!m) return { en: [], nl: [] };
-  try {
-    const j = JSON.parse(m[0]);
-    return { en: validPicks(j.en, en), nl: validPicks(j.nl, nl) };
-  } catch { return { en: [], nl: [] }; }
+  const j = parseFirstJson(out);
+  if (!j) return { en: [], nl: [] };
+  return { en: validPicks(j.en, en), nl: validPicks(j.nl, nl) };
 }
 
 // ── Mail ───────────────────────────────────────────────────────────────────
@@ -200,7 +198,7 @@ function section(label, picks) {
   </div>`;
 }
 
-function mailHtml(dayLabel, picks, failed) {
+function mailHtml(dayLabel, picks, failed, weak = []) {
   const down = failed.length
     ? `<p style="font:12px/1.5 ${SANS};color:${C.muted};margin:10px 0 0">Vandaag niet bereikbaar: ${esc(failed.join(', '))}.</p>`
     : '';
@@ -210,15 +208,47 @@ function mailHtml(dayLabel, picks, failed) {
     <h1 style="font:400 24px/1.25 ${SERIF};color:${C.ink};margin:8px 0 6px">${esc(dayLabel)}</h1>
     <p style="font:14px/1.5 ${SANS};color:${C.muted};margin:0">Kies per taal de leukste. Een klik op een vraag opent thelongcouncil.com met het artikel en de vraag al ingevuld. Daarna nog op "Ask the council" drukken.</p>
     ${down}
+    ${alertBlock(weak)}
     ${section('Engels', picks.en)}
     ${section('Nederlands', picks.nl)}
   </div>
 </div>`;
 }
 
+// ── Health check: article sessions that missed their article's point ───────
+// The pipeline stores cards.context_check = {engaged, total, missed} for sessions
+// started from an article. Fewer than half the members engaging the article's
+// central claim is the failure Alex flagged on 27 Oct; the mail lists it.
+export async function weakArticleSessions({ supabaseUrl, serviceKey, nowMs = Date.now() }) {
+  if (!supabaseUrl || !serviceKey) return [];
+  const since = new Date(nowMs - 24 * 3600 * 1000).toISOString();
+  const url = `${supabaseUrl}/rest/v1/sessions?select=slug,original_issue,check:cards->context_check&created_at=gte.${encodeURIComponent(since)}&order=created_at.desc&limit=100`;
+  try {
+    const r = await fetch(url, { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` }, signal: AbortSignal.timeout(8000) });
+    if (!r.ok) return [];
+    const rows = await r.json();
+    return rows
+      .filter((s) => s.check && s.check.total && s.check.engaged / s.check.total < 0.5)
+      .map((s) => ({ slug: s.slug, question: s.original_issue, engaged: s.check.engaged, total: s.check.total, missed: s.check.missed || [] }));
+  } catch { return []; }
+}
+
+function alertBlock(weak) {
+  if (!weak.length) return '';
+  const rows = weak.map((w) => `<li style="margin:4px 0"><a href="${SITE}/archive/${esc(w.slug)}" style="color:${C.accent}">${esc(w.question)}</a>: ${w.engaged} van de ${w.total} leden ${w.engaged === 1 ? 'ging' : 'gingen'} in op de kern van het artikel${w.missed.length ? ` (niet: ${esc(w.missed.join(', '))})` : ''}.</li>`).join('');
+  return `<div style="margin-top:16px;border:1px solid ${C.accent};padding:12px 14px;font:13px/1.5 ${SANS};color:${C.ink}">
+    <strong>Let op:</strong> deze sessie${weak.length > 1 ? 's' : ''} van het afgelopen etmaal miste${weak.length > 1 ? 'n' : ''} de kern van het artikel.
+    <ul style="margin:6px 0 0;padding-left:18px">${rows}</ul>
+  </div>`;
+}
+
 // ── Entry point ────────────────────────────────────────────────────────────
-export async function buildDailyPicks({ key, model, now = new Date() }) {
-  const [en, nl] = await Promise.all([pool(SOURCES.en, now.getTime()), pool(SOURCES.nl, now.getTime())]);
+export async function buildDailyPicks({ key, model, supabaseUrl, serviceKey, now = new Date() }) {
+  const [en, nl, weak] = await Promise.all([
+    pool(SOURCES.en, now.getTime()),
+    pool(SOURCES.nl, now.getTime()),
+    weakArticleSessions({ supabaseUrl, serviceKey, nowMs: now.getTime() }),
+  ]);
   if (en.items.length < PICKS_PER_LANG || nl.items.length < PICKS_PER_LANG) {
     throw new Error(`too few candidates (en ${en.items.length}, nl ${nl.items.length}; down: ${[...en.failed, ...nl.failed].join(', ') || 'none'})`);
   }
@@ -237,8 +267,9 @@ export async function buildDailyPicks({ key, model, now = new Date() }) {
   const failed = [...en.failed, ...nl.failed];
   return {
     subject: `TLC-suggesties ${dayLabel}`,
-    html: mailHtml(dayLabel.charAt(0).toUpperCase() + dayLabel.slice(1), picks, failed),
+    html: mailHtml(dayLabel.charAt(0).toUpperCase() + dayLabel.slice(1), picks, failed, weak),
     failed,
+    weak,
     picks: {
       en: picks.en.map(({ source, ...p }) => ({ ...p, source: source.name })),
       nl: picks.nl.map(({ source, ...p }) => ({ ...p, source: source.name })),
