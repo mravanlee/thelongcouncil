@@ -1,0 +1,18 @@
+# Weekly check of the app's npm packages. Without this, next sat on 14.2.3
+# (exact pin from the first upload, Apr 2026) while 14.2.4-14.2.35 shipped
+# security fixes, and nobody noticed until an `npm ci` warning on 2026-10-27.
+# Patch/minor bumps arrive as one grouped PR; major bumps (e.g. next 14 -> 15)
+# get their own PR so they can be tested separately.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /thelongcouncil
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
