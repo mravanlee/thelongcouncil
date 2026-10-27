@@ -20,6 +20,8 @@ const DUPLICATE_REDIRECTS = {
   // Climate session: the first production rerun (9j37) scored 2/6 and was replaced too.
   'bear-main-cost-climate-disaster-recovery-cz0l': 'bear-main-cost-climate-disaster-recovery-lk8o',
   'bear-main-cost-climate-disaster-recovery-9j37': 'bear-main-cost-climate-disaster-recovery-lk8o',
+  // Starlink session: invented Friedman-Pinochet episode in the original (Alex's choice).
+  'one-private-company-control-infrastructure-critical-tj3a': 'one-private-company-control-infrastructure-critical-qhbl',
 };
 
 const nextConfig = {
