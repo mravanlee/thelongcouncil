@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { ArrowLeft, Languages } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { supabase, isFinishedSession } from '../../lib/supabase';
 import Procession from '../../components/Procession';
 import { resolveAvatarSlug, KNOWN_AVATAR_SLUGS } from '../../lib/avatarSlugs';
 import { parseCard } from '../../lib/cardParser';
@@ -20,6 +20,9 @@ export async function getServerSideProps(context) {
     .eq('slug', slug)
     .single();
   if (error || !session) return { notFound: true };
+  // Still running (pre-created row): 404 without the long cache header below,
+  // so an early visit never keeps the empty page cached. Same as /who and /brief.
+  if (!isFinishedSession(session)) return { notFound: true };
 
   // Archive debates are immutable once published, so let Vercel's edge CDN
   // cache the SSR HTML instead of sending the getServerSideProps no-store

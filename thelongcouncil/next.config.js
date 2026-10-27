@@ -22,6 +22,8 @@ const DUPLICATE_REDIRECTS = {
   'bear-main-cost-climate-disaster-recovery-9j37': 'bear-main-cost-climate-disaster-recovery-lk8o',
   // Starlink session: invented Friedman-Pinochet episode in the original (Alex's choice).
   'one-private-company-control-infrastructure-critical-tj3a': 'one-private-company-control-infrastructure-critical-qhbl',
+  // France unrest: original NRC article no longer readable, rerun with the AP report on the same events.
+  'there-so-much-unrest-france-turned-hn84': 'there-so-much-unrest-france-turned-6giy',
 };
 
 const nextConfig = {

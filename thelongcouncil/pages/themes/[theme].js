@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
-import { supabase } from '../../lib/supabase';
+import { supabase, finishedOnly } from '../../lib/supabase';
 import { resolveAvatarSlug } from '../../lib/avatarSlugs';
 import { SERIF, SiteHeader, SiteFooter } from '../../components/SiteChrome';
 import { matchingThemes, themeBySlug, themeSlug } from '../../lib/themes';
@@ -53,9 +53,9 @@ export async function getServerSideProps(context) {
   const label = theme.label;
   const content = themeContent(label);
 
-  const { data: rows, error } = await supabase
+  const { data: rows, error } = await finishedOnly(supabase
     .from('sessions')
-    .select('id, slug, original_issue, sharpened_issue, member_names, created_at, cards, featured_quote, featured_quote_member')
+    .select('id, slug, original_issue, sharpened_issue, member_names, created_at, cards, featured_quote, featured_quote_member'))
     .order('created_at', { ascending: false });
   if (error) return { props: { error: true, label, slug: context.params.theme } };
 
