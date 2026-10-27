@@ -11,6 +11,12 @@ const DUPLICATE_REDIRECTS = {
   'if-europe-pursues-degrowth-benefits-environment-is7z': 'win-european-degrowth-planet-china-nobody-sq9u',
   'rise-trump-predicted-before-happened-history-mrq5': 'trump-s-rise-predicted-conditions-made-tbsd',
   'tax-policy-maintains-welfare-state-while-cdb6': 'tax-policy-supports-welfare-state-while-o1dz',
+  // 27 Oct 2026: article sessions from before the central-claim fix, regenerated
+  // with the same question and article (Alex's choice; backups in secrets/backups,
+  // tlc_<code>_before_regen_20261027_184245.json). rvlb was shared on X on 24 Oct.
+  'radical-right-movements-strengthen-european-cooperation-rvlb': 'radical-right-movements-strengthen-european-cooperation-vftn',
+  'one-man-dominate-democracy-thirty-years-w65a': 'one-man-dominate-democracy-thirty-years-xe9c',
+  'rising-prices-alone-decide-people-vote-qw5v': 'rising-prices-alone-decide-people-vote-r6nx',
 };
 
 const nextConfig = {
