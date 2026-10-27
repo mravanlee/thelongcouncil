@@ -22,7 +22,12 @@ export default async function handler(req, res) {
   if (!process.env.ANTHROPIC_API_KEY) return res.status(500).json({ error: 'Server not configured' });
 
   try {
-    const out = await buildDailyPicks({ key: process.env.ANTHROPIC_API_KEY, model: PICKS_MODEL });
+    const out = await buildDailyPicks({
+      key: process.env.ANTHROPIC_API_KEY,
+      model: PICKS_MODEL,
+      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
+      serviceKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    });
     res.setHeader('Cache-Control', 'no-store');
     return res.status(200).json(out);
   } catch (err) {

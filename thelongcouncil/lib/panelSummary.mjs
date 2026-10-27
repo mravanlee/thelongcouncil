@@ -8,6 +8,7 @@
 //
 // The LLM call stays with each caller (the backfill script). This module owns the
 // one contract: what to extract, what to ask, and how to validate the result.
+import { parseFirstJson } from './parseJson.mjs';
 
 // ── Pull CENTRAL TENSION + poles + selected members out of the assembly ──
 export function extractAssemblyFraming(assembly) {
@@ -98,14 +99,8 @@ Return ONLY valid JSON, no preamble, exactly:
 // ── Validate + normalise the LLM response into the stored shape, or null ──
 export function parsePanelSummary(text, framing) {
   if (!text) return null;
-  let obj;
-  try {
-    const m = text.match(/\{[\s\S]*\}/);
-    if (!m) return null;
-    obj = JSON.parse(m[0]);
-  } catch {
-    return null;
-  }
+  const obj = parseFirstJson(text);
+  if (!obj) return null;
   const clean = (s) => String(s || '')
     .replace(/\s*[—–]\s*/g, ', ')
     .replace(/\s+([,.;:)])/g, '$1')

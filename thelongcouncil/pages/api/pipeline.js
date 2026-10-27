@@ -5,6 +5,7 @@ import { getMemberQuotes } from '../../lib/memberQuotes';
 import { storeOgCards } from '../../lib/ogCards.mjs';
 import { refreshRelated } from '../../lib/related.mjs';
 import { fetchSources, anchorsFromSources } from '../../lib/contextSources.mjs';
+import { parseFirstJson } from '../../lib/parseJson.mjs';
 
 export const config = { maxDuration: 300 };
 
@@ -453,10 +454,10 @@ async function precreateSession(originalIssue) {
   }
 }
 
-async function finalizeSession({ slug, sharpenedIssue, assemblyOutput, deliberationOutput, verdictOutput, briefOutput, memberNames, memberTypes, featuredQuote, featuredQuoteMember, briefQuotes, memberActions, actions, factualAnchors, contextSources, questionEnglish, questionLang }) {
+async function finalizeSession({ slug, sharpenedIssue, assemblyOutput, deliberationOutput, verdictOutput, briefOutput, memberNames, memberTypes, featuredQuote, featuredQuoteMember, briefQuotes, memberActions, actions, factualAnchors, contextSources, contextClaim, contextCheck, questionEnglish, questionLang }) {
   try {
     const supabase = getServiceSupabase();
-    const cards = { assembly: assemblyOutput, deliberation: deliberationOutput, verdict: verdictOutput, brief: briefOutput, actions: actions || [], brief_quotes: briefQuotes || {}, member_actions: memberActions || {}, factual_anchors: factualAnchors || '', context_sources: contextSources || [], question_en: questionEnglish || null, question_lang: questionLang || null };
+    const cards = { assembly: assemblyOutput, deliberation: deliberationOutput, verdict: verdictOutput, brief: briefOutput, actions: actions || [], brief_quotes: briefQuotes || {}, member_actions: memberActions || {}, factual_anchors: factualAnchors || '', context_sources: contextSources || [], context_claim: contextClaim || null, context_check: contextCheck || null, question_en: questionEnglish || null, question_lang: questionLang || null };
     const { data, error } = await supabase
       .from('sessions')
       .update({
@@ -479,10 +480,10 @@ async function finalizeSession({ slug, sharpenedIssue, assemblyOutput, deliberat
   }
 }
 
-async function saveSessionToDatabase({ originalIssue, sharpenedIssue, assemblyOutput, deliberationOutput, verdictOutput, briefOutput, memberNames, memberTypes, featuredQuote, featuredQuoteMember, briefQuotes, memberActions, actions, factualAnchors, contextSources, questionEnglish, questionLang }) {
+async function saveSessionToDatabase({ originalIssue, sharpenedIssue, assemblyOutput, deliberationOutput, verdictOutput, briefOutput, memberNames, memberTypes, featuredQuote, featuredQuoteMember, briefQuotes, memberActions, actions, factualAnchors, contextSources, contextClaim, contextCheck, questionEnglish, questionLang }) {
   try {
     const supabase = getServiceSupabase();
-    const cards = { assembly: assemblyOutput, deliberation: deliberationOutput, verdict: verdictOutput, brief: briefOutput, actions: actions || [], brief_quotes: briefQuotes || {}, member_actions: memberActions || {}, factual_anchors: factualAnchors || '', context_sources: contextSources || [], question_en: questionEnglish || null, question_lang: questionLang || null };
+    const cards = { assembly: assemblyOutput, deliberation: deliberationOutput, verdict: verdictOutput, brief: briefOutput, actions: actions || [], brief_quotes: briefQuotes || {}, member_actions: memberActions || {}, factual_anchors: factualAnchors || '', context_sources: contextSources || [], context_claim: contextClaim || null, context_check: contextCheck || null, question_en: questionEnglish || null, question_lang: questionLang || null };
     let slug = generateSlug(sharpenedIssue || originalIssue);
     let attempt = 0;
     let inserted = null;
@@ -818,9 +819,58 @@ async function generateFactualAnchors(question) {
   }
 }
 
-function buildContextBlock(factualAnchors) {
+// Month the council reasons in. Was hard-coded "May 2026" from 27 May to 27 Oct.
+function contextMonth() {
+  return new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric', timeZone: 'Europe/Amsterdam' }).format(new Date());
+}
+
+// Two kinds of context. Anchors the pipeline found itself stay background: since
+// 17 Jun they may not become the subject (one TikTok fact hijacked whole debates).
+// An article the READER attached is different: it is why the question exists, so
+// its central claim is put on the table and every member must engage it. Using
+// the background wording for attached articles (22 Oct) made the council skip
+// the article's point and argue from side details.
+function buildContextBlock(factualAnchors, articleClaim = '') {
+  if (articleClaim) {
+    return `THE READER'S ARTICLE (${contextMonth()}): the reader attached a news article and asks the council about it. The article is the reason for this question.\n\nCENTRAL CLAIM OF THE ARTICLE: ${articleClaim}\n\n${factualAnchors ? `FACTS FROM THE ARTICLE:\n${factualAnchors}\n\n` : ''}Every member engages the central claim while answering the question: tests it, builds on it or disputes it, from their own documented ideas. Facts and side details from the article may support an argument but never replace the central claim. The claim is the article's, not established truth: members may challenge it.\n\n`;
+  }
   if (!factualAnchors) return '';
-  return `CURRENT CONTEXT (May 2026): background facts the council is aware of. Reason in light of them so no member argues from an outdated or purely abstract version of the issue. But treat them as context, not as the subject: reference an anchor only where it genuinely bears on your argument, and never let a single recent event, deal or company become the focus of the debate. The question, not the anchor, is what the council answers.\n\n${factualAnchors}\n\n`;
+  return `CURRENT CONTEXT (${contextMonth()}): background facts the council is aware of. Reason in light of them so no member argues from an outdated or purely abstract version of the issue. But treat them as context, not as the subject: reference an anchor only where it genuinely bears on your argument, and never let a single recent event, deal or company become the focus of the debate. The question, not the anchor, is what the council answers.\n\n${factualAnchors}\n\n`;
+}
+
+// Strict on purpose: a looser wording (and Haiku) scored the failed 27 Oct Oxfam
+// session 6/6 because "the rich should pay" counted as engaging. With this wording
+// Sonnet 5 scored it 0/6 and the fixed run 3/5; Haiku stayed unreliable.
+const PROMPT_CLAIM_CHECK_SYSTEM = `You check a council debate about a news article. You receive the article's CENTRAL CLAIM and the members' reasoning cards.
+
+A card ENGAGES the claim only if it addresses what is specific and new in it: its particular mechanism or twist (who gains, how, and why that matters), whether it agrees or disputes. A card that only discusses the article's general topic (for example who is to blame, or who should pay in general) without touching that specific mechanism has MISSED the claim, even if it agrees with the article's side. A card built on a side detail of the article has also missed it.
+
+Return ONLY JSON, no preamble: {"engaged":["Member name",...],"missed":["Member name",...]}`;
+
+// Returns {engaged, total, missed[]} or null when the check cannot run.
+async function checkClaimEngagement(claim, deliberation) {
+  try {
+    const out = await callClaude(
+      PROMPT_CLAIM_CHECK_SYSTEM,
+      `CENTRAL CLAIM:\n${claim}\n\nREASONING CARDS:\n${deliberation}`,
+      400,
+      0,
+      process.env.TLC_MODEL_CONTEXT || process.env.TLC_MODEL || 'claude-sonnet-5'
+    );
+    const j = parseFirstJson(out);
+    if (!j) return null;
+    const engaged = Array.isArray(j.engaged) ? j.engaged : [];
+    const missed = Array.isArray(j.missed) ? j.missed : [];
+    const total = engaged.length + missed.length;
+    if (!total) return null;
+    if (engaged.length / total < 0.5) {
+      console.warn(`[pipeline] context-check: only ${engaged.length}/${total} cards engage the article's claim; missed: ${missed.join(', ')}`);
+    }
+    return { engaged: engaged.length, total, missed };
+  } catch (err) {
+    console.warn('[pipeline] context-check failed:', err.message);
+    return null;
+  }
 }
 
 // The Long Council is English-first. When a question is asked in another
@@ -1034,7 +1084,10 @@ const PROMPT1_SYSTEM = `You are the Council Assembly Engine for The Long Council
 Your task is to select the most relevant members from the council roster for the issue provided. You are not generating reasoning yet — only selecting who should sit at the table and why.
 
 CURRENT CONTEXT ANCHORS:
-If the user message begins with a "CURRENT CONTEXT (May 2026)" block listing factual anchors, those facts are non-negotiable state-of-the-world. Use them to select members whose documented work gives them something to say about the issue as it actually exists today, not an abstract or outdated version of it.
+If the user message begins with a "CURRENT CONTEXT" block listing factual anchors, those facts are non-negotiable state-of-the-world. Use them to select members whose documented work gives them something to say about the issue as it actually exists today, not an abstract or outdated version of it.
+
+THE READER'S ARTICLE:
+If the user message begins with a "THE READER'S ARTICLE" block, the article's CENTRAL CLAIM is what the council must engage. Select members whose documented work speaks to that central claim and the question. Never select a member only because their work explains one side detail, example or number in the article.
 
 CONFIDENCE SIGNALS — used throughout all outputs:
 [documented] — directly traceable to a specific decision, speech, or published position in the member's T1–T3 profile. Always cite the specific source.
@@ -1125,6 +1178,8 @@ NAMES ARE CANONICAL. Every \`##\` heading and every inline reference matches the
 
 CURRENT CONTEXT ANCHORS. If the user message begins with a "CURRENT CONTEXT" block, those facts are non-negotiable state-of-the-world. A member whose historical framing clashes with an anchor must address the clash, not bypass it. Reference an anchor only where it bears on the argument; the question, not the anchor, is what the council answers.
 
+THE READER'S ARTICLE. If the user message begins with a "THE READER'S ARTICLE" block, every card engages the article's CENTRAL CLAIM: tests it, builds on it or disputes it, while answering the question. A card built on a side detail of the article (one example, one price, one number) instead of its central claim misses the point and cannot ship. The claim is the article's, not established truth.
+
 ════════════════════════════════════════════════════════════════
 HOW A CARD SPEAKS
 ════════════════════════════════════════════════════════════════
@@ -1146,6 +1201,8 @@ THE FRAMING LINE IS A CLAIM ABOUT THIS ISSUE, standalone, ≤ 12 words.
 
 THE PARAGRAPH: 60–100 words, exactly one paragraph.
 - Opens with the position. Contains exactly ONE historical anchor: a year, a decision, a meeting, a speech, a city. A card with no person, place or year cannot ship — theorists and ancients included: name a ruler you advised, a collapse you watched.
+- The anchor must bear on THIS question: a moment when the member faced the same kind of choice or watched the same mechanism at work. Never a biographical episode used as decoration. If linking the episode to the question needs an invented bridge, pick another moment.
+- The anchor must have happened as stated: take it from the member's profile or the well-documented record. Never invent a meeting, a remark to a named person, a speech, a date or a motive, and never place a later institution or place-name in an earlier year (no "Brussels" for EU policy in 1945). A true but plainer episode beats a precise one that did not happen. A theorist may anchor in the year they actually made an argument ("In 1945 I argued…"), without naming the book (see NO SELF-CITATION).
 - Depth beyond the single move belongs in the policy brief, not on the card. If you are writing a second paragraph, stop and cut.
 
 LANGUAGE — the reader must understand every sentence on first pass:
@@ -1252,7 +1309,7 @@ You are the Verdict Engine for The Long Council — a product that assembles doc
 Your task is to synthesise the reasoning cards from the Deliberation Engine into the conclusion that appears in the conclusion bar at the end of a session. This is what every user reads — whether or not they open the full policy brief. It must stand alone and be worth reading on its own.
 
 CURRENT CONTEXT ANCHORS:
-If the user message begins with a "CURRENT CONTEXT (May 2026)" block listing factual anchors, those facts are non-negotiable state-of-the-world. The verdict line and reasoning summary must be consistent with them. A verdict that prescribes something an anchor makes impossible (e.g. geographic relocation when the anchor says missile range covers everything) is a failed verdict. Rewrite to match reality.
+If the user message begins with a "CURRENT CONTEXT" block listing factual anchors, those facts are non-negotiable state-of-the-world. If it begins with a "THE READER'S ARTICLE" block, the verdict must also say where the council lands on the article's CENTRAL CLAIM. The verdict line and reasoning summary must be consistent with them. A verdict that prescribes something an anchor makes impossible (e.g. geographic relocation when the anchor says missile range covers everything) is a failed verdict. Rewrite to match reality.
 
 The conclusion bar has two parts only: the verdict and the reasoning summary. Nothing else. Limits, unresolved questions, and counterfactuals belong in the policy brief. This output is the front page. Sharp, clear, honest.
 
@@ -1496,7 +1553,7 @@ const PROMPT4_SYSTEM = `You are the Policy Brief Engine for The Long Council —
 Your task is to produce the structured policy brief. This is the analyst's report. It is NOT a transcript of the debate. It is a synthesised document that adds genuine value beyond what the reasoning cards and conclusion already provided.
 
 CURRENT CONTEXT ANCHORS:
-If the user message begins with a "CURRENT CONTEXT (May 2026)" block listing factual anchors, the brief must be consistent with them throughout. Where a member's documented historical framing is in tension with an anchor, the brief should name the tension explicitly and show how the member's reasoning adapts (or doesn't) to the present.
+If the user message begins with a "CURRENT CONTEXT" or "THE READER'S ARTICLE" block, the brief must be consistent with those facts throughout, and with an article it addresses the article's CENTRAL CLAIM directly. Where a member's documented historical framing is in tension with an anchor, the brief should name the tension explicitly and show how the member's reasoning adapts (or doesn't) to the present.
 
 CRITICAL ROLE: The reasoning cards are short (50-80 words each, one paragraph). They give the headline position of each member. The DEPTH lives here, in the brief. Counterintuitive points, candid limits, sharp positioning against alternatives, fuller member quotes, the irreducible dissent: all of that belongs in this brief, not on the cards. The cards are the front page; you are the long read.
 
@@ -1773,6 +1830,7 @@ export default async function handler(req, res) {
       ? contextLinks.filter((u) => typeof u === 'string' && u.trim()).slice(0, 3)
       : [];
     let factualAnchors = '';
+    let articleClaim = '';
     let contextSources = [];
     let translation;
     if (links.length > 0) {
@@ -1786,8 +1844,9 @@ export default async function handler(req, res) {
         const ctxModel = process.env.TLC_MODEL_CONTEXT || process.env.TLC_MODEL || 'claude-sonnet-5';
         const extracted = await anchorsFromSources(question, fetched.sources, { key: process.env.ANTHROPIC_API_KEY, model: ctxModel });
         factualAnchors = extracted.anchors;
+        articleClaim = extracted.claim || '';
       }
-      console.log(`[pipeline] Context from ${contextSources.length} source(s); anchors: ${factualAnchors ? 'yes' : 'none'}.`);
+      console.log(`[pipeline] Context from ${contextSources.length} source(s); anchors: ${factualAnchors ? 'yes' : 'none'}; claim: ${articleClaim || 'none'}.`);
     } else {
       const [fa, tr] = await Promise.all([
         generateFactualAnchors(question),
@@ -1801,7 +1860,7 @@ export default async function handler(req, res) {
     if (translation.english) {
       console.log(`[pipeline] Question translated from ${translation.lang}: ${translation.english}`);
     }
-    const contextBlock = buildContextBlock(factualAnchors);
+    const contextBlock = buildContextBlock(factualAnchors, articleClaim);
 
     send('progress', { step: 1, message: 'Assembling the council...' });
     const assemblyOutput = await callClaude(
@@ -2004,6 +2063,13 @@ Every card is first person. A member says "I" and "my" and never names themselve
       factualAnchors,
     });
 
+    // Did the cards engage the article's central claim? Runs alongside the verdict
+    // so it adds no wait. A low score is logged, stored on the session and listed
+    // in Alex's morning mail (lib/dailyPicks.mjs), so a relapse gets noticed.
+    const contextCheckPromise = articleClaim
+      ? checkClaimEngagement(articleClaim, deliberationOutput)
+      : Promise.resolve(null);
+
     send('progress', { step: 3, message: 'Forming the verdict...' });
     const verdictOutput = await callClaude(
       PROMPT3_SYSTEM,
@@ -2057,6 +2123,7 @@ Every card is first person. A member says "I" and "my" and never names themselve
     // times out in that tail, we keep a complete, useful session instead of
     // losing everything to the orphan cleanup. The final finalizeSession below
     // re-saves the same row with the enrichment added.
+    const contextCheck = await contextCheckPromise;
     if (preSlug) {
       const core = await finalizeSession({
         slug: preSlug,
@@ -2074,6 +2141,8 @@ Every card is first person. A member says "I" and "my" and never names themselve
         actions,
         factualAnchors,
         contextSources,
+        contextClaim: articleClaim,
+        contextCheck,
         questionEnglish: translation.english,
         questionLang: translation.lang,
       });
@@ -2128,6 +2197,8 @@ Every card is first person. A member says "I" and "my" and never names themselve
         actions,
         factualAnchors,
         contextSources,
+        contextClaim: articleClaim,
+        contextCheck,
         questionEnglish: translation.english,
         questionLang: translation.lang,
       });
@@ -2148,6 +2219,8 @@ Every card is first person. A member says "I" and "my" and never names themselve
         actions,
         factualAnchors,
         contextSources,
+        contextClaim: articleClaim,
+        contextCheck,
         questionEnglish: translation.english,
         questionLang: translation.lang,
       });
