@@ -3,7 +3,7 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
 import Procession from '../components/Procession';
-import { supabase } from '../lib/supabase';
+import { supabase, finishedOnly } from '../lib/supabase';
 import { resolveAvatarSlug, KNOWN_AVATAR_SLUGS } from '../lib/avatarSlugs';
 import { doctrineTagsForSlug } from '../lib/doctrineTags';
 import { SiteFooter, SiteHeader, SERIF } from '../components/SiteChrome';
@@ -168,15 +168,15 @@ function memberMonogram(name) {
 
 // ── Server-side props ───────────────────────────────────────────────────
 export async function getServerSideProps() {
-  const recentPromise = supabase
+  const recentPromise = finishedOnly(supabase
     .from('sessions')
-    .select('id, slug, original_issue, created_at, cards, featured_quote, featured_quote_member, member_names, member_types')
+    .select('id, slug, original_issue, created_at, cards, featured_quote, featured_quote_member, member_names, member_types'))
     .order('created_at', { ascending: false })
     .limit(4);
 
-  const countPromise = supabase
+  const countPromise = finishedOnly(supabase
     .from('sessions')
-    .select('*', { count: 'exact', head: true });
+    .select('*', { count: 'exact', head: true }));
 
   const [recentResult, countResult] = await Promise.all([recentPromise, countPromise]);
 

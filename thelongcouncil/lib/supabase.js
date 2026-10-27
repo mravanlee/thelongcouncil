@@ -11,6 +11,19 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
+// A session row exists from the start of a run (precreateSession in the
+// pipeline) but has no deliberation until it is finalized minutes later. Lists
+// and pages skip such rows: on 27 Oct 2026 an unfinished page opened from the
+// archive list stayed empty ("0 members") in the cache after the run finished.
+export function isFinishedSession(session) {
+  return !!(session && session.cards && session.cards.deliberation)
+}
+
+// The same rule as a query filter, so .limit(n) still returns n finished rows.
+export function finishedOnly(query) {
+  return query.not('cards->>deliberation', 'is', null)
+}
+
 // Server-side Supabase client (uses service role key — bypasses RLS)
 // Use this in API routes that need to insert/update sessions
 export function getServiceSupabase() {

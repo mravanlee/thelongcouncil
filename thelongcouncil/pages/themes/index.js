@@ -1,6 +1,6 @@
 import Head from 'next/head';
 import Link from 'next/link';
-import { supabase } from '../../lib/supabase';
+import { supabase, finishedOnly } from '../../lib/supabase';
 import { SERIF, SiteHeader, SiteFooter } from '../../components/SiteChrome';
 import { THEMES, matchingThemes, themeSlug } from '../../lib/themes';
 import { themeContent, themeDisplay } from '../../lib/themeContent';
@@ -10,9 +10,9 @@ const SITE = 'https://www.thelongcouncil.com';
 const PLACE = new Set(['US', 'EU', 'China', 'Netherlands']);
 
 export async function getServerSideProps(context) {
-  const { data: rows } = await supabase
+  const { data: rows } = await finishedOnly(supabase
     .from('sessions')
-    .select('original_issue, sharpened_issue, cards');
+    .select('original_issue, sharpened_issue, cards'));
   const all = (rows || []).map((s) => ({
     display_issue: (s.cards && s.cards.question_en) || s.original_issue,
     original_issue: s.original_issue,

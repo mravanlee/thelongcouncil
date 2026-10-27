@@ -3,7 +3,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { Search } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { supabase, finishedOnly } from '../../lib/supabase';
 import { resolveAvatarSlug } from '../../lib/avatarSlugs';
 import { SERIF, SiteFooter, SiteHeader } from '../../components/SiteChrome';
 import { THEMES, THEME_REGEX, topicHaystack, matchingThemes, themeSlug } from '../../lib/themes';
@@ -12,11 +12,11 @@ import { themeDisplay } from '../../lib/themeContent';
 const SCROLL_KEY = 'archive_scroll_y';
 
 export async function getServerSideProps(ctx) {
-  const { data: sessions, error } = await supabase
+  const { data: sessions, error } = await finishedOnly(supabase
     .from('sessions')
     .select(
       'id, slug, original_issue, sharpened_issue, member_names, member_types, created_at, cards, featured_quote, featured_quote_member',
-    )
+    ))
     .order('created_at', { ascending: false });
 
   if (error) {
