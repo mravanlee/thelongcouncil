@@ -17,6 +17,9 @@ const DUPLICATE_REDIRECTS = {
   'radical-right-movements-strengthen-european-cooperation-rvlb': 'radical-right-movements-strengthen-european-cooperation-vftn',
   'one-man-dominate-democracy-thirty-years-w65a': 'one-man-dominate-democracy-thirty-years-xe9c',
   'rising-prices-alone-decide-people-vote-qw5v': 'rising-prices-alone-decide-people-vote-r6nx',
+  // Climate session: the first production rerun (9j37) scored 2/6 and was replaced too.
+  'bear-main-cost-climate-disaster-recovery-cz0l': 'bear-main-cost-climate-disaster-recovery-lk8o',
+  'bear-main-cost-climate-disaster-recovery-9j37': 'bear-main-cost-climate-disaster-recovery-lk8o',
 };
 
 const nextConfig = {
