@@ -11,7 +11,22 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
+    # Only propose versions that have been out for 14 days, so a hijacked or
+    # broken release is usually caught upstream before it reaches us (same rule
+    # as LongevityWatch). On 2026-10-28 three of five PRs held days-old versions.
+    cooldown:
+      default-days: 14
     groups:
+      # react and react-dom must move together: on 2026-10-28 they arrived as
+      # separate major PRs and neither could install (react-dom 18 requires
+      # react 18). A package goes to the first group it matches, so this one
+      # comes before minor-and-patch.
+      react:
+        patterns:
+          - react
+          - react-dom
+          - "@types/react"
+          - "@types/react-dom"
       minor-and-patch:
         update-types:
           - minor
