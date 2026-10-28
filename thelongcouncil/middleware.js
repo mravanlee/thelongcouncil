@@ -63,8 +63,13 @@ export function middleware(req, event) {
   const bot = detectAiBot(ua);
   if (bot) {
     const path = req.nextUrl.pathname;
-    const country = (req.geo && req.geo.country) || '-';
-    const ip = req.ip || '-';
+    // Next 15 removed req.geo / req.ip (they silently became undefined, which
+    // would log every hit as country=- ip=-). Read Vercel's request headers
+    // directly; these are what @vercel/functions' geolocation()/ipAddress() use.
+    const country = req.headers.get('x-vercel-ip-country') || '-';
+    const ip = req.headers.get('x-real-ip')
+      || (req.headers.get('x-forwarded-for') || '').split(',')[0].trim()
+      || '-';
     // Single-line structured log (search Vercel logs for "[ai-bot]") plus a
     // durable, queryable row in ai_bot_hits. Human page views are intentionally
     // NOT logged here: Cloudflare Web Analytics already covers visitor traffic
