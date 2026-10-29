@@ -1388,7 +1388,7 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
                           {l.status === 'ok' && (
                             <span className="min-w-0 text-foreground">
                               <span className="text-primary">&#10003; Read and checked:</span> {l.title || l.url}
-                              {l.type === 'opinion' ? ' (opinion)' : ''}{l.mode === 'summary' ? ' (headline and summary only)' : ''}
+                              {l.type === 'opinion' ? ' (opinion)' : ''}
                             </span>
                           )}
                           <button type="button" onClick={() => removeCtxLink(l.id)} className="ml-auto shrink-0 px-1 text-muted-foreground hover:text-foreground" aria-label="Remove link">&times;</button>
@@ -1439,7 +1439,7 @@ export default function Home({ recentSessions: initialRecentSessions = [], sessi
                       <p className="text-[13px] leading-relaxed text-muted-foreground">
                         <span className="text-primary">&#10003; Read and checked:</span>{' '}
                         <span className="text-foreground">{artSource.title || artSource.url}</span>
-                        {artSource.type === 'opinion' ? ' (opinion piece)' : ''}{artSource.mode === 'summary' ? ' (headline and summary only)' : ''}
+                        {artSource.type === 'opinion' ? ' (opinion piece)' : ''}
                       </p>
                     )}
                     {artQuestions.length > 0 ? (

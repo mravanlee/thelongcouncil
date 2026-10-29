@@ -16,20 +16,21 @@ const PER_SOURCE = 15;
 const RECENT_MS = 36 * 3600 * 1000;
 const PICKS_PER_LANG = 3;
 
-// Outlets TLC can read: The Atlantic and The Economist answer our reader with a
-// 403, so they are not here. `note` marks paywalled titles where the council only
-// sees the headline and summary.
-const GATED = 'council leest kop + samenvatting';
+// Outlets the council can read in full. The Atlantic and The Economist answer our
+// reader with a 403. Paywalled outlets (NRC, Trouw, Foreign Policy) were dropped on
+// 29 Oct 2026: the reader now refuses them, since a headline and teaser alone made
+// the model fill in the article itself. NOS has one feed per desk; the same story
+// can sit in several, so pool() drops repeats.
 export const SOURCES = {
   en: [
     { id: 'guardian', name: 'The Guardian', feed: 'https://www.theguardian.com/international/rss' },
     { id: 'conversation', name: 'The Conversation', feed: 'https://theconversation.com/global/articles.atom' },
-    { id: 'foreignpolicy', name: 'Foreign Policy', feed: 'https://foreignpolicy.com/feed/', note: GATED },
     { id: 'aljazeera', name: 'Al Jazeera', feed: 'https://www.aljazeera.com/xml/rss/all.xml' },
   ],
   nl: [
-    { id: 'nrc', name: 'NRC', feed: 'https://www.nrc.nl/rss/', note: GATED },
-    { id: 'trouw', name: 'Trouw', feed: 'https://www.trouw.nl/rss.xml', note: GATED },
+    { id: 'nos-politiek', name: 'NOS', feed: 'https://feeds.nos.nl/nosnieuwspolitiek' },
+    { id: 'nos-economie', name: 'NOS', feed: 'https://feeds.nos.nl/nosnieuwseconomie' },
+    { id: 'nos-buitenland', name: 'NOS', feed: 'https://feeds.nos.nl/nosnieuwsbuitenland' },
   ],
 };
 
@@ -117,9 +118,14 @@ async function pool(sources, nowMs) {
   const results = await Promise.allSettled(sources.map(fetchFeed));
   const items = [];
   const failed = [];
+  const seen = new Set();
   results.forEach((r, i) => {
     if (r.status !== 'fulfilled') { failed.push(sources[i].name); return; }
-    for (const a of candidates(r.value, nowMs)) items.push({ ...a, source: sources[i] });
+    for (const a of candidates(r.value, nowMs)) {
+      if (seen.has(a.link)) continue;
+      seen.add(a.link);
+      items.push({ ...a, source: sources[i] });
+    }
   });
   return { items, failed };
 }
