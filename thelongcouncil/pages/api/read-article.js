@@ -1,7 +1,7 @@
 // Reads a news-article link the reader attaches (for context) or starts from
 // (for suggested questions), and returns a confirmation plus, when asked, 3
 // suggested questions. Security lives in lib/contextSources: https-only, Google
-// Web Risk, SSRF-guarded fetch, paywall fallback, article text treated as data.
+// Web Risk, SSRF-guarded fetch, paywalled pages refused, article text treated as data.
 import { fetchSource, suggestQuestions } from '../../lib/contextSources.mjs';
 
 export const config = { maxDuration: 45 };
@@ -21,6 +21,7 @@ const REASON_COPY = {
   not_html: 'That link is not a readable web page.',
   not_article: 'That link is not a news article, so there is nothing for the council to read.',
   unreadable: 'We could not find an article to read at that link.',
+  paywalled: 'That article is behind a paywall, so the council cannot read it. Try a free report on the same news, or ask without a link.',
   too_many_redirects: 'That link redirected too many times.',
   fetch_failed: 'That page could not be reached.',
 };
